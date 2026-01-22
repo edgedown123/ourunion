@@ -1,0 +1,70 @@
+export type BoardType = 'intro' | 'notice' | 'notice_all' | 'family_events' | 'free' | 'resources' | 'signup' | 'trash';
+export type UserRole = 'guest' | 'member' | 'admin';
+
+export interface PostAttachment {
+  name: string;
+  data: string; // Base64 string
+  type: string; // MIME type
+}
+
+export interface Comment {
+  id: string;
+  author: string;
+  content: string;
+  createdAt: string;
+  replies?: Comment[]; // 대댓글(답글) 목록
+}
+
+export interface Post {
+  id: string;
+  type: BoardType;
+  title: string;
+  content: string;
+  author: string;
+  createdAt: string;
+  views: number;
+  imageUrl?: string;
+  attachments?: PostAttachment[];
+  password?: string; // 자유게시판 삭제용 비번
+  comments?: Comment[]; // 댓글 목록
+}
+
+export interface Member {
+  id: string;
+  loginId: string;
+  password?: string; 
+  name: string;
+  birthDate: string;
+  phone: string;
+  email: string;
+  garage: string;
+  signupDate: string;
+}
+
+export interface HistoryItem {
+  year: string;
+  text: string;
+}
+
+export interface OfficeItem {
+  id: string;
+  name: string;
+  address: string;
+  phone: string;
+  mapImageUrl: string;
+}
+
+export interface SiteSettings {
+  siteName: string;
+  pointColor: string;
+  heroTitle: string;
+  heroSubtitle: string;
+  heroImageUrl: string;
+  fontFamily: string;
+  greetingTitle: string;
+  greetingMessage: string;
+  greetingImageUrl: string;
+  missionItems: string[];
+  history: HistoryItem[];
+  offices: OfficeItem[];
+}

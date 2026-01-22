@@ -1,0 +1,369 @@
+
+import React, { useState, useEffect } from 'react';
+import { BoardType, Post, SiteSettings, UserRole, Member, PostAttachment, Comment } from './types';
+import { INITIAL_POSTS, INITIAL_SETTINGS } from './constants';
+import Layout from './components/Layout';
+import Navbar from './components/Navbar';
+import Hero from './components/Hero';
+import Board from './components/Board';
+import AdminPanel from './components/AdminPanel';
+import PostEditor from './components/PostEditor';
+import Introduction from './components/Introduction';
+import Footer from './components/Footer';
+import SignupForm from './components/SignupForm';
+
+const App: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<string>('home');
+  const [isWriting, setIsWriting] = useState(false);
+  const [writingType, setWritingType] = useState<BoardType | null>(null);
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [showMemberLogin, setShowMemberLogin] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [loginId, setLoginId] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  
+  const [userRole, setUserRole] = useState<UserRole>('guest');
+  const [loggedInMember, setLoggedInMember] = useState<Member | null>(null);
+  const [isAdminAuth, setIsAdminAuth] = useState(false);
+  
+  const [showNewMemberPopup, setShowNewMemberPopup] = useState(false);
+  const [lastReportedCount, setLastReportedCount] = useState<number>(() => Number(localStorage.getItem('union_last_report_count') || 0));
+
+  const [settings, setSettings] = useState<SiteSettings>(() => {
+    const saved = localStorage.getItem('union_settings');
+    return saved ? JSON.parse(saved) : INITIAL_SETTINGS;
+  });
+  const [posts, setPosts] = useState<Post[]>(() => {
+    const saved = localStorage.getItem('union_posts');
+    return saved ? JSON.parse(saved) : INITIAL_POSTS;
+  });
+  const [deletedPosts, setDeletedPosts] = useState<Post[]>(() => {
+    const saved = localStorage.getItem('union_deleted_posts');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [members, setMembers] = useState<Member[]>(() => {
+    const saved = localStorage.getItem('union_members');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => { localStorage.setItem('union_settings', JSON.stringify(settings)); }, [settings]);
+  useEffect(() => { localStorage.setItem('union_posts', JSON.stringify(posts)); }, [posts]);
+  useEffect(() => { localStorage.setItem('union_deleted_posts', JSON.stringify(deletedPosts)); }, [deletedPosts]);
+  useEffect(() => { localStorage.setItem('union_members', JSON.stringify(members)); }, [members]);
+
+  useEffect(() => {
+    if (isAdminAuth) {
+      setUserRole('admin');
+      if (members.length > lastReportedCount) setShowNewMemberPopup(true);
+    }
+  }, [isAdminAuth, members.length, lastReportedCount]);
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    setIsWriting(false);
+    setWritingType(null);
+    setEditingPost(null);
+    setSelectedPostId(null);
+    window.scrollTo(0, 0);
+  };
+
+  const handleSavePost = (title: string, content: string, attachments?: PostAttachment[], postPassword?: string, id?: string) => {
+    if (id) {
+      setPosts(prev => prev.map(p => p.id === id ? {
+        ...p,
+        title,
+        content,
+        attachments,
+        password: postPassword
+      } : p));
+      alert('게시글이 수정되었습니다.');
+    } else {
+      const newPost: Post = {
+        id: Date.now().toString(),
+        type: (writingType || activeTab) as BoardType,
+        title,
+        content,
+        author: userRole === 'admin' ? '관리자' : (loggedInMember?.name || '조합원'),
+        createdAt: new Date().toISOString().split('T')[0],
+        views: 0,
+        attachments: attachments,
+        password: postPassword,
+        comments: []
+      };
+      setPosts(prev => [newPost, ...prev]);
+      alert('게시글이 등록되었습니다.');
+    }
+    setIsWriting(false);
+    setWritingType(null);
+    setEditingPost(null);
+  };
+
+  const handleSaveComment = (postId: string, content: string, parentId?: string) => {
+    if (userRole === 'guest') return alert('댓글은 회원만 작성 가능합니다.');
+    const newComment: Comment = {
+      id: Date.now().toString(),
+      author: userRole === 'admin' ? '관리자' : (loggedInMember?.name || '조합원'),
+      content,
+      createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      replies: []
+    };
+
+    setPosts(prevPosts => prevPosts.map(post => {
+      if (post.id === postId) {
+        if (!parentId) {
+          return { ...post, comments: [...(post.comments || []), newComment] };
+        } else {
+          return {
+            ...post,
+            comments: (post.comments || []).map(comment => {
+              if (comment.id === parentId) {
+                return { ...comment, replies: [...(comment.replies || []), newComment] };
+              }
+              return comment;
+            })
+          };
+        }
+      }
+      return post;
+    }));
+  };
+
+  const handleDeletePost = (postId: string, inputPassword?: string) => {
+    const postToDelete = posts.find(p => p.id === postId);
+    if (!postToDelete) return;
+
+    if (postToDelete.password) {
+      if (inputPassword !== postToDelete.password) {
+        alert('비밀번호가 일치하지 않습니다.');
+        return;
+      }
+    } else {
+      if (userRole !== 'admin') {
+        alert('삭제 권한이 없습니다.');
+        return;
+      }
+    }
+
+    setPosts(prev => prev.filter(p => p.id !== postId));
+    setDeletedPosts(prev => [postToDelete, ...prev]);
+    setSelectedPostId(null);
+    alert('삭제 처리되었습니다.');
+  };
+
+  const handleRestorePost = (postId: string) => {
+    const postToRestore = deletedPosts.find(p => p.id === postId);
+    if (!postToRestore) return;
+    setDeletedPosts(prev => prev.filter(p => p.id !== postId));
+    setPosts(prev => [postToRestore, ...prev]);
+    alert('게시글이 복구되었습니다.');
+  };
+
+  const handlePermanentDelete = (postId: string) => {
+    if (!window.confirm('영구 삭제하시겠습니까?')) return;
+    setDeletedPosts(prev => prev.filter(p => p.id !== postId));
+  };
+
+  const handleAddMember = (memberData: Omit<Member, 'id' | 'signupDate'>) => {
+    const newMember: Member = { ...memberData, id: Date.now().toString(), signupDate: new Date().toISOString().split('T')[0] };
+    setMembers(prev => [newMember, ...prev]);
+  };
+
+  const handleWriteClick = (specificType?: BoardType) => {
+    const targetType = specificType || activeTab;
+    if (['notice', 'notice_all', 'family_events', 'resources'].includes(targetType as string) && userRole !== 'admin') {
+      setWritingType(targetType as BoardType);
+      setShowAdminLogin(true);
+      return;
+    }
+    if (userRole === 'guest') {
+      alert('회원 전용 기능입니다.');
+      handleTabChange('signup');
+      return;
+    }
+    setWritingType(targetType as BoardType);
+    setIsWriting(true);
+  };
+
+  const handleEditClick = (post: Post) => {
+    setEditingPost(post);
+    setWritingType(post.type);
+    setIsWriting(true);
+    setSelectedPostId(null);
+  };
+
+  const handleSelectPost = (id: string | null) => {
+    setSelectedPostId(id);
+    if (id) {
+      // 조회수 1 증가
+      setPosts(prev => prev.map(p => p.id === id ? { ...p, views: (p.views || 0) + 1 } : p));
+    }
+  };
+
+  const handleAdminLogin = () => {
+    if (adminPassword === '1229') {
+      setIsAdminAuth(true);
+      setShowAdminLogin(false);
+      setAdminPassword('');
+      alert('관리자 인증 성공');
+    } else {
+      alert('비밀번호 오류');
+    }
+  };
+
+  const handleMemberLogin = () => {
+    const member = members.find(m => m.loginId === loginId && m.password === loginPassword);
+    if (member) {
+      setLoggedInMember(member);
+      setUserRole('member');
+      setShowMemberLogin(false);
+      setLoginId('');
+      setLoginPassword('');
+    } else {
+      alert('정보가 일치하지 않습니다.');
+    }
+  };
+
+  const handleLogout = () => {
+    setUserRole('guest');
+    setLoggedInMember(null);
+    setIsAdminAuth(false);
+    handleTabChange('home');
+  };
+
+  const handleConfirmNewMembers = () => {
+    localStorage.setItem('union_last_report_count', members.length.toString());
+    setLastReportedCount(members.length);
+    setShowNewMemberPopup(false);
+  };
+
+  const handleViewPostFromAdmin = (postId: string, type: BoardType) => {
+    if (type === 'notice_all' || type === 'family_events') {
+      setActiveTab('notice');
+    } else {
+      setActiveTab(type);
+    }
+    handleSelectPost(postId);
+    window.scrollTo(0, 0);
+  };
+
+  const renderContent = () => {
+    // 편집 모드일 때 최우선으로 에디터 표시
+    if (isWriting) {
+      return (
+        <PostEditor 
+          type={writingType || (activeTab as BoardType)} 
+          initialPost={editingPost} 
+          onSave={handleSavePost} 
+          onCancel={() => { setIsWriting(false); setEditingPost(null); }} 
+        />
+      );
+    }
+
+    if (activeTab === 'admin') {
+      if (!isAdminAuth) {
+        return (
+          <div className="flex flex-col items-center justify-center py-20">
+            <button onClick={() => setShowAdminLogin(true)} className="px-8 py-3 bg-sky-primary text-white rounded-xl font-bold shadow-lg hover:opacity-90">관리자 인증</button>
+          </div>
+        );
+      }
+      return (
+        <AdminPanel 
+          settings={settings} 
+          setSettings={setSettings} 
+          members={members} 
+          posts={posts} 
+          deletedPosts={deletedPosts}
+          onRestorePost={handleRestorePost}
+          onPermanentDelete={handlePermanentDelete}
+          onEditPost={handleEditClick} 
+          onViewPost={handleViewPostFromAdmin}
+          onClose={() => handleTabChange('home')} 
+          onReported={() => { setLastReportedCount(members.length); localStorage.setItem('union_last_report_count', members.length.toString()); }} 
+        />
+      );
+    }
+
+    if (activeTab === 'home') return <><Hero title={settings.heroTitle} subtitle={settings.heroSubtitle} imageUrl={settings.heroImageUrl} onJoinClick={() => handleTabChange('signup')} /><Board type="notice" posts={posts.slice(0, 10)} onWriteClick={handleWriteClick} onEditClick={handleEditClick} selectedPostId={selectedPostId} onSelectPost={handleSelectPost} userRole={userRole} onDeletePost={handleDeletePost} onSaveComment={handleSaveComment} /></>;
+    if (['intro', 'greeting', 'history', 'map'].includes(activeTab)) return <Introduction settings={settings} activeTab={activeTab} />;
+    if (activeTab === 'signup') return <SignupForm onGoHome={() => handleTabChange('home')} onAddMember={handleAddMember} existingMembers={members} />;
+    
+    return <Board type={activeTab as BoardType} posts={posts} onWriteClick={handleWriteClick} onEditClick={handleEditClick} selectedPostId={selectedPostId} onSelectPost={handleSelectPost} userRole={userRole} onDeletePost={handleDeletePost} onSaveComment={handleSaveComment} />;
+  };
+
+  return (
+    <Layout settings={settings}>
+      <Navbar siteName={settings.siteName} activeTab={activeTab} onTabChange={handleTabChange} userRole={userRole} memberName={userRole === 'admin' ? '관리자' : loggedInMember?.name} onToggleLogin={userRole === 'guest' ? () => setShowMemberLogin(true) : handleLogout} />
+      <main className="flex-grow">{renderContent()}</main>
+      
+      {showAdminLogin && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-3xl p-10 max-w-[320px] w-full shadow-2xl relative">
+            <button onClick={() => setShowAdminLogin(false)} className="absolute top-5 right-5 text-gray-400 hover:text-gray-600">
+              <i className="fas fa-times text-lg"></i>
+            </button>
+            <h3 className="text-xl font-black mb-6 text-center uppercase tracking-widest">Admin</h3>
+            <div className="space-y-4">
+              <input type="password" name="admin_pass" className="w-full border-2 border-gray-100 rounded-2xl p-3 text-center text-xl tracking-[0.4em] focus:border-sky-primary outline-none transition-all" autoFocus value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAdminLogin()} />
+              <button onClick={handleAdminLogin} className="w-full py-3 bg-gray-900 text-white rounded-2xl font-bold text-base hover:bg-black transition-all">인증하기</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showMemberLogin && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-[2rem] p-8 max-w-[320px] w-[90%] shadow-2xl relative">
+            <button onClick={() => setShowMemberLogin(false)} className="absolute top-6 right-6 text-gray-400 hover:text-gray-600">
+              <i className="fas fa-times text-lg"></i>
+            </button>
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 bg-sky-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <i className="fas fa-user-circle text-sky-primary text-2xl"></i>
+              </div>
+              <h3 className="text-xl font-black text-gray-900">조합원 로그인</h3>
+            </div>
+            <div className="space-y-3">
+              <input 
+                type="text" 
+                placeholder="아이디" 
+                className="w-full border-2 border-gray-50 rounded-xl p-3 text-sm outline-none focus:border-sky-primary transition-colors bg-gray-50/50" 
+                value={loginId} 
+                onChange={(e) => setLoginId(e.target.value)} 
+              />
+              <input 
+                type="password" 
+                placeholder="비밀번호" 
+                className="w-full border-2 border-gray-50 rounded-xl p-3 text-sm outline-none focus:border-sky-primary transition-colors bg-gray-50/50" 
+                value={loginPassword} 
+                onChange={(e) => setLoginPassword(e.target.value)} 
+                onKeyDown={(e) => e.key === 'Enter' && handleMemberLogin()} 
+              />
+              <button onClick={handleMemberLogin} className="w-full py-3.5 bg-sky-primary text-white rounded-xl font-bold text-sm shadow-lg shadow-sky-100 hover:opacity-90 active:scale-95 transition-all mt-2">
+                로그인
+              </button>
+              <button onClick={() => { handleTabChange('signup'); setShowMemberLogin(false); }} className="w-full text-center text-xs text-gray-400 font-bold hover:text-sky-primary mt-2">
+                아직 회원이 아니신가요? 가입하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showNewMemberPopup && (
+        <div className="fixed bottom-8 right-8 z-[110] animate-fadeIn">
+          <div className="bg-gray-900 text-white rounded-2xl p-6 max-w-xs shadow-2xl border border-white/10">
+            <h3 className="text-lg font-bold mb-2 flex items-center"><i className="fas fa-user-plus text-sky-400 mr-2"></i> 신규 가입 발생</h3>
+            <p className="text-sm text-gray-300 mb-6">{members.length - lastReportedCount}명의 신청이 대기 중입니다.</p>
+            <button onClick={handleConfirmNewMembers} className="w-full py-2 bg-sky-primary rounded-lg text-xs font-bold shadow-lg hover:opacity-90 active:scale-95 transition-all">확인</button>
+          </div>
+        </div>
+      )}
+      <Footer siteName={settings.siteName} onTabChange={handleTabChange} />
+    </Layout>
+  );
+};
+
+export default App;
