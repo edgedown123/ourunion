@@ -22,6 +22,7 @@ export const isFirebaseEnabled = () => !!db;
 
 /**
  * 실시간 데이터 감시
+ * 데이터가 없더라도(최초 실행) callback을 호출하여 로딩 완료를 알림
  */
 export const listenToData = (collectionName: string, documentId: string, callback: (data: any) => void) => {
   if (!db) return null;
@@ -29,9 +30,13 @@ export const listenToData = (collectionName: string, documentId: string, callbac
   return onSnapshot(docRef, (docSnap) => {
     if (docSnap.exists()) {
       callback(docSnap.data().data);
+    } else {
+      // 문서가 없는 경우 null을 전달하여 로딩이 끝났음을 알림
+      callback(null);
     }
   }, (error) => {
     console.error(`Firebase 실시간 감시 오류 (${documentId}):`, error);
+    callback(null); // 에러 발생 시에도 로딩은 끝내줌
   });
 };
 
