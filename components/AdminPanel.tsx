@@ -23,16 +23,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const heroImageRef = useRef<HTMLInputElement>(null);
   const greetingImageRef = useRef<HTMLInputElement>(null);
   const officeMapInputRef = useRef<HTMLInputElement>(null);
+  const importFileInputRef = useRef<HTMLInputElement>(null);
   
-  const [activeOfficeId, setActiveOfficeId] = useState<string | null>(null);
+  // 5단 탭 상태 (선생님이 좋아하시는 구조 유지)
   const [adminTab, setAdminTab] = useState<'members' | 'intro' | 'offices' | 'posts' | 'settings'>('members');
-  
-  // 연, 월, 일 상태 추가
+  const [activeOfficeId, setActiveOfficeId] = useState<string | null>(settings.offices[0]?.id || null);
+
+  // 연혁 입력을 위한 상태
   const [newYear, setNewYear] = useState('');
   const [newMonth, setNewMonth] = useState('');
   const [newDay, setNewDay] = useState('');
   const [newText, setNewText] = useState('');
-  const [newMissionItem, setNewMissionItem] = useState('');
 
   const handleSettingsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -50,21 +51,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     }
   };
 
-  const handleOfficeChange = (officeId: string, field: keyof OfficeItem, value: string) => {
-    const updatedOffices = settings.offices.map(off => 
-      off.id === officeId ? { ...off, [field]: value } : off
-    );
-    setSettings({ ...settings, offices: updatedOffices });
-  };
-
-  const handleOfficeMapUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!activeOfficeId) return;
+  const handleOfficeMapUpload = (e: React.ChangeEvent<HTMLInputElement>, officeId: string) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
         const updatedOffices = settings.offices.map(off => 
-          off.id === activeOfficeId ? { ...off, mapImageUrl: reader.result as string } : off
+          off.id === officeId ? { ...off, mapImageUrl: reader.result as string } : off
         );
         setSettings({ ...settings, offices: updatedOffices });
       };
@@ -74,36 +67,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const handleAddHistory = () => {
     if (!newYear || !newText) return alert('연도와 내용은 필수로 입력해주세요.');
-    
-    // 포맷팅 로직: 연, 월, 일 조합
     let dateStr = `${newYear}년`;
     if (newMonth) dateStr += ` ${newMonth}월`;
     if (newDay) dateStr += ` ${newDay}일`;
-
     const updatedHistory = [{ year: dateStr, text: newText }, ...(settings.history || [])];
     setSettings({ ...settings, history: updatedHistory });
-    
-    // 입력창 초기화
-    setNewYear('');
-    setNewMonth('');
-    setNewDay('');
-    setNewText('');
+    setNewYear(''); setNewMonth(''); setNewDay(''); setNewText('');
   };
 
   const handleDeleteHistory = (index: number) => {
     const updatedHistory = settings.history.filter((_, i) => i !== index);
     setSettings({ ...settings, history: updatedHistory });
-  };
-
-  const handleAddMission = () => {
-    if (!newMissionItem) return;
-    setSettings({ ...settings, missionItems: [...(settings.missionItems || []), newMissionItem] });
-    setNewMissionItem('');
-  };
-
-  const handleDeleteMission = (index: number) => {
-    const updated = (settings.missionItems || []).filter((_, i) => i !== index);
-    setSettings({ ...settings, missionItems: updated });
   };
 
   const handleDownloadExcel = () => {
@@ -114,312 +88,416 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    const dateStr = new Date().toISOString().split('T')[0];
-    link.setAttribute('href', url);
-    link.setAttribute('download', `조합원_가입신청_명단_${dateStr}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
+    link.href = url;
+    link.download = `조합원명단.csv`;
     link.click();
-    document.body.removeChild(link);
   };
 
-  const handleFullSystemBackup = () => {
-    const now = new Date();
-    const timestamp = now.getFullYear() + 
-      String(now.getMonth() + 1).padStart(2, '0') + 
-      String(now.getDate()).padStart(2, '0') + '_' + 
-      String(now.getHours()).padStart(2, '0') + 
-      String(now.getMinutes()).padStart(2, '0') + 
-      String(now.getSeconds()).padStart(2, '0');
-
+  // 데이터 내보내기 (백업)
+  const handleExportData = () => {
     const backupData = {
-      siteSettings: settings,
-      allPosts: posts,
-      deletedPosts: deletedPosts,
-      members: members,
-      backupVersion: "1.0",
-      generatedAt: now.toLocaleString()
+      settings,
+      posts,
+      members,
+      deletedPosts,
+      version: "1.0",
+      date: new Date().toLocaleString()
     };
-
     const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `우리노동조합_전체백업_${timestamp}.json`;
-    document.body.appendChild(link);
+    link.download = `우리노동조합_데이터_백업_${new Date().toISOString().split('T')[0]}.json`;
     link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    alert('시스템 전체 백업 파일이 생성되었습니다.');
+  };
+
+  // 데이터 불러오기 (동기화)
+  const handleImportData = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const json = JSON.parse(event.target?.result as string);
+        if (confirm('파일의 데이터로 전체 교체하시겠습니까? 현재 기기의 데이터는 삭제됩니다.')) {
+          // 로컬 스토리지 강제 업데이트를 위해 새로고침을 유도하거나 상태를 직접 업데이트
+          localStorage.setItem('union_settings', JSON.stringify(json.settings));
+          localStorage.setItem('union_posts', JSON.stringify(json.posts));
+          localStorage.setItem('union_members', JSON.stringify(json.members));
+          localStorage.setItem('union_deleted_posts', JSON.stringify(json.deletedPosts || []));
+          alert('데이터 동기화가 완료되었습니다. 페이지를 새로고침합니다.');
+          window.location.reload();
+        }
+      } catch (err) {
+        alert('올바른 백업 파일이 아닙니다.');
+      }
+    };
+    reader.readAsText(file);
   };
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 animate-fadeIn">
-      <div className="flex justify-between items-center mb-8 bg-white p-6 rounded-2xl border shadow-sm">
+      {/* 상단 헤더 */}
+      <div className="flex justify-between items-center mb-8 bg-white p-6 rounded-3xl border shadow-sm">
         <div className="flex items-center">
-          <div className="w-12 h-12 bg-sky-primary/10 rounded-xl flex items-center justify-center mr-4">
-            <i className="fas fa-shield-alt text-sky-primary text-2xl"></i>
+          <div className="w-14 h-14 bg-sky-primary text-white rounded-2xl flex items-center justify-center mr-5 shadow-lg shadow-sky-100">
+            <i className="fas fa-shield-alt text-2xl"></i>
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">관리자 커맨드 센터</h2>
-            <p className="text-sm text-gray-500">사이트의 모든 설정과 게시글을 강제 제어합니다.</p>
+            <h2 className="text-2xl font-black text-gray-900 tracking-tight">관리자 커맨드 센터</h2>
+            <p className="text-sm text-gray-400 font-bold">노동조합 운영을 위한 모든 설정을 제어합니다.</p>
           </div>
         </div>
-        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400">
+        <button onClick={onClose} className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors text-gray-400">
           <i className="fas fa-times text-2xl"></i>
         </button>
       </div>
 
-      <div className="flex space-x-2 mb-8 border-b pb-px overflow-x-auto whitespace-nowrap scrollbar-hide text-gray-400">
-        <button onClick={() => setAdminTab('members')} className={`px-6 py-3 text-sm font-bold transition-all border-b-2 ${adminTab === 'members' ? 'border-sky-primary text-sky-primary' : 'border-transparent hover:text-gray-600'}`}>조합원 관리</button>
-        <button onClick={() => setAdminTab('intro')} className={`px-6 py-3 text-sm font-bold transition-all border-b-2 ${adminTab === 'intro' ? 'border-sky-primary text-sky-primary' : 'border-transparent hover:text-gray-600'}`}>인사말/소개 관리</button>
-        <button onClick={() => setAdminTab('offices')} className={`px-6 py-3 text-sm font-bold transition-all border-b-2 ${adminTab === 'offices' ? 'border-sky-primary text-sky-primary' : 'border-transparent hover:text-gray-600'}`}>찾아오시는 길</button>
-        <button onClick={() => setAdminTab('posts')} className={`px-6 py-3 text-sm font-bold transition-all border-b-2 ${adminTab === 'posts' ? 'border-sky-primary text-sky-primary' : 'border-transparent hover:text-gray-600'}`}>게시물/휴지통</button>
-        <button onClick={() => setAdminTab('settings')} className={`px-6 py-3 text-sm font-bold transition-all border-b-2 ${adminTab === 'settings' ? 'border-sky-primary text-sky-primary' : 'border-transparent hover:text-gray-600'}`}>시스템 설정</button>
+      {/* 5단 탭 메뉴 */}
+      <div className="flex space-x-1 mb-8 bg-gray-100/50 p-1.5 rounded-2xl overflow-x-auto scrollbar-hide no-scrollbar">
+        {[
+          { id: 'members', label: '조합원 관리', icon: 'fa-users' },
+          { id: 'intro', label: '인사말/소개 관리', icon: 'fa-info-circle' },
+          { id: 'offices', label: '찾아오시는 길', icon: 'fa-map-marker-alt' },
+          { id: 'posts', label: '게시글/휴지통', icon: 'fa-file-alt' },
+          { id: 'settings', label: '시스템 설정', icon: 'fa-cog' },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setAdminTab(tab.id as any)}
+            className={`flex items-center space-x-2 px-6 py-3.5 rounded-xl text-sm font-black transition-all whitespace-nowrap ${
+              adminTab === tab.id 
+                ? 'bg-white text-sky-primary shadow-sm' 
+                : 'text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            <i className={`fas ${tab.icon}`}></i>
+            <span>{tab.label}</span>
+          </button>
+        ))}
       </div>
 
       <div className="space-y-6">
+        {/* 1. 조합원 관리 */}
         {adminTab === 'members' && (
-          <div className="bg-white rounded-2xl border shadow-sm overflow-hidden animate-fadeIn">
-            <div className="p-6 border-b flex justify-between items-center">
-              <h3 className="font-bold text-gray-800">조합원 가입 신청 명단 ({members.length}명)</h3>
-              <button onClick={handleDownloadExcel} className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold shadow-md hover:bg-emerald-700 transition-all flex items-center active:scale-95">
-                <i className="fas fa-file-excel mr-2"></i> 전체 명단 엑셀 다운로드
+          <div className="bg-white rounded-[2.5rem] border shadow-sm overflow-hidden animate-fadeIn">
+            <div className="p-8 border-b flex justify-between items-center bg-gray-50/30">
+              <div>
+                <h3 className="text-xl font-black text-gray-900">가입 신청 명단</h3>
+                <p className="text-xs text-gray-400 mt-1 font-bold">현재 총 {members.length}명의 신청자가 있습니다.</p>
+              </div>
+              <button onClick={handleDownloadExcel} className="px-6 py-3 bg-emerald-600 text-white rounded-2xl text-xs font-black shadow-lg shadow-emerald-50 hover:bg-emerald-700 transition-all">
+                <i className="fas fa-file-excel mr-2"></i> 엑셀로 내려받기
               </button>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
-                <thead className="bg-gray-50 text-[11px] font-black text-gray-400 uppercase">
+                <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest">
                   <tr>
-                    <th className="px-6 py-4">이름</th>
-                    <th className="px-6 py-4">연락처</th>
-                    <th className="px-6 py-4">이메일</th>
-                    <th className="px-6 py-4">차고지</th>
-                    <th className="px-6 py-4">가입일</th>
+                    <th className="px-8 py-5">성함</th>
+                    <th className="px-8 py-5">연락처</th>
+                    <th className="px-8 py-5">차고지</th>
+                    <th className="px-8 py-5">가입일</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y">
-                  {members.map(m => (
-                    <tr key={m.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 font-bold text-gray-900">{m.name}</td>
-                      <td className="px-6 py-4 text-gray-600 font-mono">{m.phone}</td>
-                      <td className="px-6 py-4 text-gray-600">{m.email}</td>
-                      <td className="px-6 py-4 text-gray-600 font-medium">{m.garage}</td>
-                      <td className="px-6 py-4 text-gray-400 text-xs">{m.signupDate}</td>
+                <tbody className="divide-y divide-gray-50">
+                  {members.length === 0 ? (
+                    <tr><td colSpan={4} className="px-8 py-20 text-center text-gray-400 font-bold italic">아직 가입 신청자가 없습니다.</td></tr>
+                  ) : members.map(m => (
+                    <tr key={m.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-8 py-5 font-black text-gray-900">{m.name}</td>
+                      <td className="px-8 py-5 text-gray-600">{m.phone}</td>
+                      <td className="px-8 py-5 text-gray-600 font-bold">{m.garage}</td>
+                      <td className="px-8 py-5 text-gray-400 text-xs font-medium">{m.signupDate}</td>
                     </tr>
                   ))}
-                  {members.length === 0 && (
-                    <tr><td colSpan={5} className="px-6 py-12 text-center text-gray-400 italic">가입 신청 내역이 없습니다.</td></tr>
-                  )}
                 </tbody>
               </table>
             </div>
           </div>
         )}
 
+        {/* 2. 인사말/소개 관리 */}
         {adminTab === 'intro' && (
-          <div className="space-y-6 animate-fadeIn">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-white p-6 rounded-2xl border shadow-sm">
-                <h3 className="font-bold text-gray-800 mb-6 flex items-center"><i className="fas fa-comment-dots mr-2 text-sky-primary"></i> 인사말 편집</h3>
-                <div className="space-y-4">
-                  <div><label className="block text-[10px] font-black text-gray-400 mb-1">인사말 제목</label><input type="text" name="greetingTitle" value={settings.greetingTitle} onChange={handleSettingsChange} className="w-full border rounded-lg p-2.5 text-sm outline-none focus:border-sky-primary" /></div>
-                  <div><label className="block text-[10px] font-black text-gray-400 mb-1">인사말 본문</label><textarea name="greetingMessage" value={settings.greetingMessage} onChange={handleSettingsChange} className="w-full border rounded-lg p-2.5 text-sm h-40 outline-none focus:border-sky-primary resize-none" /></div>
-                  <div>
-                    <label className="block text-[10px] font-black text-gray-400 mb-2">인사말 이미지</label>
-                    <div className="flex items-center space-x-4">
-                      <img src={settings.greetingImageUrl} className="w-20 h-20 object-cover rounded-lg border shadow-sm" />
-                      <button onClick={() => greetingImageRef.current?.click()} className="px-4 py-2 bg-gray-100 text-gray-600 text-xs font-bold rounded-lg hover:bg-gray-200">이미지 변경</button>
-                      <input type="file" ref={greetingImageRef} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'greetingImageUrl')} />
-                    </div>
-                  </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fadeIn">
+            <div className="bg-white p-8 rounded-[2.5rem] border shadow-sm space-y-8">
+              <h3 className="font-black text-gray-900 text-lg flex items-center">
+                <i className="fas fa-comment-dots mr-3 text-sky-primary"></i> 인사말 편집
+              </h3>
+              <div className="space-y-4">
+                <div className="aspect-video bg-gray-100 rounded-2xl overflow-hidden border relative group">
+                  <img src={settings.greetingImageUrl} className="w-full h-full object-cover" />
+                  <button 
+                    onClick={() => greetingImageRef.current?.click()}
+                    className="absolute inset-0 bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center font-bold"
+                  >
+                    사진 교체하기
+                  </button>
+                  <input type="file" ref={greetingImageRef} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'greetingImageUrl')} />
                 </div>
+                <input type="text" name="greetingTitle" value={settings.greetingTitle} onChange={handleSettingsChange} className="w-full border-2 border-gray-100 rounded-xl p-4 text-sm font-bold focus:border-sky-primary outline-none" placeholder="인사말 제목" />
+                <textarea name="greetingMessage" value={settings.greetingMessage} onChange={handleSettingsChange} className="w-full border-2 border-gray-100 rounded-xl p-4 text-sm h-40 focus:border-sky-primary outline-none resize-none" placeholder="인사말 본문" />
               </div>
-              <div className="bg-white p-6 rounded-2xl border shadow-sm">
-                <h3 className="font-bold text-gray-800 mb-6 flex items-center"><i className="fas fa-list-check mr-2 text-sky-primary"></i> 핵심 사명 관리</h3>
-                <div className="space-y-3 mb-6">
-                  {(settings.missionItems || []).map((item, idx) => (
-                    <div key={idx} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border group">
-                      <span className="text-sm text-gray-700">{item}</span>
-                      <button onClick={() => handleDeleteMission(idx)} className="text-red-300 hover:text-red-500 opacity-0 group-hover:opacity-100"><i className="fas fa-times"></i></button>
-                    </div>
-                  ))}
+            </div>
+
+            <div className="bg-white p-8 rounded-[2.5rem] border shadow-sm space-y-8">
+              <h3 className="font-black text-gray-900 text-lg flex items-center">
+                <i className="fas fa-history mr-3 text-sky-primary"></i> 연혁 데이터 관리
+              </h3>
+              <div className="bg-sky-50/50 p-6 rounded-2xl border border-sky-100 space-y-4">
+                <div className="grid grid-cols-3 gap-2">
+                  <input type="text" placeholder="연(2025)" value={newYear} onChange={e => setNewYear(e.target.value)} className="border rounded-lg p-3 text-sm outline-none focus:border-sky-primary" />
+                  <input type="text" placeholder="월(01)" value={newMonth} onChange={e => setNewMonth(e.target.value)} className="border rounded-lg p-3 text-sm outline-none focus:border-sky-primary" />
+                  <input type="text" placeholder="일(01)" value={newDay} onChange={e => setNewDay(e.target.value)} className="border rounded-lg p-3 text-sm outline-none focus:border-sky-primary" />
                 </div>
                 <div className="flex space-x-2">
-                  <input type="text" value={newMissionItem} onChange={e => setNewMissionItem(e.target.value)} className="flex-1 border rounded-lg p-2 text-sm outline-none" placeholder="새로운 사명 추가" />
-                  <button onClick={handleAddMission} className="px-4 py-2 bg-sky-primary text-white rounded-lg text-sm font-bold">추가</button>
+                  <input type="text" placeholder="연혁 내용을 입력하세요" value={newText} onChange={e => setNewText(e.target.value)} className="flex-1 border rounded-lg p-3 text-sm outline-none focus:border-sky-primary" />
+                  <button onClick={handleAddHistory} className="px-6 py-3 bg-sky-primary text-white rounded-lg font-black text-sm whitespace-nowrap shadow-md">추가</button>
                 </div>
               </div>
-            </div>
-            <div className="bg-white p-6 rounded-2xl border shadow-sm">
-              <h3 className="font-bold text-gray-800 mb-6 flex items-center"><i className="fas fa-history mr-2 text-sky-primary"></i> 연혁 데이터 편집</h3>
-              <div className="space-y-6">
-                <div className="bg-gray-50 p-6 rounded-2xl border">
-                  <p className="text-[11px] font-black text-sky-600 mb-4 uppercase tracking-wider">새 연혁 추가</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-4">
-                    <div className="sm:col-span-1">
-                      <label className="block text-[10px] font-bold text-gray-400 mb-1">연 (Year)</label>
-                      <input type="text" placeholder="예: 2025" value={newYear} onChange={e => setNewYear(e.target.value)} className="w-full border rounded-lg p-2.5 text-sm outline-none bg-white" />
+              <div className="space-y-2 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
+                {settings.history.map((item, idx) => (
+                  <div key={idx} className="flex justify-between items-center p-4 bg-gray-50 rounded-xl group border border-transparent hover:border-sky-100 transition-all">
+                    <div className="flex items-center space-x-4">
+                      <span className="font-black text-sky-700 text-sm w-32">{item.year}</span>
+                      <span className="text-sm text-gray-700 font-medium">{item.text}</span>
                     </div>
-                    <div className="sm:col-span-1">
-                      <label className="block text-[10px] font-bold text-gray-400 mb-1">월 (Month)</label>
-                      <input type="text" placeholder="예: 12" value={newMonth} onChange={e => setNewMonth(e.target.value)} className="w-full border rounded-lg p-2.5 text-sm outline-none bg-white" />
-                    </div>
-                    <div className="sm:col-span-1">
-                      <label className="block text-[10px] font-bold text-gray-400 mb-1">일 (Day)</label>
-                      <input type="text" placeholder="예: 29" value={newDay} onChange={e => setNewDay(e.target.value)} className="w-full border rounded-lg p-2.5 text-sm outline-none bg-white" />
-                    </div>
-                    <div className="sm:col-span-1 flex items-end">
-                      <button onClick={handleAddHistory} className="w-full py-2.5 bg-sky-primary text-white rounded-lg text-sm font-bold shadow-md hover:opacity-90 transition-all">연혁 추가</button>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-400 mb-1">내용 (History Text)</label>
-                    <input type="text" placeholder="예: 우리노동조합 창립 선언" value={newText} onChange={e => setNewText(e.target.value)} className="w-full border rounded-lg p-2.5 text-sm outline-none bg-white" />
-                  </div>
-                </div>
-                
-                <div className="space-y-2 max-h-80 overflow-y-auto pr-2">
-                  <p className="text-[11px] font-black text-gray-400 mb-2 uppercase tracking-wider">등록된 연혁 목록</p>
-                  {settings.history.map((item, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-4 bg-white border rounded-xl hover:bg-gray-50 group transition-colors shadow-sm">
-                      <div className="flex items-center">
-                        <span className="font-black text-sky-700 w-44 flex-shrink-0 text-sm">{item.year}</span>
-                        <span className="text-sm font-medium text-gray-700">{item.text}</span>
-                      </div>
-                      <button onClick={() => handleDeleteHistory(idx)} className="text-gray-300 group-hover:text-red-500 p-2 transition-colors"><i className="fas fa-trash-alt"></i></button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {adminTab === 'offices' && (
-          <div className="space-y-6 animate-fadeIn">
-            <div className="bg-white p-6 rounded-2xl border shadow-sm">
-              <h3 className="font-bold text-gray-800 mb-6 flex items-center"><i className="fas fa-map-marker-alt mr-2 text-sky-primary"></i> 사업소(찾아오시는 길) 정보 관리</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {settings.offices.map((office) => (
-                  <div key={office.id} className="border rounded-2xl overflow-hidden bg-gray-50 shadow-inner">
-                    <div className="h-40 bg-gray-200 relative group overflow-hidden">
-                      <img src={office.mapImageUrl} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <button onClick={() => { setActiveOfficeId(office.id); officeMapInputRef.current?.click(); }} className="px-3 py-1.5 bg-white text-gray-900 text-[11px] font-black rounded-lg">지도 이미지 변경</button>
-                      </div>
-                    </div>
-                    <div className="p-5 space-y-4">
-                      <div><label className="block text-[10px] font-black text-gray-400 mb-1">명칭</label><input type="text" value={office.name} onChange={(e) => handleOfficeChange(office.id, 'name', e.target.value)} className="w-full border rounded-lg p-2 text-sm font-bold" /></div>
-                      <div><label className="block text-[10px] font-black text-gray-400 mb-1">주소</label><input type="text" value={office.address} onChange={(e) => handleOfficeChange(office.id, 'address', e.target.value)} className="w-full border rounded-lg p-2 text-xs" /></div>
-                      <div><label className="block text-[10px] font-black text-gray-400 mb-1">연락처</label><input type="text" value={office.phone} onChange={(e) => handleOfficeChange(office.id, 'phone', e.target.value)} className="w-full border rounded-lg p-2 text-xs" /></div>
-                    </div>
+                    <button onClick={() => handleDeleteHistory(idx)} className="text-red-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <i className="fas fa-trash-alt"></i>
+                    </button>
                   </div>
                 ))}
               </div>
-              <input type="file" ref={officeMapInputRef} className="hidden" accept="image/*" onChange={handleOfficeMapUpload} />
             </div>
           </div>
         )}
 
+        {/* 3. 찾아오시는 길 */}
+        {adminTab === 'offices' && (
+          <div className="bg-white p-8 rounded-[2.5rem] border shadow-sm animate-fadeIn">
+            <h3 className="font-black text-gray-900 text-lg mb-8 flex items-center">
+              <i className="fas fa-map-marked-alt mr-3 text-sky-primary"></i> 사업소 정보 수정
+            </h3>
+            <div className="flex space-x-2 mb-8 border-b pb-4">
+              {settings.offices.map(off => (
+                <button 
+                  key={off.id}
+                  onClick={() => setActiveOfficeId(off.id)}
+                  className={`px-6 py-2 rounded-full text-xs font-black transition-all ${
+                    activeOfficeId === off.id ? 'bg-sky-primary text-white' : 'bg-gray-100 text-gray-400'
+                  }`}
+                >
+                  {off.name}
+                </button>
+              ))}
+            </div>
+            {settings.offices.find(o => o.id === activeOfficeId) && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 mb-1 tracking-widest">사업소 이름</label>
+                    <input type="text" value={settings.offices.find(o => o.id === activeOfficeId)?.name} onChange={(e) => {
+                      const updated = settings.offices.map(o => o.id === activeOfficeId ? { ...o, name: e.target.value } : o);
+                      setSettings({ ...settings, offices: updated });
+                    }} className="w-full border-2 border-gray-100 rounded-xl p-4 font-bold text-sm outline-none focus:border-sky-primary" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 mb-1 tracking-widest">주소</label>
+                    <input type="text" value={settings.offices.find(o => o.id === activeOfficeId)?.address} onChange={(e) => {
+                      const updated = settings.offices.map(o => o.id === activeOfficeId ? { ...o, address: e.target.value } : o);
+                      setSettings({ ...settings, offices: updated });
+                    }} className="w-full border-2 border-gray-100 rounded-xl p-4 font-bold text-sm outline-none focus:border-sky-primary" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 mb-1 tracking-widest">전화번호</label>
+                    <input type="text" value={settings.offices.find(o => o.id === activeOfficeId)?.phone} onChange={(e) => {
+                      const updated = settings.offices.map(o => o.id === activeOfficeId ? { ...o, phone: e.target.value } : o);
+                      setSettings({ ...settings, offices: updated });
+                    }} className="w-full border-2 border-gray-100 rounded-xl p-4 font-bold text-sm outline-none focus:border-sky-primary" />
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <label className="block text-[10px] font-black text-gray-400 mb-1 tracking-widest">지도 이미지 (전경 사진)</label>
+                  <div className="aspect-video bg-gray-100 rounded-2xl overflow-hidden border relative group shadow-inner">
+                    <img src={settings.offices.find(o => o.id === activeOfficeId)?.mapImageUrl} className="w-full h-full object-cover" />
+                    <button 
+                      onClick={() => officeMapInputRef.current?.click()}
+                      className="absolute inset-0 bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center font-bold"
+                    >
+                      지도 이미지 변경
+                    </button>
+                    <input type="file" ref={officeMapInputRef} className="hidden" accept="image/*" onChange={(e) => handleOfficeMapUpload(e, activeOfficeId!)} />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 4. 게시글/휴지통 */}
         {adminTab === 'posts' && (
-          <div className="space-y-12 animate-fadeIn">
-            <div className="bg-white rounded-2xl border shadow-sm overflow-hidden border-t-4 border-t-sky-primary">
-              <div className="p-6 border-b flex justify-between items-center bg-gray-50/50">
-                <h3 className="font-bold text-gray-800 flex items-center"><i className="fas fa-list mr-2 text-sky-primary"></i> 운영 중인 모든 게시물 관리</h3>
-                <span className="text-xs text-gray-400 font-bold">비밀번호를 확인하여 수정/삭제 시 사용하세요.</span>
+          <div className="space-y-8 animate-fadeIn">
+            <div className="bg-white rounded-[2.5rem] border shadow-sm overflow-hidden">
+              <div className="p-8 border-b bg-gray-50/30">
+                <h3 className="font-black text-gray-900">전체 게시글 관리</h3>
               </div>
-              <div className="overflow-x-auto">
+              <div className="max-h-96 overflow-y-auto custom-scrollbar">
                 <table className="w-full text-sm text-left">
-                  <thead className="bg-gray-50 text-[11px] font-black text-gray-400">
-                    <tr><th className="px-6 py-4">제목</th><th className="px-6 py-4">작성자</th><th className="px-6 py-4">게시판</th><th className="px-6 py-4">비밀번호</th><th className="px-6 py-4">조회수</th><th className="px-6 py-4 text-center">관리</th></tr>
+                  <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase">
+                    <tr><th className="px-8 py-4">구분</th><th className="px-8 py-4">제목</th><th className="px-8 py-4">작성자</th><th className="px-8 py-4">관리</th></tr>
                   </thead>
-                  <tbody className="divide-y">
+                  <tbody className="divide-y divide-gray-50">
                     {posts.map(p => (
-                      <tr key={p.id} className="hover:bg-gray-50 transition-colors group">
-                        <td className="px-6 py-4 font-bold text-gray-800 truncate max-w-[200px]">
-                          <button onClick={() => onViewPost(p.id, p.type)} className="hover:text-sky-primary hover:underline transition-all text-left truncate w-full">{p.title}</button>
-                        </td>
-                        <td className="px-6 py-4 text-gray-600">{p.author}</td>
-                        <td className="px-6 py-4"><span className="px-2 py-1 bg-gray-100 rounded text-[10px] font-bold text-gray-500 uppercase">{p.type}</span></td>
-                        <td className="px-6 py-4 font-mono text-sky-600 font-black">{p.password || '-'}</td>
-                        <td className="px-6 py-4 text-gray-400 text-xs">{p.views}</td>
-                        <td className="px-6 py-4 text-center">
-                          <button onClick={() => onEditPost(p)} className="px-3 py-1.5 bg-sky-50 text-sky-600 rounded-lg text-[11px] font-black hover:bg-sky-600 hover:text-white transition-all shadow-sm">수정</button>
+                      <tr key={p.id} className="hover:bg-gray-50/50">
+                        <td className="px-8 py-4"><span className="text-[10px] bg-sky-50 text-sky-600 px-2 py-1 rounded font-black">{p.type}</span></td>
+                        <td className="px-8 py-4 font-bold text-gray-700 truncate max-w-xs">{p.title}</td>
+                        <td className="px-8 py-4 text-gray-400">{p.author}</td>
+                        <td className="px-8 py-4 space-x-2">
+                          <button onClick={() => onViewPost(p.id, p.type)} className="text-sky-500 hover:underline font-bold text-xs">보기</button>
+                          <button onClick={() => onEditPost(p)} className="text-gray-400 hover:text-gray-900 font-bold text-xs">수정</button>
                         </td>
                       </tr>
                     ))}
-                    {posts.length === 0 && (<tr><td colSpan={6} className="px-6 py-12 text-center text-gray-400 italic">게시물이 없습니다.</td></tr>)}
                   </tbody>
                 </table>
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl border shadow-sm overflow-hidden border-t-4 border-t-red-500">
-              <div className="p-6 border-b flex justify-between items-center bg-gray-50/50">
-                <h3 className="font-bold text-red-600 flex items-center"><i className="fas fa-trash-alt mr-2"></i> 삭제된 게시물 (휴지통)</h3>
+            <div className="bg-rose-50 rounded-[2.5rem] border border-rose-100 shadow-sm overflow-hidden">
+              <div className="p-8 border-b border-rose-100 bg-white/50 flex items-center">
+                <i className="fas fa-trash-alt mr-3 text-rose-500"></i>
+                <h3 className="font-black text-rose-900">삭제된 게시글 (휴지통)</h3>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-gray-50 text-[11px] font-black text-gray-400">
-                    <tr><th className="px-6 py-4">제목</th><th className="px-6 py-4">작성자</th><th className="px-6 py-4">비밀번호</th><th className="px-6 py-4 text-center">관리</th></tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {deletedPosts.map(p => (
-                      <tr key={p.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 font-medium text-gray-500">{p.title}</td>
-                        <td className="px-6 py-4 text-gray-400">{p.author}</td>
-                        <td className="px-6 py-4 font-mono text-gray-400">{p.password || '-'}</td>
-                        <td className="px-6 py-4 text-center space-x-2">
-                          <button onClick={() => onRestorePost(p.id)} className="px-3 py-1.5 bg-sky-50 text-sky-600 rounded-lg text-[11px] font-bold">복구</button>
-                          <button onClick={() => onPermanentDelete(p.id)} className="px-3 py-1.5 bg-red-100 text-red-600 rounded-lg text-[11px] font-bold">영구삭제</button>
-                        </td>
-                      </tr>
-                    ))}
-                    {deletedPosts.length === 0 && (<tr><td colSpan={4} className="px-6 py-12 text-center text-gray-400 italic">휴지통이 비어 있습니다.</td></tr>)}
-                  </tbody>
-                </table>
+              <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                {deletedPosts.length === 0 ? (
+                  <div className="py-12 text-center text-rose-300 font-bold italic">휴지통이 비어 있습니다.</div>
+                ) : (
+                  <table className="w-full text-sm text-left">
+                    <tbody className="divide-y divide-rose-100/50">
+                      {deletedPosts.map(p => (
+                        <tr key={p.id} className="hover:bg-white/40">
+                          <td className="px-8 py-4 font-bold text-rose-800">{p.title}</td>
+                          <td className="px-8 py-4 text-rose-400 text-xs">{p.createdAt}</td>
+                          <td className="px-8 py-4 text-right space-x-3">
+                            <button onClick={() => onRestorePost(p.id)} className="text-sky-600 font-black text-xs">복구</button>
+                            <button onClick={() => onPermanentDelete(p.id)} className="text-rose-600 font-black text-xs">영구삭제</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
             </div>
           </div>
         )}
 
+        {/* 5. 시스템 설정 (동기화 기능 추가) */}
         {adminTab === 'settings' && (
           <div className="space-y-8 animate-fadeIn">
-            <div className="bg-white p-6 rounded-2xl border shadow-sm">
-              <h3 className="font-bold text-gray-800 mb-6 flex items-center"><i className="fas fa-desktop mr-2 text-sky-primary"></i> 메인 화면 및 시스템 관리</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-4">
-                  <div><label className="block text-[10px] font-black text-gray-400 mb-1">사이트 이름</label><input type="text" name="siteName" value={settings.siteName} onChange={handleSettingsChange} className="w-full border rounded-lg p-2.5 text-sm outline-none" /></div>
-                  <div><label className="block text-[10px] font-black text-gray-400 mb-1">메인 제목</label><input type="text" name="heroTitle" value={settings.heroTitle} onChange={handleSettingsChange} className="w-full border rounded-lg p-2.5 text-sm outline-none" /></div>
-                  <div><label className="block text-[10px] font-black text-gray-400 mb-1">메인 설명</label><textarea name="heroSubtitle" value={settings.heroSubtitle} onChange={handleSettingsChange} className="w-full border rounded-lg p-2.5 text-sm h-24 outline-none resize-none" /></div>
-                </div>
-                <div>
-                  <label className="block text-[10px] font-black text-gray-400 mb-2">메인 배경 이미지</label>
-                  <div className="aspect-video w-full rounded-xl overflow-hidden border bg-gray-100 mb-3"><img src={settings.heroImageUrl} className="w-full h-full object-cover" /></div>
-                  <button onClick={() => heroImageRef.current?.click()} className="w-full py-3 bg-gray-900 text-white rounded-xl text-sm font-bold shadow-lg">이미지 교체</button>
-                  <input type="file" ref={heroImageRef} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'heroImageUrl')} />
+            <div className="bg-white p-10 rounded-[2.5rem] border shadow-sm space-y-12">
+              <div>
+                <h3 className="font-black text-gray-900 text-lg mb-8 flex items-center">
+                  <i className="fas fa-palette mr-3 text-sky-primary"></i> 메인 화면 시각 정보
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                  <div className="space-y-4">
+                    <label className="block text-[10px] font-black text-gray-400 mb-1 tracking-widest uppercase">현재 대표 이미지</label>
+                    <div className="aspect-video bg-gray-50 rounded-[2rem] overflow-hidden border-4 border-white shadow-xl relative group">
+                      <img src={settings.heroImageUrl} className="w-full h-full object-cover" />
+                      <button 
+                        onClick={() => heroImageRef.current?.click()}
+                        className="absolute inset-0 bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center font-black"
+                      >
+                        <i className="fas fa-camera text-3xl mb-2"></i>
+                        사진 변경하기
+                      </button>
+                      <input type="file" ref={heroImageRef} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'heroImageUrl')} />
+                    </div>
+                  </div>
+                  <div className="space-y-6 flex flex-col justify-center">
+                    <div>
+                      <label className="block text-[10px] font-black text-gray-400 mb-2 tracking-widest uppercase">사이트 이름</label>
+                      <input type="text" name="siteName" value={settings.siteName} onChange={handleSettingsChange} className="w-full border-2 border-gray-100 rounded-2xl p-4 font-black text-xl text-sky-primary outline-none focus:border-sky-primary shadow-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black text-gray-400 mb-2 tracking-widest uppercase">메인 슬로건</label>
+                      <input type="text" name="heroTitle" value={settings.heroTitle} onChange={handleSettingsChange} className="w-full border-2 border-gray-100 rounded-2xl p-4 font-bold text-gray-700 outline-none focus:border-sky-primary" />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-gray-900 rounded-2xl p-8 text-white shadow-2xl">
+            {/* 기기 간 데이터 동기화 섹션 */}
+            <div className="bg-gray-900 rounded-[2.5rem] p-10 text-white shadow-2xl space-y-8">
               <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                 <div>
-                  <h3 className="text-xl font-bold mb-2 flex items-center"><i className="fas fa-database mr-3 text-sky-400"></i> 시스템 전체 데이터 백업</h3>
-                  <p className="text-sm text-gray-400">현재까지의 모든 설정, 게시물, 회원 정보를 하나의 파일로 저장합니다.</p>
+                  <h3 className="text-xl font-black mb-2 flex items-center">
+                    <i className="fas fa-sync-alt mr-3 text-sky-400 animate-spin-slow"></i> 기기 간 데이터 동기화
+                  </h3>
+                  <p className="text-sm text-gray-400 font-bold leading-relaxed">
+                    PC에서 쓴 글을 모바일에서 보거나, 기기를 변경할 때 사용하세요.<br/>
+                    데이터를 파일로 내보낸 뒤 다른 기기에서 불러오면 모든 내용이 똑같이 복사됩니다.
+                  </p>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button 
-                  onClick={handleFullSystemBackup}
-                  className="px-8 py-4 bg-sky-primary text-white rounded-xl font-bold shadow-lg hover:bg-sky-500 transition-all active:scale-95 flex items-center whitespace-nowrap"
+                  onClick={handleExportData}
+                  className="group flex flex-col items-center justify-center p-8 bg-white/5 border border-white/10 rounded-[2rem] hover:bg-white/10 transition-all active:scale-95"
                 >
-                  <i className="fas fa-download mr-3"></i> 전체 데이터 백업 다운로드 (.json)
+                  <div className="w-12 h-12 bg-sky-500 text-white rounded-2xl flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform">
+                    <i className="fas fa-file-export text-xl"></i>
+                  </div>
+                  <span className="font-black text-sm mb-1">데이터 내보내기</span>
+                  <span className="text-[10px] text-gray-500 font-bold">전체 게시글 및 설정 백업</span>
                 </button>
+
+                <button 
+                  onClick={() => importFileInputRef.current?.click()}
+                  className="group flex flex-col items-center justify-center p-8 bg-white/5 border border-white/10 rounded-[2rem] hover:bg-white/10 transition-all active:scale-95"
+                >
+                  <div className="w-12 h-12 bg-emerald-500 text-white rounded-2xl flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform">
+                    <i className="fas fa-file-import text-xl"></i>
+                  </div>
+                  <span className="font-black text-sm mb-1">데이터 불러오기</span>
+                  <span className="text-[10px] text-gray-500 font-bold">다른 기기 데이터 동기화</span>
+                  <input 
+                    type="file" 
+                    ref={importFileInputRef} 
+                    className="hidden" 
+                    accept="application/json" 
+                    onChange={handleImportData} 
+                  />
+                </button>
+              </div>
+
+              <div className="bg-white/5 p-5 rounded-2xl border border-white/5 text-[11px] text-gray-400 flex items-start">
+                <i className="fas fa-info-circle mr-3 mt-0.5 text-sky-400"></i>
+                <p>
+                  데이터를 불러오면 현재 기기에 저장된 내용은 모두 삭제되고 파일의 내용으로 교체됩니다. 
+                  동기화 파일을 카카오톡 '나에게 보내기' 등으로 전달하면 모바일에서 편리하게 불러올 수 있습니다.
+                </p>
               </div>
             </div>
           </div>
         )}
       </div>
+
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+        @keyframes spin-slow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow { animation: spin-slow 12s linear infinite; }
+      `}</style>
     </div>
   );
 };
