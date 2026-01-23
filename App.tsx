@@ -61,6 +61,14 @@ const App: React.FC = () => {
   };
 
   const handleTabChange = (tab: string) => {
+    // 회원 전용 접근 제한 로직
+    const restrictedTabs = ['notice', 'notice_all', 'family_events', 'free', 'resources'];
+    if (userRole === 'guest' && restrictedTabs.includes(tab)) {
+      alert('조합원 전용 메뉴입니다. 로그인이 필요합니다.');
+      setShowMemberLogin(true);
+      return;
+    }
+
     setActiveTab(tab);
     setIsWriting(false);
     setWritingType(null);
@@ -206,6 +214,13 @@ const App: React.FC = () => {
     if (activeTab === 'home') return <><Hero title={settings.heroTitle} subtitle={settings.heroSubtitle} imageUrl={settings.heroImageUrl} onJoinClick={() => handleTabChange('signup')} /><Board type="notice" posts={posts.slice(0, 10)} onWriteClick={handleWriteClick} onEditClick={handleEditClick} selectedPostId={selectedPostId} onSelectPost={handleSelectPost} userRole={userRole} onDeletePost={handleDeletePost} onSaveComment={handleSaveComment} /></>;
     if (['intro', 'greeting', 'history', 'map'].includes(activeTab)) return <Introduction settings={settings} activeTab={activeTab} />;
     if (activeTab === 'signup') return <SignupForm onGoHome={() => handleTabChange('home')} onAddMember={handleAddMember} existingMembers={members} />;
+    
+    // 게시판 렌더링 시 게스트라면 렌더링하지 않음 (이중 방어)
+    const restrictedTabs = ['notice', 'notice_all', 'family_events', 'free', 'resources'];
+    if (userRole === 'guest' && restrictedTabs.includes(activeTab)) {
+        return <div className="flex flex-col items-center justify-center py-40 text-gray-400 font-bold">조합원 전용 페이지입니다.</div>;
+    }
+
     return <Board type={activeTab as BoardType} posts={posts} onWriteClick={handleWriteClick} onEditClick={handleEditClick} selectedPostId={selectedPostId} onSelectPost={handleSelectPost} userRole={userRole} onDeletePost={handleDeletePost} onSaveComment={handleSaveComment} />;
   };
 

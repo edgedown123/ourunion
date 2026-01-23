@@ -35,11 +35,7 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
                 <span className="text-[11px] font-bold text-gray-700">
                   {memberName} <span className="text-gray-400 font-normal">님</span>
                 </span>
-                {userRole === 'admin' && (
-                  <span className="ml-2 bg-red-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full">
-                    ADMIN
-                  </span>
-                )}
+                {/* 관리자 배지(ADMIN)가 여기서 제거되었습니다 */}
               </div>
             )}
             
