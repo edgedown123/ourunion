@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { NAV_ITEMS } from '../constants';
 import { UserRole } from '../types';
@@ -33,16 +34,26 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
 
           {/* 로그인 및 설정 영역 */}
           <div className="flex items-center space-x-2">
-            {userRole === 'admin' && (
-              <span className="hidden sm:inline-block bg-red-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full mr-1 animate-pulse">
-                ADMIN
-              </span>
+            {/* 로그인된 정보 표시 */}
+            {userRole !== 'guest' && (
+              <div className="flex items-center mr-2">
+                <span className="text-[11px] font-bold text-gray-700">
+                  {memberName} <span className="text-gray-400 font-normal">님</span>
+                </span>
+                {userRole === 'admin' && (
+                  <span className="ml-2 bg-red-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full animate-pulse">
+                    ADMIN
+                  </span>
+                )}
+              </div>
             )}
             
             <button
               onClick={onToggleLogin}
               className={`text-[11px] px-3 py-1.5 rounded-full border transition-all whitespace-nowrap font-bold ${
-                userRole !== 'guest' ? 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200' : 'bg-sky-primary text-white border-sky-primary hover:opacity-90 shadow-sm'
+                userRole !== 'guest' 
+                  ? 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200' 
+                  : 'bg-sky-primary text-white border-sky-primary hover:opacity-90 shadow-sm'
               }`}
             >
               {userRole === 'guest' ? '로그인' : '로그아웃'}

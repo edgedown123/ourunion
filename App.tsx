@@ -210,6 +210,7 @@ const App: React.FC = () => {
   const handleAdminLogin = () => {
     if (adminPassword === '1229') {
       setIsAdminAuth(true);
+      setUserRole('admin');
       setShowAdminLogin(false);
       setAdminPassword('');
       alert('관리자 인증 성공');
@@ -261,7 +262,7 @@ const App: React.FC = () => {
 
   return (
     <Layout settings={settings}>
-      <Navbar siteName={settings.siteName} activeTab={activeTab} onTabChange={handleTabChange} userRole={userRole} memberName={userRole === 'admin' ? '관리자' : loggedInMember?.name} onToggleLogin={userRole === 'guest' ? () => setShowMemberLogin(true) : handleLogout} />
+      <Navbar siteName={settings.siteName} activeTab={activeTab} onTabChange={handleTabChange} userRole={userRole} memberName={userRole === 'admin' ? '관리자' : (loggedInMember?.name || '')} onToggleLogin={userRole === 'guest' ? () => setShowMemberLogin(true) : handleLogout} />
       <main className="flex-grow">{renderContent()}</main>
       
       {showAdminLogin && (
