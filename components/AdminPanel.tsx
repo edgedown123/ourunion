@@ -27,7 +27,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const [activeOfficeId, setActiveOfficeId] = useState<string | null>(null);
   const [adminTab, setAdminTab] = useState<'members' | 'intro' | 'offices' | 'posts' | 'settings'>('members');
   
+  // 연, 월, 일 상태 추가
   const [newYear, setNewYear] = useState('');
+  const [newMonth, setNewMonth] = useState('');
+  const [newDay, setNewDay] = useState('');
   const [newText, setNewText] = useState('');
   const [newMissionItem, setNewMissionItem] = useState('');
 
@@ -70,10 +73,20 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   };
 
   const handleAddHistory = () => {
-    if (!newYear || !newText) return alert('연도와 내용을 모두 입력해주세요.');
-    const updatedHistory = [{ year: newYear, text: newText }, ...(settings.history || [])];
+    if (!newYear || !newText) return alert('연도와 내용은 필수로 입력해주세요.');
+    
+    // 포맷팅 로직: 연, 월, 일 조합
+    let dateStr = `${newYear}년`;
+    if (newMonth) dateStr += ` ${newMonth}월`;
+    if (newDay) dateStr += ` ${newDay}일`;
+
+    const updatedHistory = [{ year: dateStr, text: newText }, ...(settings.history || [])];
     setSettings({ ...settings, history: updatedHistory });
+    
+    // 입력창 초기화
     setNewYear('');
+    setNewMonth('');
+    setNewDay('');
     setNewText('');
   };
 
@@ -240,19 +253,41 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
             <div className="bg-white p-6 rounded-2xl border shadow-sm">
               <h3 className="font-bold text-gray-800 mb-6 flex items-center"><i className="fas fa-history mr-2 text-sky-primary"></i> 연혁 데이터 편집</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div>
-                  <div className="flex space-x-2 mb-4">
-                    <input type="text" placeholder="연도" value={newYear} onChange={e => setNewYear(e.target.value)} className="w-24 border rounded-lg p-2 text-sm outline-none" />
-                    <input type="text" placeholder="내용" value={newText} onChange={e => setNewText(e.target.value)} className="flex-1 border rounded-lg p-2 text-sm outline-none" />
-                    <button onClick={handleAddHistory} className="px-4 py-2 bg-sky-primary text-white rounded-lg text-sm font-bold">추가</button>
+              <div className="space-y-6">
+                <div className="bg-gray-50 p-6 rounded-2xl border">
+                  <p className="text-[11px] font-black text-sky-600 mb-4 uppercase tracking-wider">새 연혁 추가</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-4">
+                    <div className="sm:col-span-1">
+                      <label className="block text-[10px] font-bold text-gray-400 mb-1">연 (Year)</label>
+                      <input type="text" placeholder="예: 2025" value={newYear} onChange={e => setNewYear(e.target.value)} className="w-full border rounded-lg p-2.5 text-sm outline-none bg-white" />
+                    </div>
+                    <div className="sm:col-span-1">
+                      <label className="block text-[10px] font-bold text-gray-400 mb-1">월 (Month)</label>
+                      <input type="text" placeholder="예: 12" value={newMonth} onChange={e => setNewMonth(e.target.value)} className="w-full border rounded-lg p-2.5 text-sm outline-none bg-white" />
+                    </div>
+                    <div className="sm:col-span-1">
+                      <label className="block text-[10px] font-bold text-gray-400 mb-1">일 (Day)</label>
+                      <input type="text" placeholder="예: 29" value={newDay} onChange={e => setNewDay(e.target.value)} className="w-full border rounded-lg p-2.5 text-sm outline-none bg-white" />
+                    </div>
+                    <div className="sm:col-span-1 flex items-end">
+                      <button onClick={handleAddHistory} className="w-full py-2.5 bg-sky-primary text-white rounded-lg text-sm font-bold shadow-md hover:opacity-90 transition-all">연혁 추가</button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 mb-1">내용 (History Text)</label>
+                    <input type="text" placeholder="예: 우리노동조합 창립 선언" value={newText} onChange={e => setNewText(e.target.value)} className="w-full border rounded-lg p-2.5 text-sm outline-none bg-white" />
                   </div>
                 </div>
-                <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+                
+                <div className="space-y-2 max-h-80 overflow-y-auto pr-2">
+                  <p className="text-[11px] font-black text-gray-400 mb-2 uppercase tracking-wider">등록된 연혁 목록</p>
                   {settings.history.map((item, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 group transition-colors">
-                      <div className="flex items-center"><span className="font-bold text-sky-700 w-16">{item.year}</span><span className="text-sm text-gray-600">{item.text}</span></div>
-                      <button onClick={() => handleDeleteHistory(idx)} className="text-gray-300 group-hover:text-red-500"><i className="fas fa-trash-alt"></i></button>
+                    <div key={idx} className="flex items-center justify-between p-4 bg-white border rounded-xl hover:bg-gray-50 group transition-colors shadow-sm">
+                      <div className="flex items-center">
+                        <span className="font-black text-sky-700 w-44 flex-shrink-0 text-sm">{item.year}</span>
+                        <span className="text-sm font-medium text-gray-700">{item.text}</span>
+                      </div>
+                      <button onClick={() => handleDeleteHistory(idx)} className="text-gray-300 group-hover:text-red-500 p-2 transition-colors"><i className="fas fa-trash-alt"></i></button>
                     </div>
                   ))}
                 </div>
