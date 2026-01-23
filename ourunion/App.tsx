@@ -42,42 +42,65 @@ const App: React.FC = () => {
   const [deletedPosts, setDeletedPosts] = useState<Post[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
 
-  // 동기화 제어용 Ref
-  const isUpdatingFromCloud = useRef(false);
+  // 마지막으로 동기화된 데이터 스냅샷 (무한 루프 방지용)
+  const lastCloudData = useRef<{
+    settings: string;
+    posts: string;
+    members: string;
+    deletedPosts: string;
+  }>({ settings: '', posts: '', members: '', deletedPosts: '' });
 
-  // 1. 초기 로드 및 실시간 구독
+  // 1. 초기 데이터 로드 및 실시간 구독 설정
   useEffect(() => {
     if (isSupabaseEnabled()) {
       fetchAllData().then(cloudData => {
         if (cloudData) {
-          isUpdatingFromCloud.current = true;
-          if (cloudData.settings) setSettings(cloudData.settings);
-          if (cloudData.posts) setPosts(cloudData.posts);
-          if (cloudData.members) setMembers(cloudData.members);
-          if (cloudData.deletedPosts) setDeletedPosts(cloudData.deletedPosts);
-          setTimeout(() => { isUpdatingFromCloud.current = false; }, 500);
+          if (cloudData.settings) {
+            lastCloudData.current.settings = JSON.stringify(cloudData.settings);
+            setSettings(cloudData.settings);
+          }
+          if (cloudData.posts) {
+            lastCloudData.current.posts = JSON.stringify(cloudData.posts);
+            setPosts(cloudData.posts);
+          }
+          if (cloudData.members) {
+            lastCloudData.current.members = JSON.stringify(cloudData.members);
+            setMembers(cloudData.members);
+          }
+          if (cloudData.deletedPosts) {
+            lastCloudData.current.deletedPosts = JSON.stringify(cloudData.deletedPosts);
+            setDeletedPosts(cloudData.deletedPosts);
+          }
         }
       });
 
       const subSettings = subscribeToChanges('union_settings', (data) => {
-        isUpdatingFromCloud.current = true;
-        setSettings(data);
-        setTimeout(() => { isUpdatingFromCloud.current = false; }, 500);
+        const dataStr = JSON.stringify(data);
+        if (dataStr !== lastCloudData.current.settings) {
+          lastCloudData.current.settings = dataStr;
+          setSettings(data);
+        }
       });
       const subPosts = subscribeToChanges('union_posts', (data) => {
-        isUpdatingFromCloud.current = true;
-        setPosts(data);
-        setTimeout(() => { isUpdatingFromCloud.current = false; }, 500);
+        const dataStr = JSON.stringify(data);
+        if (dataStr !== lastCloudData.current.posts) {
+          lastCloudData.current.posts = dataStr;
+          setPosts(data);
+        }
       });
       const subMembers = subscribeToChanges('union_members', (data) => {
-        isUpdatingFromCloud.current = true;
-        setMembers(data);
-        setTimeout(() => { isUpdatingFromCloud.current = false; }, 500);
+        const dataStr = JSON.stringify(data);
+        if (dataStr !== lastCloudData.current.members) {
+          lastCloudData.current.members = dataStr;
+          setMembers(data);
+        }
       });
       const subDeleted = subscribeToChanges('union_deleted_posts', (data) => {
-        isUpdatingFromCloud.current = true;
-        setDeletedPosts(data);
-        setTimeout(() => { isUpdatingFromCloud.current = false; }, 500);
+        const dataStr = JSON.stringify(data);
+        if (dataStr !== lastCloudData.current.deletedPosts) {
+          lastCloudData.current.deletedPosts = dataStr;
+          setDeletedPosts(data);
+        }
       });
 
       return () => {
@@ -89,36 +112,44 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // 2. 로컬 변경 시 클라우드 저장 (클라우드에서 온 업데이트가 아닐 때만)
+  // 2. 데이터 변경 시 클라우드 저장 로직 (중복 저장 방지 포함)
   useEffect(() => {
-    if (!isUpdatingFromCloud.current) {
-      localStorage.setItem('union_settings', JSON.stringify(settings));
+    const currentStr = JSON.stringify(settings);
+    if (currentStr !== lastCloudData.current.settings) {
+      lastCloudData.current.settings = currentStr;
+      localStorage.setItem('union_settings', currentStr);
       if (isSupabaseEnabled()) syncSettings(settings);
     }
   }, [settings]);
 
   useEffect(() => {
-    if (!isUpdatingFromCloud.current) {
-      localStorage.setItem('union_posts', JSON.stringify(posts));
+    const currentStr = JSON.stringify(posts);
+    if (currentStr !== lastCloudData.current.posts) {
+      lastCloudData.current.posts = currentStr;
+      localStorage.setItem('union_posts', currentStr);
       if (isSupabaseEnabled()) syncPosts(posts);
     }
   }, [posts]);
 
   useEffect(() => {
-    if (!isUpdatingFromCloud.current) {
-      localStorage.setItem('union_members', JSON.stringify(members));
+    const currentStr = JSON.stringify(members);
+    if (currentStr !== lastCloudData.current.members) {
+      lastCloudData.current.members = currentStr;
+      localStorage.setItem('union_members', currentStr);
       if (isSupabaseEnabled()) syncMembers(members);
     }
   }, [members]);
 
   useEffect(() => {
-    if (!isUpdatingFromCloud.current) {
-      localStorage.setItem('union_deleted_posts', JSON.stringify(deletedPosts));
+    const currentStr = JSON.stringify(deletedPosts);
+    if (currentStr !== lastCloudData.current.deletedPosts) {
+      lastCloudData.current.deletedPosts = currentStr;
+      localStorage.setItem('union_deleted_posts', currentStr);
       if (isSupabaseEnabled()) syncDeletedPosts(deletedPosts);
     }
   }, [deletedPosts]);
 
-  // 로그인 상태 저장
+  // 로그인 상태 및 역할 저장
   useEffect(() => {
     localStorage.setItem('union_user_role', userRole);
     localStorage.setItem('union_is_admin_auth', isAdminAuth.toString());
@@ -126,7 +157,7 @@ const App: React.FC = () => {
     else localStorage.removeItem('union_logged_in_member');
   }, [userRole, loggedInMember, isAdminAuth]);
 
-  // 관리자 팝업
+  // 관리자 알림 팝업 제어
   useEffect(() => {
     if (isAdminAuth && members.length > lastReportedCount) {
       setShowNewMemberPopup(true);

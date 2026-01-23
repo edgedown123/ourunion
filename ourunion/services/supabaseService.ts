@@ -2,18 +2,22 @@
 import { createClient } from '@supabase/supabase-js';
 import { SiteSettings, Post, Member } from '../types';
 
-// 환경 변수 가져오기 (Vite define 또는 기본 process.env)
-const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || '';
+// Vite와 Vercel 환경 모두 지원하도록 환경 변수 로드
+const supabaseUrl = (typeof process !== 'undefined' ? process.env.SUPABASE_URL : '') || (import.meta as any).env?.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = (typeof process !== 'undefined' ? process.env.SUPABASE_ANON_KEY : '') || (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
 
 export const supabase = (supabaseUrl && supabaseAnonKey) 
-  ? createClient(supabaseUrl, supabaseAnonKey) 
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      realtime: {
+        params: {
+          eventsPerSecond: 10,
+        },
+      },
+    }) 
   : null;
 
 export const isSupabaseEnabled = () => {
-  const enabled = !!supabase;
-  if (!enabled) console.warn("⚠️ Supabase 설정이 누락되었습니다.");
-  return enabled;
+  return !!supabase;
 };
 
 export const fetchAllData = async () => {
@@ -33,7 +37,7 @@ export const fetchAllData = async () => {
       deletedPosts: deletedRes.data?.data || null
     };
   } catch (error) {
-    console.error("❌ 초기 로드 실패:", error);
+    console.error("❌ 초기 데이터 로드 실패:", error);
     return null;
   }
 };
@@ -41,47 +45,54 @@ export const fetchAllData = async () => {
 export const subscribeToChanges = (tableName: string, callback: (newData: any) => void) => {
   if (!supabase) return null;
 
-  console.log(`📡 [${tableName}] 실시간 구독 시작...`);
+  console.log(`📡 [${tableName}] 실시간 감시단 가동...`);
   
-  return supabase
-    .channel(`any-name-${tableName}`) // 고유 채널명
+  const channel = supabase
+    .channel(`public:${tableName}:main`)
     .on(
       'postgres_changes',
       { 
-        event: 'UPDATE', // 업데이트 이벤트에 집중
+        event: '*', // UPDATE뿐만 아니라 INSERT 등 모든 변화 감지
         schema: 'public', 
         table: tableName,
         filter: 'id=eq.main' 
       },
       (payload) => {
+        // 데이터가 실제로 존재하고 변화가 있을 때만 콜백 실행
         if (payload.new && payload.new.data) {
-          console.log(`✨ [${tableName}] 실시간 데이터 도착!`, payload.new.data);
+          console.log(`✨ [${tableName}] 클라우드에서 새 신호 감지!`);
           callback(payload.new.data);
         }
       }
-    )
-    .subscribe((status) => {
-      console.log(`📡 [${tableName}] 구독 상태:`, status);
-      if (status === 'CHANNEL_ERROR') {
-        console.error(`❗ [${tableName}] 실시간 설정 확인 필요: Supabase 대시보드 > Database > Replication에서 이 테이블의 Realtime이 켜져있나요?`);
-      }
-    });
+    );
+
+  channel.subscribe((status) => {
+    if (status === 'SUBSCRIBED') {
+      console.log(`✅ [${tableName}] 실시간 연결 성공!`);
+    }
+    if (status === 'CHANNEL_ERROR') {
+      console.error(`❌ [${tableName}] 연결 오류! 대시보드 설정을 확인하세요.`);
+    }
+  });
+
+  return channel;
 };
 
 const upsertData = async (tableName: string, data: any) => {
   if (!supabase) return;
   try {
+    // 업데이트 시각을 포함하여 upsert 수행
     const { error } = await supabase
       .from(tableName)
       .upsert({ 
         id: 'main', 
         data: data, 
         updated_at: new Date().toISOString() 
-      });
+      }, { onConflict: 'id' });
+      
     if (error) throw error;
-    console.log(`✅ [${tableName}] 클라우드 저장 완료`);
   } catch (error) {
-    console.error(`❌ [${tableName}] 저장 실패:`, error);
+    console.error(`❌ [${tableName}] 데이터 전송 실패:`, error);
   }
 };
 
