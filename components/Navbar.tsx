@@ -10,38 +10,39 @@ interface NavbarProps {
   userRole: UserRole;
   memberName?: string;
   onToggleLogin: () => void;
+  isConnected?: boolean; // 연결 상태 추가
 }
 
-const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userRole, memberName, onToggleLogin }) => {
-  // 현재 활성화된 탭이 속한 부모 메뉴 찾기
+const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userRole, memberName, onToggleLogin, isConnected }) => {
   const activeParent = NAV_ITEMS.find(item => 
     item.id === activeTab || item.children?.some(child => child.id === activeTab)
   );
 
   return (
     <nav className="bg-white border-b sticky top-0 z-50 shadow-sm">
-      {/* 1단: 로고 및 로그인/관리자설정 */}
       <div className="bg-white px-4 border-b border-gray-100">
         <div className="max-w-7xl mx-auto flex items-center justify-between h-14">
-          {/* 로고 영역 */}
           <button 
             onClick={() => onTabChange('home')}
-            className="flex items-center cursor-pointer"
+            className="flex items-center cursor-pointer relative group"
           >
             <i className="fas fa-users text-sky-primary text-xl mr-2"></i>
             <span className="font-black text-lg tracking-tight text-gray-900">{siteName}</span>
+            {/* 실시간 연결 상태 표시 점 */}
+            <span 
+              className={`ml-1.5 w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]' : 'bg-rose-500 animate-pulse'}`}
+              title={isConnected ? '서버 연결됨' : '서버 연결 중...'}
+            ></span>
           </button>
 
-          {/* 로그인 및 설정 영역 */}
           <div className="flex items-center space-x-2">
-            {/* 로그인된 정보 표시 */}
             {userRole !== 'guest' && (
               <div className="flex items-center mr-2">
                 <span className="text-[11px] font-bold text-gray-700">
                   {memberName} <span className="text-gray-400 font-normal">님</span>
                 </span>
                 {userRole === 'admin' && (
-                  <span className="ml-2 bg-red-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full animate-pulse">
+                  <span className="ml-2 bg-red-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full">
                     ADMIN
                   </span>
                 )}
@@ -70,7 +71,6 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
         </div>
       </div>
 
-      {/* 2단: 대분류 메인 메뉴 */}
       <div className="bg-white px-4 border-b border-gray-50">
         <div className="max-w-7xl mx-auto overflow-x-auto scrollbar-hide no-scrollbar flex items-center h-12">
           <div className="flex space-x-1 h-full items-center min-w-max">
@@ -97,7 +97,6 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
         </div>
       </div>
 
-      {/* 3단: 하위 분류 서브 메뉴 (부모 메뉴가 children을 가질 때만 노출) */}
       {activeParent && activeParent.children && (
         <div className="bg-gray-50 px-4 animate-slideDown">
           <div className="max-w-7xl mx-auto overflow-x-auto scrollbar-hide no-scrollbar flex items-center h-10">
@@ -128,7 +127,6 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
         .animate-slideDown {
           animation: slideDown 0.2s ease-out forwards;
         }
-        /* 스크롤바 숨기기 */
         .no-scrollbar::-webkit-scrollbar {
           display: none;
         }

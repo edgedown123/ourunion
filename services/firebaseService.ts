@@ -1,10 +1,18 @@
 
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, onSnapshot, setDoc } from "firebase/firestore";
+import { 
+  initializeFirestore, 
+  doc, 
+  onSnapshot, 
+  setDoc, 
+  enableIndexedDbPersistence,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+  CACHE_SIZE_UNLIMITED
+} from "firebase/firestore";
 
 /**
- * Vercel의 Environment Variables가 정확히 매칭되도록 
- * 모든 가능한 변수명을 체크합니다.
+ * Vercel 환경 변수 설정
  */
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY || process.env.apiKey || "",
@@ -14,35 +22,46 @@ const firebaseConfig = {
   storageBucket: `${process.env.FIREBASE_PROJECT_ID || process.env.projectId || "ourunion-3b395"}.appspot.com`,
 };
 
-// 설정값이 하나라도 비어있으면 Firebase를 비활성화하여 에러 방지
 const isConfigValid = firebaseConfig.apiKey && firebaseConfig.projectId;
-
 const app = isConfigValid ? initializeApp(firebaseConfig) : null;
-export const db = app ? getFirestore(app) : null;
+
+/**
+ * [핵심 해결책] 
+ * 1. experimentalForceLongPolling: 모바일 통신사의 WebSocket 차단을 우회하여 데이터 연동 보장
+ * 2. localCache: 오프라인에서도 데이터를 유지하고 온라인 시 자동 동기화
+ */
+export const db = app ? initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager(),
+    cacheSizeBytes: CACHE_SIZE_UNLIMITED
+  })
+}) : null;
 
 export const isFirebaseEnabled = () => !!db;
 
 /**
- * 실시간 데이터 감시 (Snapshot)
+ * 실시간 데이터 감시
+ * 서버 데이터가 도착하면 즉시 콜백 실행
  */
 export const listenToData = (collectionName: string, documentId: string, callback: (data: any) => void) => {
   if (!db) return null;
   const docRef = doc(db, collectionName, documentId);
-  return onSnapshot(docRef, (docSnap) => {
+  
+  return onSnapshot(docRef, { includeMetadataChanges: true }, (docSnap) => {
     if (docSnap.exists()) {
       callback(docSnap.data().data);
     } else {
-      // 데이터가 없는 초기 상태면 null 전달
       callback(null);
     }
   }, (error) => {
-    console.error(`Firebase 실시간 감시 실패 (${documentId}):`, error);
+    console.error(`Firebase 동기화 실패 (${documentId}):`, error);
     callback(null);
   });
 };
 
 /**
- * 데이터 명시적 저장
+ * 데이터 저장
  */
 export const saveData = async (collectionName: string, documentId: string, data: any) => {
   if (!db) return;
@@ -50,10 +69,11 @@ export const saveData = async (collectionName: string, documentId: string, data:
   try {
     await setDoc(docRef, { 
       data, 
-      updatedAt: new Date().toISOString() 
+      updatedAt: new Date().toISOString(),
+      source: 'web_app'
     }, { merge: true });
-    console.log(`[Firebase] ${documentId} 저장 완료`);
+    console.log(`[Cloud Save Success] ${documentId}`);
   } catch (error) {
-    console.error(`[Firebase] ${documentId} 저장 실패:`, error);
+    console.error(`[Cloud Save Failed] ${documentId}:`, error);
   }
 };
