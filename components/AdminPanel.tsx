@@ -79,14 +79,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const handleDownloadExcel = () => {
     if (members.length === 0) return alert('다운로드할 명단이 없습니다.');
-    const headers = ['이름', '연락처', '이메일', '차고지', '가입일'];
-    const rows = members.map(m => [m.name, m.phone, m.email, m.garage, m.signupDate]);
+    const headers = ['이름', '아이디', '비밀번호', '연락처', '이메일', '차고지', '가입일'];
+    const rows = members.map(m => [m.name, m.loginId, m.password || '', m.phone, m.email, m.garage, m.signupDate]);
     const csvContent = "\uFEFF" + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `조합원명단.csv`;
+    link.download = `조합원명단_전체.csv`;
     link.click();
   };
 
@@ -108,7 +108,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
       try {
         const json = JSON.parse(event.target?.result as string);
         if (confirm('파일의 데이터로 전체 교체하시겠습니까? 현재 기기의 데이터는 삭제됩니다.')) {
-          // 로컬 스토리지에 즉시 강제 덮어쓰기
           localStorage.setItem('union_settings', JSON.stringify(json.settings));
           localStorage.setItem('union_posts', JSON.stringify(json.posts));
           localStorage.setItem('union_members', JSON.stringify(json.members));
@@ -129,7 +128,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           <div>
             <h2 className="text-2xl font-black text-gray-900 tracking-tight">관리자 커맨드 센터</h2>
             <div className="flex items-center mt-1">
-              <span className={`inline-block w-2 h-2 rounded-full mr-2 ${firebaseActive ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-rose-500 animate-pulse'}`}></span>
+              <span className={`inline-block w-2 h-2 rounded-full mr-2 ${firebaseActive ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
               <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
                 {firebaseActive ? 'Cloud Storage Connected' : 'Local Storage Mode'}
               </p>
@@ -159,6 +158,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest">
                   <tr>
                     <th className="px-8 py-5">성함</th>
+                    <th className="px-8 py-5">아이디</th>
+                    <th className="px-8 py-5">비밀번호</th>
                     <th className="px-8 py-5">연락처</th>
                     <th className="px-8 py-5">이메일</th>
                     <th className="px-8 py-5">차고지</th>
@@ -167,10 +168,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {members.length === 0 ? (
-                    <tr><td colSpan={5} className="px-8 py-20 text-center text-gray-400 font-bold italic">아직 가입 신청자가 없습니다.</td></tr>
+                    <tr><td colSpan={7} className="px-8 py-20 text-center text-gray-400 font-bold italic">아직 가입 신청자가 없습니다.</td></tr>
                   ) : members.map(m => (
                     <tr key={m.id} className="hover:bg-gray-50/50 transition-colors">
                       <td className="px-8 py-5 font-black text-gray-900">{m.name}</td>
+                      <td className="px-8 py-5 text-sky-600 font-bold">{m.loginId}</td>
+                      <td className="px-8 py-5 text-gray-400 font-mono text-xs">{m.password}</td>
                       <td className="px-8 py-5 text-gray-600">{m.phone}</td>
                       <td className="px-8 py-5 text-gray-600 font-medium">{m.email}</td>
                       <td className="px-8 py-5 text-gray-600 font-bold">{m.garage}</td>
