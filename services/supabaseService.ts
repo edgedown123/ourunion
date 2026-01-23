@@ -2,76 +2,60 @@
 import { createClient } from '@supabase/supabase-js';
 import { SiteSettings, Post, Member } from '../types';
 
-const supabaseUrl = (typeof process !== 'undefined' ? process.env.SUPABASE_URL : '') || (import.meta as any).env?.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = (typeof process !== 'undefined' ? process.env.SUPABASE_ANON_KEY : '') || (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
+const supabaseUrl = process.env.SUPABASE_URL || '';
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || '';
 
+// 수파베이스 클라이언트 초기화 (설정이 없을 경우 null 반환)
 export const supabase = (supabaseUrl && supabaseAnonKey) 
   ? createClient(supabaseUrl, supabaseAnonKey) 
   : null;
 
+/**
+ * 수파베이스 연결 상태 확인
+ */
 export const isSupabaseEnabled = () => !!supabase;
 
 /**
- * 전 종목 최신 데이터 1회 강제 조회
+ * 전체 데이터 동기화 (불러오기)
  */
 export const fetchAllData = async () => {
   if (!supabase) return null;
+
   try {
     const [settingsRes, postsRes, membersRes, deletedRes] = await Promise.all([
-      supabase.from('union_settings').select('data, updated_at').eq('id', 'main').maybeSingle(),
-      supabase.from('union_posts').select('data, updated_at').eq('id', 'main').maybeSingle(),
-      supabase.from('union_members').select('data, updated_at').eq('id', 'main').maybeSingle(),
-      supabase.from('union_deleted_posts').select('data, updated_at').eq('id', 'main').maybeSingle()
+      supabase.from('union_settings').select('data').single(),
+      supabase.from('union_posts').select('data').single(),
+      supabase.from('union_members').select('data').single(),
+      supabase.from('union_deleted_posts').select('data').single()
     ]);
 
     return {
-      settings: { data: settingsRes.data?.data || null, updatedAt: settingsRes.data?.updated_at },
-      posts: { data: postsRes.data?.data || null, updatedAt: postsRes.data?.updated_at },
-      members: { data: membersRes.data?.data || null, updatedAt: membersRes.data?.updated_at },
-      deletedPosts: { data: deletedRes.data?.data || null, updatedAt: deletedRes.data?.updated_at }
+      settings: settingsRes.data?.data as SiteSettings | null,
+      posts: postsRes.data?.data as Post[] | null,
+      members: membersRes.data?.data as Member[] | null,
+      deletedPosts: deletedRes.data?.data as Post[] | null
     };
   } catch (error) {
-    console.error("❌ 데이터 로드 실패:", error);
+    console.error("Supabase fetch error:", error);
     return null;
   }
 };
 
 /**
- * 실시간 변경 구독
- */
-export const subscribeToChanges = (tableName: string, callback: (newData: any) => void) => {
-  if (!supabase) return null;
-
-  return supabase
-    .channel(`any-${tableName}`)
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: tableName, filter: 'id=eq.main' },
-      (payload: any) => {
-        if (payload.new && payload.new.data) {
-          callback(payload.new.data);
-        }
-      }
-    )
-    .subscribe();
-};
-
-/**
- * 클라우드에 데이터 저장
+ * 개별 테이블 데이터 업데이트 (Upsert)
+ * 테이블 구조: id (text, PK), data (jsonb), updated_at (timestamptz)
  */
 const upsertData = async (tableName: string, data: any) => {
   if (!supabase) return;
+  
   try {
     const { error } = await supabase
       .from(tableName)
-      .upsert({ 
-        id: 'main', 
-        data: data, 
-        updated_at: new Date().toISOString() 
-      });
+      .upsert({ id: 'main', data, updated_at: new Date().toISOString() });
+    
     if (error) throw error;
   } catch (error) {
-    console.error(`❌ [${tableName}] 저장 실패:`, error);
+    console.error(`Supabase save error (${tableName}):`, error);
   }
 };
 

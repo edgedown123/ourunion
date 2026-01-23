@@ -105,9 +105,8 @@ const Introduction: React.FC<IntroductionProps> = ({ settings, activeTab }) => {
                 <div key={idx} className="flex border-l-2 border-sky-primary pl-6 relative">
                   <div className="absolute -left-2 top-0 w-4 h-4 rounded-full bg-sky-primary border-4 border-white shadow-sm"></div>
                   <div className="pb-2">
-                    {/* 날짜가 길어질 것을 대비해 폰트 크기와 두께 최적화 */}
-                    <span className="font-black text-sky-800 text-sm tracking-tight">{item.year}</span>
-                    <p className="text-gray-700 mt-1 font-medium leading-relaxed">{item.text}</p>
+                    <span className="font-black text-sky-800 text-sm">{item.year}</span>
+                    <p className="text-gray-700 mt-1 font-medium">{item.text}</p>
                   </div>
                 </div>
               ))
