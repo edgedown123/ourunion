@@ -10,10 +10,9 @@ interface NavbarProps {
   userRole: UserRole;
   memberName?: string;
   onToggleLogin: () => void;
-  isConnected?: boolean; // 연결 상태 추가
 }
 
-const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userRole, memberName, onToggleLogin, isConnected }) => {
+const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userRole, memberName, onToggleLogin }) => {
   const activeParent = NAV_ITEMS.find(item => 
     item.id === activeTab || item.children?.some(child => child.id === activeTab)
   );
@@ -28,11 +27,6 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
           >
             <i className="fas fa-users text-sky-primary text-xl mr-2"></i>
             <span className="font-black text-lg tracking-tight text-gray-900">{siteName}</span>
-            {/* 실시간 연결 상태 표시 점 */}
-            <span 
-              className={`ml-1.5 w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]' : 'bg-rose-500 animate-pulse'}`}
-              title={isConnected ? '서버 연결됨' : '서버 연결 중...'}
-            ></span>
           </button>
 
           <div className="flex items-center space-x-2">
