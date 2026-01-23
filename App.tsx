@@ -11,7 +11,7 @@ import PostEditor from './components/PostEditor';
 import Introduction from './components/Introduction';
 import Footer from './components/Footer';
 import SignupForm from './components/SignupForm';
-import { isFirebaseEnabled, listenToData, saveData, reconnectNetwork } from './services/firebaseService';
+import { isFirebaseEnabled, listenToData, saveData, forceReconnect, checkServerConnection } from './services/firebaseService';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('home');
@@ -25,7 +25,7 @@ const App: React.FC = () => {
   const [loginId, setLoginId] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   
-  // 로그인 상태 유지
+  // 로그인 상태
   const [userRole, setUserRole] = useState<UserRole>(() => (localStorage.getItem('union_role') as UserRole) || 'guest');
   const [isAdminAuth, setIsAdminAuth] = useState<boolean>(() => localStorage.getItem('union_is_admin') === 'true');
   const [loggedInMember, setLoggedInMember] = useState<Member | null>(() => {
@@ -33,7 +33,7 @@ const App: React.FC = () => {
     try { return saved ? JSON.parse(saved) : null; } catch { return null; }
   });
   
-  // 로컬 데이터를 무시하고 서버 데이터를 강제로 기다림 (모바일 연동용)
+  // 데이터 상태
   const [settings, setSettings] = useState<SiteSettings>(INITIAL_SETTINGS);
   const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
   const [deletedPosts, setDeletedPosts] = useState<Post[]>([]);
@@ -41,32 +41,33 @@ const App: React.FC = () => {
 
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
-  const syncTimer = useRef<number | null>(null);
 
-  // --- 모바일 전용: 앱 활성화 시 네트워크 재강제 연결 ---
+  // --- 모바일 근본 해결: 앱 재진입 시 강제 재연결 ---
   useEffect(() => {
-    const handleVisibilityChange = () => {
+    const handleVisibilityChange = async () => {
       if (document.visibilityState === 'visible') {
-        reconnectNetwork(); // 화면을 다시 켤 때마다 네트워크를 깨움
+        console.log("모바일 화면 켜짐 - 네트워크 재연결 시도");
+        await forceReconnect();
+        const ok = await checkServerConnection();
+        setIsConnected(ok);
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
-  // --- Firebase 실시간 동기화 (근본 해결 로직) ---
+  // --- Firebase 실시간 동기화 (모든 데이터 리스너) ---
   useEffect(() => {
     if (!isFirebaseEnabled()) {
-      // Firebase가 안 되면 로컬이라도 즉시 로드
-      const s = localStorage.getItem('union_settings');
-      if (s) setSettings(JSON.parse(s));
-      const p = localStorage.getItem('union_posts');
-      if (p) setPosts(JSON.parse(p));
       setIsLoadingData(false);
       return;
     }
 
-    // 서버 데이터 도착 시 무조건 화면 갱신
+    // 서버 생존 즉시 확인 (초록 점 점등용)
+    checkServerConnection().then(ok => {
+      setIsConnected(ok);
+    });
+
     const unsubSettings = listenToData('union', 'settings', (data) => {
       if (data) {
         setSettings(data);
@@ -75,6 +76,7 @@ const App: React.FC = () => {
       setIsConnected(true);
       setIsLoadingData(false);
     });
+    
     const unsubPosts = listenToData('union', 'posts', (data) => {
       if (data) {
         setPosts(data);
@@ -83,17 +85,25 @@ const App: React.FC = () => {
       setIsConnected(true);
       setIsLoadingData(false);
     });
+
     const unsubMembers = listenToData('union', 'members', (data) => {
       if (data) setMembers(data);
       setIsConnected(true);
     });
+
     const unsubDeleted = listenToData('union', 'deleted_posts', (data) => {
       if (data) setDeletedPosts(data);
       setIsConnected(true);
     });
 
+    // 만약 데이터가 아예 없는 빈 서버라면 5초 후 로딩 해제
+    const timer = setTimeout(() => {
+      setIsLoadingData(false);
+    }, 5000);
+
     return () => {
       unsubSettings?.(); unsubPosts?.(); unsubMembers?.(); unsubDeleted?.();
+      clearTimeout(timer);
     };
   }, []);
 
@@ -246,7 +256,7 @@ const App: React.FC = () => {
       return (
         <div className="flex flex-col items-center justify-center py-40">
           <div className="w-8 h-8 border-4 border-sky-100 border-t-sky-primary rounded-full animate-spin mb-4"></div>
-          <p className="text-[10px] font-black text-gray-300 tracking-widest uppercase animate-pulse">Syncing Mobile Cloud...</p>
+          <p className="text-[10px] font-black text-gray-300 tracking-widest uppercase animate-pulse">Establishing Cloud Sync...</p>
         </div>
       );
     }
