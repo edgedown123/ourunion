@@ -197,17 +197,19 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                   <tr>
                     <th className="px-8 py-5">성함</th>
                     <th className="px-8 py-5">연락처</th>
+                    <th className="px-8 py-5">이메일</th>
                     <th className="px-8 py-5">차고지</th>
                     <th className="px-8 py-5">가입일</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {members.length === 0 ? (
-                    <tr><td colSpan={4} className="px-8 py-20 text-center text-gray-400 font-bold italic">아직 가입 신청자가 없습니다.</td></tr>
+                    <tr><td colSpan={5} className="px-8 py-20 text-center text-gray-400 font-bold italic">아직 가입 신청자가 없습니다.</td></tr>
                   ) : members.map(m => (
                     <tr key={m.id} className="hover:bg-gray-50/50 transition-colors">
                       <td className="px-8 py-5 font-black text-gray-900">{m.name}</td>
                       <td className="px-8 py-5 text-gray-600">{m.phone}</td>
+                      <td className="px-8 py-5 text-gray-600">{m.email}</td>
                       <td className="px-8 py-5 text-gray-600 font-bold">{m.garage}</td>
                       <td className="px-8 py-5 text-gray-400 text-xs font-medium">{m.signupDate}</td>
                     </tr>

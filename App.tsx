@@ -202,6 +202,22 @@ const App: React.FC = () => {
     setMembers(prev => [newMember, ...prev]);
   };
 
+  const handleRemoveMember = (id: string, pass: string) => {
+    const memberIndex = members.findIndex(m => m.loginId === id && m.password === pass);
+    if (memberIndex === -1) {
+      alert('아이디 또는 비밀번호가 일치하지 않습니다.');
+      return;
+    }
+    if (window.confirm('정말로 탈퇴하시겠습니까? 모든 가입 정보가 영구 삭제됩니다.')) {
+      const updatedMembers = members.filter((_, i) => i !== memberIndex);
+      setMembers(updatedMembers);
+      if (loggedInMember?.loginId === id) {
+        handleLogout();
+      }
+      alert('탈퇴 처리가 완료되었습니다. 그동안 이용해주셔서 감사합니다.');
+    }
+  };
+
   const handleWriteClick = (specificType?: BoardType) => {
     const targetType = specificType || activeTab;
     if (['notice', 'notice_all', 'family_events', 'resources'].includes(targetType as string) && userRole !== 'admin') {
@@ -318,7 +334,7 @@ const App: React.FC = () => {
 
     if (activeTab === 'home') return <><Hero title={settings.heroTitle} subtitle={settings.heroSubtitle} imageUrl={settings.heroImageUrl} onJoinClick={() => handleTabChange('signup')} /><Board type="notice" posts={posts.slice(0, 10)} onWriteClick={handleWriteClick} onEditClick={handleEditClick} selectedPostId={selectedPostId} onSelectPost={handleSelectPost} userRole={userRole} onDeletePost={handleDeletePost} onSaveComment={handleSaveComment} /></>;
     if (['intro', 'greeting', 'history', 'map'].includes(activeTab)) return <Introduction settings={settings} activeTab={activeTab} />;
-    if (activeTab === 'signup') return <SignupForm onGoHome={() => handleTabChange('home')} onAddMember={handleAddMember} existingMembers={members} />;
+    if (activeTab === 'signup') return <SignupForm onGoHome={() => handleTabChange('home')} onAddMember={handleAddMember} onRemoveMember={handleRemoveMember} existingMembers={members} />;
     
     return <Board type={activeTab as BoardType} posts={posts} onWriteClick={handleWriteClick} onEditClick={handleEditClick} selectedPostId={selectedPostId} onSelectPost={handleSelectPost} userRole={userRole} onDeletePost={handleDeletePost} onSaveComment={handleSaveComment} />;
   };
