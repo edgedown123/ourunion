@@ -3,7 +3,8 @@ import { initializeApp } from "firebase/app";
 import { getFirestore, doc, onSnapshot, setDoc } from "firebase/firestore";
 
 /**
- * Vercel에 입력하신 다양한 변수명을 모두 지원합니다.
+ * Vercel의 Environment Variables가 정확히 매칭되도록 
+ * 모든 가능한 변수명을 체크합니다.
  */
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY || process.env.apiKey || "",
@@ -13,16 +14,16 @@ const firebaseConfig = {
   storageBucket: `${process.env.FIREBASE_PROJECT_ID || process.env.projectId || "ourunion-3b395"}.appspot.com`,
 };
 
-// 필수 설정값인 API Key와 Project ID가 있는지 확인
+// 설정값이 하나라도 비어있으면 Firebase를 비활성화하여 에러 방지
 const isConfigValid = firebaseConfig.apiKey && firebaseConfig.projectId;
+
 const app = isConfigValid ? initializeApp(firebaseConfig) : null;
 export const db = app ? getFirestore(app) : null;
 
 export const isFirebaseEnabled = () => !!db;
 
 /**
- * 실시간 데이터 감시
- * 데이터가 없더라도(최초 실행) callback을 호출하여 로딩 완료를 알림
+ * 실시간 데이터 감시 (Snapshot)
  */
 export const listenToData = (collectionName: string, documentId: string, callback: (data: any) => void) => {
   if (!db) return null;
@@ -31,17 +32,17 @@ export const listenToData = (collectionName: string, documentId: string, callbac
     if (docSnap.exists()) {
       callback(docSnap.data().data);
     } else {
-      // 문서가 없는 경우 null을 전달하여 로딩이 끝났음을 알림
+      // 데이터가 없는 초기 상태면 null 전달
       callback(null);
     }
   }, (error) => {
-    console.error(`Firebase 실시간 감시 오류 (${documentId}):`, error);
-    callback(null); // 에러 발생 시에도 로딩은 끝내줌
+    console.error(`Firebase 실시간 감시 실패 (${documentId}):`, error);
+    callback(null);
   });
 };
 
 /**
- * 데이터 저장
+ * 데이터 명시적 저장
  */
 export const saveData = async (collectionName: string, documentId: string, data: any) => {
   if (!db) return;
@@ -51,7 +52,8 @@ export const saveData = async (collectionName: string, documentId: string, data:
       data, 
       updatedAt: new Date().toISOString() 
     }, { merge: true });
+    console.log(`[Firebase] ${documentId} 저장 완료`);
   } catch (error) {
-    console.error(`Firebase 저장 오류 (${documentId}):`, error);
+    console.error(`[Firebase] ${documentId} 저장 실패:`, error);
   }
 };
