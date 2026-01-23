@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { BoardType, Post, SiteSettings, UserRole, Member, PostAttachment, Comment } from './types';
 import { INITIAL_POSTS, INITIAL_SETTINGS } from './constants';
 import Layout from './components/Layout';
@@ -11,6 +11,7 @@ import PostEditor from './components/PostEditor';
 import Introduction from './components/Introduction';
 import Footer from './components/Footer';
 import SignupForm from './components/SignupForm';
+import { isSupabaseEnabled, fetchAllData, syncSettings, syncPosts, syncMembers, syncDeletedPosts } from './services/supabaseService';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('home');
@@ -48,10 +49,41 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : [];
   });
 
-  useEffect(() => { localStorage.setItem('union_settings', JSON.stringify(settings)); }, [settings]);
-  useEffect(() => { localStorage.setItem('union_posts', JSON.stringify(posts)); }, [posts]);
-  useEffect(() => { localStorage.setItem('union_deleted_posts', JSON.stringify(deletedPosts)); }, [deletedPosts]);
-  useEffect(() => { localStorage.setItem('union_members', JSON.stringify(members)); }, [members]);
+  // --- Supabase 초기 동기화 ---
+  useEffect(() => {
+    if (isSupabaseEnabled()) {
+      fetchAllData().then(cloudData => {
+        if (cloudData) {
+          if (cloudData.settings) setSettings(cloudData.settings);
+          if (cloudData.posts) setPosts(cloudData.posts);
+          if (cloudData.members) setMembers(cloudData.members);
+          if (cloudData.deletedPosts) setDeletedPosts(cloudData.deletedPosts);
+          console.log("☁️ Supabase 데이터 동기화 완료");
+        }
+      });
+    }
+  }, []);
+
+  // --- 데이터 변경 시 LocalStorage & Supabase 동기화 ---
+  useEffect(() => { 
+    localStorage.setItem('union_settings', JSON.stringify(settings)); 
+    if (isSupabaseEnabled()) syncSettings(settings);
+  }, [settings]);
+
+  useEffect(() => { 
+    localStorage.setItem('union_posts', JSON.stringify(posts)); 
+    if (isSupabaseEnabled()) syncPosts(posts);
+  }, [posts]);
+
+  useEffect(() => { 
+    localStorage.setItem('union_deleted_posts', JSON.stringify(deletedPosts)); 
+    if (isSupabaseEnabled()) syncDeletedPosts(deletedPosts);
+  }, [deletedPosts]);
+
+  useEffect(() => { 
+    localStorage.setItem('union_members', JSON.stringify(members)); 
+    if (isSupabaseEnabled()) syncMembers(members);
+  }, [members]);
 
   useEffect(() => {
     if (isAdminAuth) {
@@ -196,7 +228,6 @@ const App: React.FC = () => {
   const handleSelectPost = (id: string | null) => {
     setSelectedPostId(id);
     if (id) {
-      // 조회수 1 증가
       setPosts(prev => prev.map(p => p.id === id ? { ...p, views: (p.views || 0) + 1 } : p));
     }
   };
@@ -249,7 +280,6 @@ const App: React.FC = () => {
   };
 
   const renderContent = () => {
-    // 편집 모드일 때 최우선으로 에디터 표시
     if (isWriting) {
       return (
         <PostEditor 
