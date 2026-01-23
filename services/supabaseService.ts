@@ -5,28 +5,25 @@ import { SiteSettings, Post, Member } from '../types';
 const supabaseUrl = process.env.SUPABASE_URL || '';
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || '';
 
-// 수파베이스 클라이언트 초기화 (설정이 없을 경우 null 반환)
+// 수파베이스 클라이언트 초기화
 export const supabase = (supabaseUrl && supabaseAnonKey) 
   ? createClient(supabaseUrl, supabaseAnonKey) 
   : null;
 
-/**
- * 수파베이스 연결 상태 확인
- */
 export const isSupabaseEnabled = () => !!supabase;
 
 /**
- * 전체 데이터 동기화 (불러오기)
+ * 전체 데이터 초기 로드
  */
 export const fetchAllData = async () => {
   if (!supabase) return null;
 
   try {
     const [settingsRes, postsRes, membersRes, deletedRes] = await Promise.all([
-      supabase.from('union_settings').select('data').single(),
-      supabase.from('union_posts').select('data').single(),
-      supabase.from('union_members').select('data').single(),
-      supabase.from('union_deleted_posts').select('data').single()
+      supabase.from('union_settings').select('data').eq('id', 'main').maybeSingle(),
+      supabase.from('union_posts').select('data').eq('id', 'main').maybeSingle(),
+      supabase.from('union_members').select('data').eq('id', 'main').maybeSingle(),
+      supabase.from('union_deleted_posts').select('data').eq('id', 'main').maybeSingle()
     ]);
 
     return {
@@ -42,8 +39,27 @@ export const fetchAllData = async () => {
 };
 
 /**
- * 개별 테이블 데이터 업데이트 (Upsert)
- * 테이블 구조: id (text, PK), data (jsonb), updated_at (timestamptz)
+ * 실시간 변경사항 구독 설정
+ */
+export const subscribeToChanges = (tableName: string, callback: (newData: any) => void) => {
+  if (!supabase) return null;
+
+  return supabase
+    .channel(`public:${tableName}`)
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: tableName, filter: 'id=eq.main' },
+      (payload) => {
+        if (payload.new && payload.new.data) {
+          callback(payload.new.data);
+        }
+      }
+    )
+    .subscribe();
+};
+
+/**
+ * 데이터 업데이트 (Upsert)
  */
 const upsertData = async (tableName: string, data: any) => {
   if (!supabase) return;

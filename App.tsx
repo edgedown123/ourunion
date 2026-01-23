@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { BoardType, Post, SiteSettings, UserRole, Member, PostAttachment, Comment } from './types';
 import { INITIAL_POSTS, INITIAL_SETTINGS } from './constants';
 import Layout from './components/Layout';
@@ -11,7 +11,7 @@ import PostEditor from './components/PostEditor';
 import Introduction from './components/Introduction';
 import Footer from './components/Footer';
 import SignupForm from './components/SignupForm';
-import { isSupabaseEnabled, fetchAllData, syncSettings, syncPosts, syncMembers, syncDeletedPosts } from './services/supabaseService';
+import { isSupabaseEnabled, fetchAllData, syncSettings, syncPosts, syncMembers, syncDeletedPosts, subscribeToChanges } from './services/supabaseService';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('home');
@@ -25,9 +25,13 @@ const App: React.FC = () => {
   const [loginId, setLoginId] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   
-  const [userRole, setUserRole] = useState<UserRole>('guest');
-  const [loggedInMember, setLoggedInMember] = useState<Member | null>(null);
-  const [isAdminAuth, setIsAdminAuth] = useState(false);
+  // --- 로그인 상태 유지 (localStorage 기반 초기화) ---
+  const [userRole, setUserRole] = useState<UserRole>(() => (localStorage.getItem('union_user_role') as UserRole) || 'guest');
+  const [loggedInMember, setLoggedInMember] = useState<Member | null>(() => {
+    const saved = localStorage.getItem('union_logged_in_member');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [isAdminAuth, setIsAdminAuth] = useState<boolean>(() => localStorage.getItem('union_is_admin_auth') === 'true');
   
   const [showNewMemberPopup, setShowNewMemberPopup] = useState(false);
   const [lastReportedCount, setLastReportedCount] = useState<number>(() => Number(localStorage.getItem('union_last_report_count') || 0));
@@ -49,40 +53,74 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : [];
   });
 
-  // --- Supabase 초기 동기화 ---
+  // 데이터 변경을 추적하기 위한 ref (무한 루프 방지용)
+  const isSyncingRef = useRef(false);
+
+  // --- 로그인 상태 저장 ---
+  useEffect(() => {
+    localStorage.setItem('union_user_role', userRole);
+    localStorage.setItem('union_logged_in_member', loggedInMember ? JSON.stringify(loggedInMember) : '');
+    localStorage.setItem('union_is_admin_auth', isAdminAuth.toString());
+  }, [userRole, loggedInMember, isAdminAuth]);
+
+  // --- Supabase 초기 동기화 및 실시간 구독 ---
   useEffect(() => {
     if (isSupabaseEnabled()) {
+      // 1. 초기 로드
       fetchAllData().then(cloudData => {
         if (cloudData) {
+          isSyncingRef.current = true;
           if (cloudData.settings) setSettings(cloudData.settings);
           if (cloudData.posts) setPosts(cloudData.posts);
           if (cloudData.members) setMembers(cloudData.members);
           if (cloudData.deletedPosts) setDeletedPosts(cloudData.deletedPosts);
-          console.log("☁️ Supabase 데이터 동기화 완료");
+          console.log("☁️ Supabase 초기 데이터 동기화 완료");
+          setTimeout(() => { isSyncingRef.current = false; }, 500);
         }
       });
+
+      // 2. 실시간 구독 설정 (다른 기기에서 변경 시)
+      const subSettings = subscribeToChanges('union_settings', (data) => {
+        if (!isSyncingRef.current) setSettings(data);
+      });
+      const subPosts = subscribeToChanges('union_posts', (data) => {
+        if (!isSyncingRef.current) setPosts(data);
+      });
+      const subMembers = subscribeToChanges('union_members', (data) => {
+        if (!isSyncingRef.current) setMembers(data);
+      });
+      const subDeleted = subscribeToChanges('union_deleted_posts', (data) => {
+        if (!isSyncingRef.current) setDeletedPosts(data);
+      });
+
+      return () => {
+        subSettings?.unsubscribe();
+        subPosts?.unsubscribe();
+        subMembers?.unsubscribe();
+        subDeleted?.unsubscribe();
+      };
     }
   }, []);
 
-  // --- 데이터 변경 시 LocalStorage & Supabase 동기화 ---
+  // --- 데이터 변경 시 Supabase에 푸시 (로컬 변경을 클라우드로) ---
   useEffect(() => { 
     localStorage.setItem('union_settings', JSON.stringify(settings)); 
-    if (isSupabaseEnabled()) syncSettings(settings);
+    if (isSupabaseEnabled() && !isSyncingRef.current) syncSettings(settings);
   }, [settings]);
 
   useEffect(() => { 
     localStorage.setItem('union_posts', JSON.stringify(posts)); 
-    if (isSupabaseEnabled()) syncPosts(posts);
+    if (isSupabaseEnabled() && !isSyncingRef.current) syncPosts(posts);
   }, [posts]);
 
   useEffect(() => { 
     localStorage.setItem('union_deleted_posts', JSON.stringify(deletedPosts)); 
-    if (isSupabaseEnabled()) syncDeletedPosts(deletedPosts);
+    if (isSupabaseEnabled() && !isSyncingRef.current) syncDeletedPosts(deletedPosts);
   }, [deletedPosts]);
 
   useEffect(() => { 
     localStorage.setItem('union_members', JSON.stringify(members)); 
-    if (isSupabaseEnabled()) syncMembers(members);
+    if (isSupabaseEnabled() && !isSyncingRef.current) syncMembers(members);
   }, [members]);
 
   useEffect(() => {
@@ -251,6 +289,7 @@ const App: React.FC = () => {
       setShowMemberLogin(false);
       setLoginId('');
       setLoginPassword('');
+      alert(`${member.name}님 환영합니다!`);
     } else {
       alert('정보가 일치하지 않습니다.');
     }
@@ -261,6 +300,7 @@ const App: React.FC = () => {
     setLoggedInMember(null);
     setIsAdminAuth(false);
     handleTabChange('home');
+    alert('로그아웃 되었습니다.');
   };
 
   const handleConfirmNewMembers = () => {
