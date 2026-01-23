@@ -25,7 +25,7 @@ const App: React.FC = () => {
   const [loginId, setLoginId] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   
-  // --- 로그인 상태 유지 (localStorage 기반 초기화) ---
+  // --- 1. 로그인 상태 유지 (localStorage에서 즉시 로드) ---
   const [userRole, setUserRole] = useState<UserRole>(() => (localStorage.getItem('union_role') as UserRole) || 'guest');
   const [isAdminAuth, setIsAdminAuth] = useState<boolean>(() => localStorage.getItem('union_is_admin') === 'true');
   const [loggedInMember, setLoggedInMember] = useState<Member | null>(() => {
@@ -33,19 +33,29 @@ const App: React.FC = () => {
     try { return saved ? JSON.parse(saved) : null; } catch { return null; }
   });
   
-  const [showNewMemberPopup, setShowNewMemberPopup] = useState(false);
-  const [lastReportedCount, setLastReportedCount] = useState<number>(() => Number(localStorage.getItem('union_last_report_count') || 0));
+  // --- 2. 게시물 및 설정 데이터 (localStorage에서 즉시 로드하여 "리셋" 방지) ---
+  const [settings, setSettings] = useState<SiteSettings>(() => {
+    const saved = localStorage.getItem('union_settings');
+    try { return saved ? JSON.parse(saved) : INITIAL_SETTINGS; } catch { return INITIAL_SETTINGS; }
+  });
+  const [posts, setPosts] = useState<Post[]>(() => {
+    const saved = localStorage.getItem('union_posts');
+    try { return saved ? JSON.parse(saved) : INITIAL_POSTS; } catch { return INITIAL_POSTS; }
+  });
+  const [deletedPosts, setDeletedPosts] = useState<Post[]>(() => {
+    const saved = localStorage.getItem('union_deleted_posts');
+    try { return saved ? JSON.parse(saved) : []; } catch { return []; }
+  });
+  const [members, setMembers] = useState<Member[]>(() => {
+    const saved = localStorage.getItem('union_members');
+    try { return saved ? JSON.parse(saved) : []; } catch { return []; }
+  });
 
-  const [settings, setSettings] = useState<SiteSettings>(INITIAL_SETTINGS);
-  const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
-  const [deletedPosts, setDeletedPosts] = useState<Post[]>([]);
-  const [members, setMembers] = useState<Member[]>([]);
-
-  // 실시간 동기화 제어
   const [isLoadingData, setIsLoadingData] = useState(true);
   const hasLoadedFromFirebase = useRef(false);
+  const isSyncingFromServer = useRef(false);
 
-  // --- Firebase 실시간 데이터 로딩 (한 번만 설정) ---
+  // --- 3. Firebase 실시간 데이터 동기화 ---
   useEffect(() => {
     if (!isFirebaseEnabled()) {
       setIsLoadingData(false);
@@ -61,20 +71,41 @@ const App: React.FC = () => {
       }
     };
 
+    // 서버 데이터를 받았을 때만 상태와 로컬스토리지를 업데이트
     const unsubSettings = listenToData('union', 'settings', (data) => {
-      if (data) setSettings(data);
+      if (data) {
+        isSyncingFromServer.current = true;
+        setSettings(data);
+        localStorage.setItem('union_settings', JSON.stringify(data));
+        setTimeout(() => isSyncingFromServer.current = false, 100);
+      }
       checkAllLoaded();
     });
     const unsubPosts = listenToData('union', 'posts', (data) => {
-      if (data) setPosts(data);
+      if (data) {
+        isSyncingFromServer.current = true;
+        setPosts(data);
+        localStorage.setItem('union_posts', JSON.stringify(data));
+        setTimeout(() => isSyncingFromServer.current = false, 100);
+      }
       checkAllLoaded();
     });
     const unsubMembers = listenToData('union', 'members', (data) => {
-      if (data) setMembers(data);
+      if (data) {
+        isSyncingFromServer.current = true;
+        setMembers(data);
+        localStorage.setItem('union_members', JSON.stringify(data));
+        setTimeout(() => isSyncingFromServer.current = false, 100);
+      }
       checkAllLoaded();
     });
     const unsubDeleted = listenToData('union', 'deleted_posts', (data) => {
-      if (data) setDeletedPosts(data);
+      if (data) {
+        isSyncingFromServer.current = true;
+        setDeletedPosts(data);
+        localStorage.setItem('union_deleted_posts', JSON.stringify(data));
+        setTimeout(() => isSyncingFromServer.current = false, 100);
+      }
       checkAllLoaded();
     });
 
@@ -83,11 +114,25 @@ const App: React.FC = () => {
     };
   }, []);
 
-  // --- [중요] 명시적 데이터 저장 함수 (자동 저장 방지) ---
+  // --- 4. 명시적 데이터 저장 함수 (로컬 + 서버 동시 저장) ---
   const syncWithServer = (type: string, newData: any) => {
-    if (!isFirebaseEnabled() || !hasLoadedFromFirebase.current) return;
-    saveData('union', type, newData);
+    // 로컬에 먼저 즉시 저장
+    localStorage.setItem(`union_${type}`, JSON.stringify(newData));
+    
+    // Firebase가 준비되었고, 서버에서 불러오는 중이 아닐 때만 서버로 전송
+    if (isFirebaseEnabled() && hasLoadedFromFirebase.current && !isSyncingFromServer.current) {
+      saveData('union', type, newData);
+    }
   };
+
+  const [lastReportedCount, setLastReportedCount] = useState<number>(() => Number(localStorage.getItem('union_last_report_count') || 0));
+  const [showNewMemberPopup, setShowNewMemberPopup] = useState(false);
+
+  useEffect(() => {
+    if (isAdminAuth && members.length > lastReportedCount) {
+      setShowNewMemberPopup(true);
+    }
+  }, [isAdminAuth, members.length, lastReportedCount]);
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
@@ -120,7 +165,7 @@ const App: React.FC = () => {
       alert('게시글이 등록되었습니다.');
     }
     setPosts(updatedPosts);
-    syncWithServer('posts', updatedPosts); // 명시적 저장
+    syncWithServer('posts', updatedPosts);
     setIsWriting(false);
     setEditingPost(null);
   };
@@ -218,10 +263,12 @@ const App: React.FC = () => {
       setShowMemberLogin(false);
       setLoginId('');
       setLoginPassword('');
+      alert(`${member.name}님, 환영합니다!`);
     } else alert('정보가 일치하지 않습니다.');
   };
 
   const handleLogout = () => {
+    if (!window.confirm('로그아웃 하시겠습니까?')) return;
     setUserRole('guest');
     setLoggedInMember(null);
     setIsAdminAuth(false);
@@ -229,18 +276,9 @@ const App: React.FC = () => {
     localStorage.removeItem('union_is_admin');
     localStorage.removeItem('union_member');
     handleTabChange('home');
-    alert('로그아웃 되었습니다.');
   };
 
   const renderContent = () => {
-    if (isLoadingData) {
-      return (
-        <div className="flex flex-col items-center justify-center py-40">
-          <div className="w-12 h-12 border-4 border-sky-100 border-t-sky-primary rounded-full animate-spin mb-4"></div>
-          <p className="text-sm font-bold text-gray-400">조합 데이터를 연결 중입니다...</p>
-        </div>
-      );
-    }
     if (isWriting) return <PostEditor type={writingType || (activeTab as BoardType)} initialPost={editingPost} onSave={handleSavePost} onCancel={() => { setIsWriting(false); setEditingPost(null); }} />;
     if (activeTab === 'admin') {
       if (!isAdminAuth) return <div className="flex flex-col items-center justify-center py-20"><button onClick={() => setShowAdminLogin(true)} className="px-8 py-3 bg-sky-primary text-white rounded-xl font-bold shadow-lg hover:opacity-90">관리자 인증</button></div>;
@@ -276,7 +314,6 @@ const App: React.FC = () => {
     if (id) {
       const updatedPosts = posts.map(p => p.id === id ? { ...p, views: (p.views || 0) + 1 } : p);
       setPosts(updatedPosts);
-      // 조회수는 빈번하므로 실시간 저장은 선택적으로 수행하거나, 페이지를 떠날 때 수행할 수 있으나 여기서는 단순화를 위해 유지
     }
   };
 
@@ -290,6 +327,13 @@ const App: React.FC = () => {
   return (
     <Layout settings={settings}>
       <Navbar siteName={settings.siteName} activeTab={activeTab} onTabChange={handleTabChange} userRole={userRole} memberName={userRole === 'admin' ? '관리자' : (loggedInMember?.name || '')} onToggleLogin={userRole === 'guest' ? () => setShowMemberLogin(true) : handleLogout} />
+      
+      {isLoadingData && !hasLoadedFromFirebase.current && (
+        <div className="bg-sky-50 py-2 text-center text-[10px] font-bold text-sky-400 animate-pulse">
+          <i className="fas fa-sync-alt mr-2"></i> 서버 데이터와 동기화 중입니다...
+        </div>
+      )}
+
       <main className="flex-grow">{renderContent()}</main>
       
       {showAdminLogin && (
