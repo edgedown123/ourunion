@@ -139,7 +139,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
       </div>
 
       <div className="flex space-x-1 mb-8 bg-gray-100/50 p-1.5 rounded-2xl overflow-x-auto scrollbar-hide no-scrollbar">
-        {[ { id: 'members', label: '조합원 관리', icon: 'fa-users' }, { id: 'intro', label: '인사말/소개 관리', icon: 'fa-info-circle' }, { id: 'offices', label: '찾아오시는 길', icon: 'fa-map-marker-alt' }, { id: 'posts', label: '게시글/휴지통', icon: 'fa-file-alt' }, { id: 'settings', label: '시스템 설정', icon: 'fa-cog' } ].map((tab) => (
+        {[ 
+          { id: 'members', label: '조합원 관리', icon: 'fa-users' }, 
+          { id: 'intro', label: '인사말/소개 관리', icon: 'fa-info-circle' }, 
+          { id: 'offices', label: '찾아오시는 길', icon: 'fa-map-marker-alt' }, 
+          { id: 'posts', label: '게시글/휴지통', icon: 'fa-file-alt' }, 
+          { id: 'settings', label: '시스템 설정', icon: 'fa-cog' } 
+        ].map((tab) => (
           <button key={tab.id} onClick={() => setAdminTab(tab.id as any)} className={`flex items-center space-x-2 px-6 py-3.5 rounded-xl text-sm font-black transition-all whitespace-nowrap ${adminTab === tab.id ? 'bg-white text-sky-primary shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
             <i className={`fas ${tab.icon}`}></i><span>{tab.label}</span>
           </button>
@@ -227,24 +233,33 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
           </div>
         )}
-        
+
         {adminTab === 'offices' && (
           <div className="bg-white p-8 rounded-[2.5rem] border shadow-sm animate-fadeIn">
-            <h3 className="font-black text-gray-900 text-lg mb-8 flex items-center"><i className="fas fa-map-marked-alt mr-3 text-sky-primary"></i> 사업소 정보 수정</h3>
-            <div className="flex space-x-2 mb-8 border-b pb-4">
+            <h3 className="font-black text-gray-900 text-lg mb-8 flex items-center"><i className="fas fa-map-marked-alt mr-3 text-sky-primary"></i> 찾아오시는 길 관리</h3>
+            <div className="flex space-x-2 mb-8 border-b pb-4 overflow-x-auto scrollbar-hide no-scrollbar">
               {settings.offices.map(off => (
-                <button key={off.id} onClick={() => setActiveOfficeId(off.id)} className={`px-6 py-2 rounded-full text-xs font-black transition-all ${activeOfficeId === off.id ? 'bg-sky-primary text-white' : 'bg-gray-100 text-gray-400'}`}>{off.name}</button>
+                <button key={off.id} onClick={() => setActiveOfficeId(off.id)} className={`px-6 py-2 rounded-full text-xs font-black transition-all whitespace-nowrap ${activeOfficeId === off.id ? 'bg-sky-primary text-white shadow-md' : 'bg-gray-100 text-gray-400'}`}>{off.name}</button>
               ))}
             </div>
             {settings.offices.find(o => o.id === activeOfficeId) && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                 <div className="space-y-6">
-                  <div><label className="block text-[10px] font-black text-gray-400 mb-1 tracking-widest uppercase">사업소 이름</label><input type="text" value={settings.offices.find(o => o.id === activeOfficeId)?.name} onChange={(e) => { const updated = settings.offices.map(o => o.id === activeOfficeId ? { ...o, name: e.target.value } : o); setSettings({ ...settings, offices: updated }); }} className="w-full border-2 border-gray-100 rounded-xl p-4 font-bold text-sm outline-none focus:border-sky-primary" /></div>
-                  <div><label className="block text-[10px] font-black text-gray-400 mb-1 tracking-widest uppercase">주소</label><input type="text" value={settings.offices.find(o => o.id === activeOfficeId)?.address} onChange={(e) => { const updated = settings.offices.map(o => o.id === activeOfficeId ? { ...o, address: e.target.value } : o); setSettings({ ...settings, offices: updated }); }} className="w-full border-2 border-gray-100 rounded-xl p-4 font-bold text-sm outline-none focus:border-sky-primary" /></div>
-                  <div><label className="block text-[10px] font-black text-gray-400 mb-1 tracking-widest uppercase">전화번호</label><input type="text" value={settings.offices.find(o => o.id === activeOfficeId)?.phone} onChange={(e) => { const updated = settings.offices.map(o => o.id === activeOfficeId ? { ...o, phone: e.target.value } : o); setSettings({ ...settings, offices: updated }); }} className="w-full border-2 border-gray-100 rounded-xl p-4 font-bold text-sm outline-none focus:border-sky-primary" /></div>
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 mb-1 tracking-widest uppercase">사업소 이름</label>
+                    <input type="text" value={settings.offices.find(o => o.id === activeOfficeId)?.name} onChange={(e) => { const updated = settings.offices.map(o => o.id === activeOfficeId ? { ...o, name: e.target.value } : o); setSettings({ ...settings, offices: updated }); }} className="w-full border-2 border-gray-100 rounded-xl p-4 font-bold text-sm outline-none focus:border-sky-primary" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 mb-1 tracking-widest uppercase">주소</label>
+                    <input type="text" value={settings.offices.find(o => o.id === activeOfficeId)?.address} onChange={(e) => { const updated = settings.offices.map(o => o.id === activeOfficeId ? { ...o, address: e.target.value } : o); setSettings({ ...settings, offices: updated }); }} className="w-full border-2 border-gray-100 rounded-xl p-4 font-bold text-sm outline-none focus:border-sky-primary" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 mb-1 tracking-widest uppercase">전화번호</label>
+                    <input type="text" value={settings.offices.find(o => o.id === activeOfficeId)?.phone} onChange={(e) => { const updated = settings.offices.map(o => o.id === activeOfficeId ? { ...o, phone: e.target.value } : o); setSettings({ ...settings, offices: updated }); }} className="w-full border-2 border-gray-100 rounded-xl p-4 font-bold text-sm outline-none focus:border-sky-primary" />
+                  </div>
                 </div>
                 <div className="space-y-4">
-                  <label className="block text-[10px] font-black text-gray-400 mb-1 tracking-widest uppercase">지도 이미지</label>
+                  <label className="block text-[10px] font-black text-gray-400 mb-1 tracking-widest uppercase">지도/전경 이미지</label>
                   <div className="aspect-video bg-gray-100 rounded-2xl overflow-hidden border relative group shadow-inner">
                     <img src={settings.offices.find(o => o.id === activeOfficeId)?.mapImageUrl} className="w-full h-full object-cover" />
                     <button onClick={() => officeMapInputRef.current?.click()} className="absolute inset-0 bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center font-bold">이미지 변경</button>
@@ -259,39 +274,55 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         {adminTab === 'posts' && (
           <div className="space-y-8 animate-fadeIn">
             <div className="bg-white rounded-[2.5rem] border shadow-sm overflow-hidden">
-              <div className="p-8 border-b bg-gray-50/30"><h3 className="font-black text-gray-900">전체 게시글 관리</h3></div>
+              <div className="p-8 border-b bg-gray-50/30 flex justify-between items-center">
+                <h3 className="font-black text-gray-900">게시글 관리</h3>
+                <span className="text-xs text-gray-400 font-bold">총 {posts.length}개</span>
+              </div>
               <div className="max-h-96 overflow-y-auto custom-scrollbar">
                 <table className="w-full text-sm text-left">
-                  <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase"><tr><th className="px-8 py-4">구분</th><th className="px-8 py-4">제목</th><th className="px-8 py-4">작성자</th><th className="px-8 py-4">관리</th></tr></thead>
+                  <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase">
+                    <tr><th className="px-8 py-4">구분</th><th className="px-8 py-4">제목</th><th className="px-8 py-4">작성자</th><th className="px-8 py-4">관리</th></tr>
+                  </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {posts.map(p => (
+                    {posts.length === 0 ? (
+                      <tr><td colSpan={4} className="px-8 py-20 text-center text-gray-400 font-bold italic">게시글이 없습니다.</td></tr>
+                    ) : posts.map(p => (
                       <tr key={p.id} className="hover:bg-gray-50/50">
                         <td className="px-8 py-4"><span className="text-[10px] bg-sky-50 text-sky-600 px-2 py-1 rounded font-black">{p.type}</span></td>
                         <td className="px-8 py-4 font-bold text-gray-700 truncate max-w-xs">{p.title}</td>
                         <td className="px-8 py-4 text-gray-400">{p.author}</td>
-                        <td className="px-8 py-4 space-x-2"><button onClick={() => onViewPost(p.id, p.type)} className="text-sky-500 hover:underline font-bold text-xs">보기</button><button onClick={() => onEditPost(p)} className="text-gray-400 hover:text-gray-900 font-bold text-xs">수정</button></td>
+                        <td className="px-8 py-4 space-x-4">
+                          <button onClick={() => onViewPost(p.id, p.type)} className="text-sky-500 hover:underline font-bold text-xs">보기</button>
+                          <button onClick={() => onEditPost(p)} className="text-gray-500 hover:text-gray-900 font-bold text-xs">수정</button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
             </div>
-            <div className="bg-rose-50 rounded-[2.5rem] border border-rose-100 shadow-sm overflow-hidden">
-              <div className="p-8 border-b border-rose-100 bg-white/50 flex items-center"><i className="fas fa-trash-alt mr-3 text-rose-500"></i><h3 className="font-black text-rose-900">삭제된 게시글 (휴지통)</h3></div>
-              <div className="max-h-60 overflow-y-auto custom-scrollbar">
-                {deletedPosts.length === 0 ? <div className="py-12 text-center text-rose-300 font-bold italic">휴지통이 비어 있습니다.</div> : (
-                  <table className="w-full text-sm text-left">
-                    <tbody className="divide-y divide-rose-100/50">
-                      {deletedPosts.map(p => (
-                        <tr key={p.id} className="hover:bg-white/40">
-                          <td className="px-8 py-4 font-bold text-rose-800">{p.title}</td>
-                          <td className="px-8 py-4 text-rose-400 text-xs">{p.createdAt}</td>
-                          <td className="px-8 py-4 text-right space-x-3"><button onClick={() => onRestorePost(p.id)} className="text-sky-600 font-black text-xs">복구</button><button onClick={() => onPermanentDelete(p.id)} className="text-rose-600 font-black text-xs">영구삭제</button></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
+
+            <div className="bg-white rounded-[2.5rem] border border-red-100 shadow-sm overflow-hidden">
+              <div className="p-8 border-b bg-red-50/30 flex justify-between items-center">
+                <h3 className="font-black text-red-900 flex items-center"><i className="fas fa-trash-alt mr-3"></i> 휴지통</h3>
+                <span className="text-xs text-red-400 font-bold">{deletedPosts.length}개의 삭제된 글</span>
+              </div>
+              <div className="max-h-64 overflow-y-auto custom-scrollbar">
+                <table className="w-full text-sm text-left">
+                  <tbody className="divide-y divide-gray-50">
+                    {deletedPosts.length === 0 ? (
+                      <tr><td className="px-8 py-10 text-center text-gray-300 font-bold italic">휴지통이 비어 있습니다.</td></tr>
+                    ) : deletedPosts.map(p => (
+                      <tr key={p.id} className="hover:bg-red-50/20">
+                        <td className="px-8 py-4 font-bold text-gray-500 truncate max-w-sm">{p.title}</td>
+                        <td className="px-8 py-4 text-right space-x-4">
+                          <button onClick={() => onRestorePost(p.id)} className="text-sky-500 font-black text-xs hover:underline">복구</button>
+                          <button onClick={() => onPermanentDelete(p.id)} className="text-red-400 font-black text-xs hover:underline">영구삭제</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -299,9 +330,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         
         {adminTab === 'settings' && (
           <div className="space-y-8 animate-fadeIn">
+            {/* 메인 화면 설정 - 최상단 배치 */}
             <div className="bg-white p-10 rounded-[2.5rem] border shadow-sm space-y-12">
               <div>
-                <h3 className="font-black text-gray-900 text-lg mb-8 flex items-center"><i className="fas fa-palette mr-3 text-sky-primary"></i> 메인 화면 시각 정보</h3>
+                <h3 className="font-black text-gray-900 text-lg mb-8 flex items-center"><i className="fas fa-palette mr-3 text-sky-primary"></i> 메인 화면 설정</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                   <div className="space-y-4">
                     <label className="block text-[10px] font-black text-gray-400 mb-1 tracking-widest uppercase">대표 이미지</label>
@@ -318,13 +350,25 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
               </div>
             </div>
+
+            {/* 데이터 백업 및 관리 - 메인 화면 설정 아래 배치 */}
             <div className="bg-gray-900 rounded-[2.5rem] p-10 text-white shadow-2xl space-y-8">
               <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                <div><h3 className="text-xl font-black mb-2 flex items-center"><i className="fas fa-sync-alt mr-3 text-sky-400"></i> 데이터 백업 및 관리</h3><p className="text-sm text-gray-400 font-bold leading-relaxed">데이터를 파일로 내보내거나 가져올 수 있습니다.</p></div>
+                <div>
+                  <h3 className="text-xl font-black mb-2 flex items-center"><i className="fas fa-sync-alt mr-3 text-sky-400"></i> 데이터 백업 및 관리</h3>
+                  <p className="text-sm text-gray-400 font-bold leading-relaxed">다른 기기로 데이터를 옮기기 위해 백업 파일을 활용하세요.</p>
+                </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <button onClick={handleExportData} className="group flex flex-col items-center justify-center p-8 bg-white/5 border border-white/10 rounded-[2rem] hover:bg-white/10 transition-all active:scale-95"><div className="w-12 h-12 bg-sky-500 text-white rounded-2xl flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform"><i className="fas fa-file-export text-xl"></i></div><span className="font-black text-sm mb-1">데이터 내보내기</span></button>
-                <button onClick={() => importFileInputRef.current?.click()} className="group flex flex-col items-center justify-center p-8 bg-white/5 border border-white/10 rounded-[2rem] hover:bg-white/10 transition-all active:scale-95"><div className="w-12 h-12 bg-emerald-500 text-white rounded-2xl flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform"><i className="fas fa-file-import text-xl"></i></div><span className="font-black text-sm mb-1">데이터 가져오기</span><input type="file" ref={importFileInputRef} className="hidden" accept="application/json" onChange={handleImportData} /></button>
+                <button onClick={handleExportData} className="group flex flex-col items-center justify-center p-8 bg-white/5 border border-white/10 rounded-[2rem] hover:bg-white/10 transition-all active:scale-95">
+                  <div className="w-12 h-12 bg-sky-500 text-white rounded-2xl flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform"><i className="fas fa-file-export text-xl"></i></div>
+                  <span className="font-black text-sm mb-1">데이터 내보내기</span>
+                </button>
+                <button onClick={() => importFileInputRef.current?.click()} className="group flex flex-col items-center justify-center p-8 bg-white/5 border border-white/10 rounded-[2rem] hover:bg-white/10 transition-all active:scale-95">
+                  <div className="w-12 h-12 bg-emerald-500 text-white rounded-2xl flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform"><i className="fas fa-file-import text-xl"></i></div>
+                  <span className="font-black text-sm mb-1">데이터 가져오기</span>
+                  <input type="file" ref={importFileInputRef} className="hidden" accept="application/json" onChange={handleImportData} />
+                </button>
               </div>
             </div>
           </div>
