@@ -11,7 +11,7 @@ import PostEditor from './components/PostEditor';
 import Introduction from './components/Introduction';
 import Footer from './components/Footer';
 import SignupForm from './components/SignupForm';
-import { isFirebaseEnabled, listenToData, saveData } from './services/firebaseService';
+import { isFirebaseEnabled, listenToData, saveData, reconnectNetwork } from './services/firebaseService';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('home');
@@ -25,7 +25,7 @@ const App: React.FC = () => {
   const [loginId, setLoginId] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   
-  // 로그인 상태
+  // 로그인 상태 유지
   const [userRole, setUserRole] = useState<UserRole>(() => (localStorage.getItem('union_role') as UserRole) || 'guest');
   const [isAdminAuth, setIsAdminAuth] = useState<boolean>(() => localStorage.getItem('union_is_admin') === 'true');
   const [loggedInMember, setLoggedInMember] = useState<Member | null>(() => {
@@ -33,111 +33,76 @@ const App: React.FC = () => {
     try { return saved ? JSON.parse(saved) : null; } catch { return null; }
   });
   
-  // 데이터 상태 (초기에는 로컬 로드, 이후 서버 데이터가 덮어씀)
-  const [settings, setSettings] = useState<SiteSettings>(() => {
-    const saved = localStorage.getItem('union_settings');
-    try { return saved ? JSON.parse(saved) : INITIAL_SETTINGS; } catch { return INITIAL_SETTINGS; }
-  });
-  const [posts, setPosts] = useState<Post[]>(() => {
-    const saved = localStorage.getItem('union_posts');
-    try { return saved ? JSON.parse(saved) : INITIAL_POSTS; } catch { return INITIAL_POSTS; }
-  });
-  const [deletedPosts, setDeletedPosts] = useState<Post[]>(() => {
-    const saved = localStorage.getItem('union_deleted_posts');
-    try { return saved ? JSON.parse(saved) : []; } catch { return []; }
-  });
-  const [members, setMembers] = useState<Member[]>(() => {
-    const saved = localStorage.getItem('union_members');
-    try { return saved ? JSON.parse(saved) : []; } catch { return []; }
-  });
+  // 로컬 데이터를 무시하고 서버 데이터를 강제로 기다림 (모바일 연동용)
+  const [settings, setSettings] = useState<SiteSettings>(INITIAL_SETTINGS);
+  const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
+  const [deletedPosts, setDeletedPosts] = useState<Post[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
 
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
-  const hasInitialLoaded = useRef(false);
+  const syncTimer = useRef<number | null>(null);
 
-  // --- Firebase 실시간 동기화 (모바일 연동 핵심) ---
+  // --- 모바일 전용: 앱 활성화 시 네트워크 재강제 연결 ---
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        reconnectNetwork(); // 화면을 다시 켤 때마다 네트워크를 깨움
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
+  // --- Firebase 실시간 동기화 (근본 해결 로직) ---
   useEffect(() => {
     if (!isFirebaseEnabled()) {
+      // Firebase가 안 되면 로컬이라도 즉시 로드
+      const s = localStorage.getItem('union_settings');
+      if (s) setSettings(JSON.parse(s));
+      const p = localStorage.getItem('union_posts');
+      if (p) setPosts(JSON.parse(p));
       setIsLoadingData(false);
       return;
     }
 
-    const loaders = {
-      settings: false,
-      posts: false,
-      members: false,
-      deleted: false
-    };
-
-    const checkReady = (key: keyof typeof loaders) => {
-      loaders[key] = true;
-      if (Object.values(loaders).every(v => v)) {
-        hasInitialLoaded.current = true;
-        setIsLoadingData(false);
-        setIsConnected(true);
-      }
-    };
-
-    // 서버 데이터 리스너: 서버 데이터가 오면 무조건 상태 업데이트 (PC -> 모바일 연동)
+    // 서버 데이터 도착 시 무조건 화면 갱신
     const unsubSettings = listenToData('union', 'settings', (data) => {
       if (data) {
         setSettings(data);
         localStorage.setItem('union_settings', JSON.stringify(data));
       }
-      checkReady('settings');
+      setIsConnected(true);
+      setIsLoadingData(false);
     });
     const unsubPosts = listenToData('union', 'posts', (data) => {
       if (data) {
         setPosts(data);
         localStorage.setItem('union_posts', JSON.stringify(data));
       }
-      checkReady('posts');
+      setIsConnected(true);
+      setIsLoadingData(false);
     });
     const unsubMembers = listenToData('union', 'members', (data) => {
-      if (data) {
-        setMembers(data);
-        localStorage.setItem('union_members', JSON.stringify(data));
-      }
-      checkReady('members');
+      if (data) setMembers(data);
+      setIsConnected(true);
     });
     const unsubDeleted = listenToData('union', 'deleted_posts', (data) => {
-      if (data) {
-        setDeletedPosts(data);
-        localStorage.setItem('union_deleted_posts', JSON.stringify(data));
-      }
-      checkReady('deleted');
+      if (data) setDeletedPosts(data);
+      setIsConnected(true);
     });
-
-    // 타임아웃 방지: 5초 지나도 연결 안 되면 로딩 해제 (오프라인 모드)
-    const timer = setTimeout(() => {
-      if (!hasInitialLoaded.current) {
-        setIsLoadingData(false);
-        console.warn("서버 연결 지연 - 오프라인 모드로 실행합니다.");
-      }
-    }, 5000);
 
     return () => {
       unsubSettings?.(); unsubPosts?.(); unsubMembers?.(); unsubDeleted?.();
-      clearTimeout(timer);
     };
   }, []);
 
-  // 명시적 서버 저장 (수정/작성 시에만 서버로 쏨)
   const syncWithServer = (type: string, newData: any) => {
     localStorage.setItem(`union_${type}`, JSON.stringify(newData));
     if (isFirebaseEnabled()) {
       saveData('union', type, newData);
     }
   };
-
-  const [lastReportedCount, setLastReportedCount] = useState<number>(() => Number(localStorage.getItem('union_last_report_count') || 0));
-  const [showNewMemberPopup, setShowNewMemberPopup] = useState(false);
-
-  useEffect(() => {
-    if (isAdminAuth && members.length > lastReportedCount) {
-      setShowNewMemberPopup(true);
-    }
-  }, [isAdminAuth, members.length, lastReportedCount]);
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
@@ -280,15 +245,15 @@ const App: React.FC = () => {
     if (isLoadingData) {
       return (
         <div className="flex flex-col items-center justify-center py-40">
-          <div className="w-10 h-10 border-4 border-sky-100 border-t-sky-primary rounded-full animate-spin mb-4"></div>
-          <p className="text-[11px] font-black text-gray-300 tracking-widest uppercase">Syncing Cloud Data...</p>
+          <div className="w-8 h-8 border-4 border-sky-100 border-t-sky-primary rounded-full animate-spin mb-4"></div>
+          <p className="text-[10px] font-black text-gray-300 tracking-widest uppercase animate-pulse">Syncing Mobile Cloud...</p>
         </div>
       );
     }
     if (isWriting) return <PostEditor type={writingType || (activeTab as BoardType)} initialPost={editingPost} onSave={handleSavePost} onCancel={() => { setIsWriting(false); setEditingPost(null); }} />;
     if (activeTab === 'admin') {
       if (!isAdminAuth) return <div className="flex flex-col items-center justify-center py-20"><button onClick={() => setShowAdminLogin(true)} className="px-8 py-3 bg-sky-primary text-white rounded-xl font-bold shadow-lg hover:opacity-90">관리자 인증</button></div>;
-      return <AdminPanel settings={settings} setSettings={handleUpdateSettings} members={members} posts={posts} deletedPosts={deletedPosts} onRestorePost={handleRestorePost} onPermanentDelete={handlePermanentDelete} onEditPost={handleEditClick} onViewPost={handleViewPostFromAdmin} onClose={() => handleTabChange('home')} onReported={() => { setLastReportedCount(members.length); localStorage.setItem('union_last_report_count', members.length.toString()); }} />;
+      return <AdminPanel settings={settings} setSettings={handleUpdateSettings} members={members} posts={posts} deletedPosts={deletedPosts} onRestorePost={handleRestorePost} onPermanentDelete={handlePermanentDelete} onEditPost={handleEditClick} onViewPost={handleViewPostFromAdmin} onClose={() => handleTabChange('home')} onReported={() => {}} />;
     }
     if (activeTab === 'home') return <><Hero title={settings.heroTitle} subtitle={settings.heroSubtitle} imageUrl={settings.heroImageUrl} onJoinClick={() => handleTabChange('signup')} /><Board type="notice" posts={posts.slice(0, 10)} onWriteClick={handleWriteClick} onEditClick={handleEditClick} selectedPostId={selectedPostId} onSelectPost={handleSelectPost} userRole={userRole} onDeletePost={handleDeletePost} onSaveComment={handleSaveComment} /></>;
     if (['intro', 'greeting', 'history', 'map'].includes(activeTab)) return <Introduction settings={settings} activeTab={activeTab} />;
@@ -375,19 +340,6 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {showNewMemberPopup && (
-        <div className="fixed bottom-8 right-8 z-[110] animate-fadeIn">
-          <div className="bg-gray-900 text-white rounded-2xl p-6 max-w-xs shadow-2xl border border-white/10">
-            <h3 className="text-lg font-bold mb-2 flex items-center"><i className="fas fa-user-plus text-sky-400 mr-2"></i> 신규 가입 발생</h3>
-            <p className="text-sm text-gray-300 mb-6">{members.length - lastReportedCount}명의 신청이 있습니다.</p>
-            <button onClick={() => {
-              localStorage.setItem('union_last_report_count', members.length.toString());
-              setLastReportedCount(members.length);
-              setShowNewMemberPopup(false);
-            }} className="w-full py-2 bg-sky-primary rounded-lg text-xs font-bold shadow-lg hover:opacity-90 transition-all">확인</button>
-          </div>
-        </div>
-      )}
       <Footer siteName={settings.siteName} onTabChange={handleTabChange} />
     </Layout>
   );
