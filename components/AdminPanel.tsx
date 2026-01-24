@@ -13,12 +13,12 @@ interface AdminPanelProps {
   onEditPost: (post: Post) => void;
   onViewPost: (id: string, type: BoardType) => void;
   onClose: () => void;
-  onReported?: () => void;
+  onRemoveMember?: (id: string) => void; // 회원 삭제 콜백 추가
 }
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ 
   settings, setSettings, members, posts, deletedPosts, 
-  onRestorePost, onPermanentDelete, onEditPost, onViewPost, onClose 
+  onRestorePost, onPermanentDelete, onEditPost, onViewPost, onClose, onRemoveMember
 }) => {
   const heroImageRef = useRef<HTMLInputElement>(null);
   const greetingImageRef = useRef<HTMLInputElement>(null);
@@ -76,8 +76,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const handleDownloadExcel = () => {
     if (members.length === 0) return alert('다운로드할 명단이 없습니다.');
-    const headers = ['이름', '아이디', '비밀번호', '연락처', '이메일', '차고지', '가입일'];
-    const rows = members.map(m => [m.name, m.loginId, m.password || '', m.phone, m.email, m.garage, m.signupDate]);
+    const headers = ['이름', '연락처', '이메일', '차고지', '가입일'];
+    const rows = members.map(m => [m.name, m.phone, m.email, m.garage, m.signupDate]);
     const csvContent = "\uFEFF" + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -162,26 +162,35 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest">
                   <tr>
                     <th className="px-8 py-5">성함</th>
-                    <th className="px-8 py-5">아이디</th>
-                    <th className="px-8 py-5">비밀번호</th>
                     <th className="px-8 py-5">연락처</th>
                     <th className="px-8 py-5">이메일</th>
                     <th className="px-8 py-5">차고지</th>
                     <th className="px-8 py-5">가입일</th>
+                    <th className="px-8 py-5">관리</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {members.length === 0 ? (
-                    <tr><td colSpan={7} className="px-8 py-20 text-center text-gray-400 font-bold italic">아직 가입 신청자가 없습니다.</td></tr>
+                    <tr><td colSpan={6} className="px-8 py-20 text-center text-gray-400 font-bold italic">아직 가입 신청자가 없습니다.</td></tr>
                   ) : members.map(m => (
                     <tr key={m.id} className="hover:bg-gray-50/50 transition-colors">
                       <td className="px-8 py-5 font-black text-gray-900">{m.name}</td>
-                      <td className="px-8 py-5 text-sky-600 font-bold">{m.loginId}</td>
-                      <td className="px-8 py-5 text-gray-400 font-mono text-xs">{m.password}</td>
                       <td className="px-8 py-5 text-gray-600">{m.phone}</td>
                       <td className="px-8 py-5 text-gray-600 font-medium">{m.email}</td>
                       <td className="px-8 py-5 text-gray-600 font-bold">{m.garage}</td>
                       <td className="px-8 py-5 text-gray-400 text-xs font-medium">{m.signupDate}</td>
+                      <td className="px-8 py-5">
+                        <button 
+                          onClick={() => {
+                            if (confirm(`${m.name} 조합원을 강제 탈퇴시키겠습니까?`)) {
+                              onRemoveMember?.(m.id);
+                            }
+                          }}
+                          className="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-[10px] font-black hover:bg-red-500 hover:text-white transition-all border border-red-100 shadow-sm active:scale-95"
+                        >
+                          강제탈퇴
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
