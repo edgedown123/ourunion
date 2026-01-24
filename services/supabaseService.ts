@@ -5,8 +5,11 @@ import { Post, SiteSettings } from '../types';
 // --------------------------------------
 // Supabase 연결 (Vite 환경변수)
 // --------------------------------------
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const env = typeof import.meta !== 'undefined' ? import.meta.env : undefined;
+
+const supabaseUrl = env?.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = env?.VITE_SUPABASE_ANON_KEY || '';
+
 
 export const isSupabaseEnabled = () =>
   supabaseUrl.length > 0 && supabaseAnonKey.length > 0;
