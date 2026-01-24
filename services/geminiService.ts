@@ -5,7 +5,8 @@ import { GoogleGenAI, Type } from "@google/genai";
  * Helper function to safely get the AI instance
  */
 const getAiInstance = () => {
-  const apiKey = process.env.API_KEY;
+  const apiKey = typeof process !== 'undefined' ? process.env.API_KEY : '';
+  
   if (!apiKey || apiKey === "undefined" || apiKey.length < 10) {
     console.warn("Gemini API_KEY가 설정되지 않았거나 올바르지 않습니다. AI 기능이 제한됩니다.");
     return null;
@@ -37,7 +38,8 @@ export const generatePostContent = async (topic: string, type: string) => {
             title: { type: Type.STRING },
             content: { type: Type.STRING }
           },
-          required: ["title", "content"]
+          required: ["title", "content"],
+          propertyOrdering: ["title", "content"]
         }
       }
     });

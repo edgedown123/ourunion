@@ -3,8 +3,10 @@ import { createClient } from '@supabase/supabase-js';
 import { Post, Member, SiteSettings } from '../types';
 
 // Vercel/Vite 환경에서 환경변수를 안전하게 가져옵니다.
-const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || '';
+const getEnv = (key: string) => typeof process !== 'undefined' ? process.env[key] || '' : '';
+
+const supabaseUrl = getEnv('SUPABASE_URL');
+const supabaseAnonKey = getEnv('SUPABASE_ANON_KEY');
 
 export const isSupabaseEnabled = () => 
   supabaseUrl.length > 0 && supabaseAnonKey.length > 0 && supabaseUrl !== 'undefined';
