@@ -174,7 +174,6 @@ const App: React.FC = () => {
     const updatedMembers = members.filter(m => m.id !== memberId);
     setMembers(updatedMembers);
     saveToLocal('members', updatedMembers);
-    await cloud.deleteMemberFromCloud(memberId);
     alert('회원 탈퇴 처리가 완료되었습니다.');
   };
 
