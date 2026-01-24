@@ -40,20 +40,33 @@ const App: React.FC = () => {
   const [members, setMembers] = useState<Member[]>([]);
 
   // 데이터 동기화 함수
-  const syncData = useCallback(async (showLoading = true) => {
-    if (showLoading) setIsLoading(true);
-    else setIsRefreshing(true);
+// 데이터 동기화 함수
+const syncData = useCallback(async (showLoading = true) => {
+  if (showLoading) setIsLoading(true);
+  else setIsRefreshing(true);
 
+  try {
     if (cloud.isSupabaseEnabled()) {
-      const [cloudPosts, cloudMembers, cloudSettings] = await Promise.all([
+      const results = await Promise.allSettled([
         cloud.fetchPostsFromCloud(),
         cloud.fetchMembersFromCloud(),
-        cloud.fetchSettingsFromCloud()
+        cloud.fetchSettingsFromCloud(),
       ]);
 
-      if (cloudPosts) setPosts(cloudPosts);
-      if (cloudMembers) setMembers(cloudMembers);
-      if (cloudSettings) setSettings(cloudSettings);
+      const postsResult = results[0];
+      const membersResult = results[1];
+      const settingsResult = results[2];
+
+      if (postsResult.status === 'fulfilled' && postsResult.value) setPosts(postsResult.value);
+      if (membersResult.status === 'fulfilled' && membersResult.value) setMembers(membersResult.value);
+      if (settingsResult.status === 'fulfilled' && settingsResult.value) setSettings(settingsResult.value);
+
+      // 실패한 게 있으면 콘솔에 찍어두기(진단용)
+      results.forEach((r, i) => {
+        if (r.status === 'rejected') {
+          console.error('syncData failed:', ['posts', 'members', 'settings'][i], r.reason);
+        }
+      });
     } else {
       const sPosts = localStorage.getItem('union_posts');
       const sMembers = localStorage.getItem('union_members');
@@ -62,10 +75,15 @@ const App: React.FC = () => {
       if (sMembers) setMembers(JSON.parse(sMembers));
       if (sSettings) setSettings(JSON.parse(sSettings));
     }
-    
+  } catch (e) {
+    console.error('syncData error:', e);
+  } finally {
+    // ⭐ 어떤 상황이든 로딩은 반드시 종료
     setIsLoading(false);
     setIsRefreshing(false);
-  }, []);
+  }
+}, []);
+
 
   useEffect(() => {
     syncData();
