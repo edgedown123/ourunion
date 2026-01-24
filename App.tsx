@@ -196,20 +196,9 @@ const App: React.FC = () => {
     } else alert('비밀번호 오류');
   };
 
-  const handleMemberLogin = () => {
-    const member = members.find(m => m.loginId === loginId && m.password === loginPassword);
-    if (member) {
-      setLoggedInMember(member);
-      setUserRole('member');
-      localStorage.setItem('union_role', 'member');
-      localStorage.setItem('union_member', JSON.stringify(member));
-      setShowMemberLogin(false);
-      setLoginId('');
-      setLoginPassword('');
-    } else {
-      alert('일치하는 회원 정보가 없습니다.');
-    }
-  };
+const handleMemberLogin = () => {
+  alert('현재 회원 로그인 기능은 준비 중입니다.');
+};
 
   const handleLogout = () => {
     if (!window.confirm('로그아웃 하시겠습니까?')) return;
