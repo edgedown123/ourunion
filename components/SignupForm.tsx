@@ -161,7 +161,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onGoHome, onAddMember, onRemove
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">연락처</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">연락처(숫자만 입력하세요)</label>
                 <input required type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full border-gray-300 rounded-lg p-3 border focus:ring-2 focus:ring-sky-primary outline-none" />
               </div>
               <div>
