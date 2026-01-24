@@ -1,6 +1,6 @@
 
 import React, { useRef, useState } from 'react';
-import { SiteSettings, Member, OfficeItem, Post, BoardType } from '../types';
+import { SiteSettings, Member, Post, BoardType } from '../types';
 
 interface AdminPanelProps {
   settings: SiteSettings;
@@ -13,7 +13,7 @@ interface AdminPanelProps {
   onEditPost: (post: Post) => void;
   onViewPost: (id: string, type: BoardType) => void;
   onClose: () => void;
-  onRemoveMember?: (id: string) => void; // 회원 삭제 콜백 추가
+  onRemoveMember?: (id: string) => void;
 }
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ 
@@ -199,6 +199,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           </div>
         )}
         
+        {/* ... 나머지 탭 생략 (기존과 동일) */}
         {adminTab === 'intro' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fadeIn">
             <div className="bg-white p-8 rounded-[2.5rem] border shadow-sm space-y-8">

@@ -10,8 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@google/genai": "^1.37.0",
-    "firebase": "^10.8.0",
+    "@google/genai": "^1.38.0",
+    "@supabase/supabase-js": "^2.39.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
