@@ -1,7 +1,6 @@
 
 import React, { useRef, useState } from 'react';
 import { SiteSettings, Member, OfficeItem, Post, BoardType } from '../types';
-import { isFirebaseEnabled } from '../services/firebaseService';
 
 interface AdminPanelProps {
   settings: SiteSettings;
@@ -33,8 +32,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const [newMonth, setNewMonth] = useState('');
   const [newDay, setNewDay] = useState('');
   const [newText, setNewText] = useState('');
-
-  const firebaseActive = isFirebaseEnabled();
 
   const handleSettingsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -124,18 +121,19 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     <div className="max-w-7xl mx-auto py-8 px-4 animate-fadeIn">
       <div className="flex justify-between items-center mb-8 bg-white p-6 rounded-3xl border shadow-sm">
         <div className="flex items-center">
-          <div className="w-14 h-14 bg-sky-primary text-white rounded-2xl flex items-center justify-center mr-5 shadow-lg shadow-sky-100"><i className="fas fa-shield-alt text-2xl"></i></div>
+          <div className="w-14 h-14 bg-sky-primary text-white rounded-2xl flex items-center justify-center mr-5 shadow-lg shadow-sky-100">
+            <i className="fas fa-shield-alt text-2xl"></i>
+          </div>
           <div>
             <h2 className="text-2xl font-black text-gray-900 tracking-tight">관리자 커맨드 센터</h2>
-            <div className="flex items-center mt-1">
-              <span className={`inline-block w-2 h-2 rounded-full mr-2 ${firebaseActive ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                {firebaseActive ? 'Cloud Storage Connected' : 'Local Storage Mode'}
-              </p>
-            </div>
+            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">
+              Secure System Management
+            </p>
           </div>
         </div>
-        <button onClick={onClose} className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors text-gray-400"><i className="fas fa-times text-2xl"></i></button>
+        <button onClick={onClose} className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors text-gray-400">
+          <i className="fas fa-times text-2xl"></i>
+        </button>
       </div>
 
       <div className="flex space-x-1 mb-8 bg-gray-100/50 p-1.5 rounded-2xl overflow-x-auto scrollbar-hide no-scrollbar">
@@ -330,7 +328,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         
         {adminTab === 'settings' && (
           <div className="space-y-8 animate-fadeIn">
-            {/* 메인 화면 설정 - 최상단 배치 */}
             <div className="bg-white p-10 rounded-[2.5rem] border shadow-sm space-y-12">
               <div>
                 <h3 className="font-black text-gray-900 text-lg mb-8 flex items-center"><i className="fas fa-palette mr-3 text-sky-primary"></i> 메인 화면 설정</h3>
@@ -351,7 +348,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
             </div>
 
-            {/* 데이터 백업 및 관리 - 메인 화면 설정 아래 배치 */}
             <div className="bg-gray-900 rounded-[2.5rem] p-10 text-white shadow-2xl space-y-8">
               <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                 <div>
