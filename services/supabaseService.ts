@@ -81,50 +81,9 @@ export const deletePostFromCloud = async (id: string) => {
 // 회원 관리 동기화
 // (네 DB 컬럼은 id/email/name/created_at 만 있음)
 // --------------------------------------
-export const fetchMembersFromCloud = async (): Promise<Member[] | null> => {
-  if (!supabase) return null;
-
-  try {
-    const { data, error } = await supabase
-      .from('members')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-
-    // DB컬럼 그대로 Member 타입에 맞춰 반환
-    return (data ?? []) as Member[];
-  } catch (err) {
-    console.error('클라우드 회원 로드 실패:', err);
-    return null;
-  }
-};
-
-export const saveMemberToCloud = async (member: Member) => {
-  if (!supabase) return;
-
-  // ✅ members 테이블(현재 스키마: id/email/name/created_at)에 맞춰 최소 컬럼만 저장
-  const payload: any = {
-    id: (member as any).id,
-    email: (member as any).email,
-    name: (member as any).name ?? '',
-  };
-
-  const { error } = await supabase.from('members').upsert(payload);
-  if (error) console.error('❌ 클라우드 회원 저장 실패:', error);
-};
 
 
-export const deleteMemberFromCloud = async (id: string) => {
-  if (!supabase) return;
 
-  try {
-    const { error } = await supabase.from('members').delete().eq('id', id);
-    if (error) throw error;
-  } catch (err) {
-    console.error('클라우드 회원 삭제 실패:', err);
-  }
-};
 
 // --------------------------------------
 // 사이트 설정 동기화
