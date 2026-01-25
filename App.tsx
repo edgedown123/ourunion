@@ -19,16 +19,13 @@ const App: React.FC = () => {
   const [writingType, setWritingType] = useState<BoardType | null>(null);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
-  const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [showMemberLogin, setShowMemberLogin] = useState(false);
-  const [adminPassword, setAdminPassword] = useState('');
   const [loginId, setLoginId] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   
   const [userRole, setUserRole] = useState<UserRole>(() => (localStorage.getItem('union_role') as UserRole) || 'guest');
-  const [isAdminAuth, setIsAdminAuth] = useState<boolean>(() => localStorage.getItem('union_is_admin') === 'true');
   const [loggedInMember, setLoggedInMember] = useState<Member | null>(() => {
     const saved = localStorage.getItem('union_member');
     try { return saved ? JSON.parse(saved) : null; } catch { return null; }
@@ -56,8 +53,14 @@ useEffect(() => {
       };
 
       setLoggedInMember(member);
-      setUserRole('member');
-      localStorage.setItem('union_role', 'member');
+      {
+      const role = String((profile as any).role || '').toLowerCase();
+      const isAdmin = (profile as any).is_admin === true;
+      const nextRole: UserRole = (role === 'admin' || isAdmin) ? 'admin' : 'member';
+      setUserRole(nextRole);
+      localStorage.setItem('union_role', nextRole);
+    }
+      
       localStorage.setItem('union_member', JSON.stringify(member));
     } catch (e) {
       // ignore
@@ -81,13 +84,18 @@ const syncData = useCallback(async (showLoading = true) => {
     if (cloud.isSupabaseEnabled()) {
       const results = await Promise.allSettled([
         cloud.fetchPostsFromCloud(),
-        cloud.fetchMembersFromCloud(),
+        (userRole === 'admin' ? cloud.fetchMembersFromCloud() : Promise.resolve(null)),
         cloud.fetchSettingsFromCloud(),
       ]);
 
       const postsResult = results[0];
       const membersResult = results[1];
       const settingsResult = results[2];
+
+      // ✅ RLS로 인해 비회원은 posts 조회가 막힐 수 있음(이 경우 빈 목록으로 처리)
+      if (userRole === 'guest' && (postsResult.status !== 'fulfilled' || !postsResult.value)) {
+        setPosts([]);
+      }
 
       if (postsResult.status === 'fulfilled' && postsResult.value) setPosts(postsResult.value);
       if (membersResult.status === 'fulfilled' && membersResult.value) setMembers(membersResult.value);
@@ -114,7 +122,7 @@ const syncData = useCallback(async (showLoading = true) => {
     setIsLoading(false);
     setIsRefreshing(false);
   }
-}, []);
+}, [userRole]);
 
 
   useEffect(() => {
@@ -126,6 +134,13 @@ const syncData = useCallback(async (showLoading = true) => {
   };
 
   const handleTabChange = (tab: string) => {
+    // 관리자 화면은 관리자만
+    if (tab === 'admin' && userRole !== 'admin') {
+      alert('관리자만 접근할 수 있습니다.');
+      if (userRole === 'guest') setShowMemberLogin(true);
+      return;
+    }
+
     const restrictedTabs = ['notice', 'notice_all', 'family_events', 'free', 'resources'];
     if (userRole === 'guest' && restrictedTabs.includes(tab)) {
       alert('조합원 전용 메뉴입니다. 로그인이 필요합니다.');
@@ -240,18 +255,6 @@ const syncData = useCallback(async (showLoading = true) => {
     await cloud.saveSettingsToCloud(newSettings);
   };
 
-  const handleAdminLogin = () => {
-    if (adminPassword === '1229') {
-      setIsAdminAuth(true);
-      setUserRole('admin');
-      localStorage.setItem('union_role', 'admin');
-      localStorage.setItem('union_is_admin', 'true');
-      setShowAdminLogin(false);
-      setAdminPassword('');
-      alert('관리자 인증 성공');
-    } else alert('비밀번호 오류');
-  };
-
 const handleMemberLogin = async () => {
   try {
     const profile = await cloud.signInMember(loginId, loginPassword);
@@ -268,11 +271,17 @@ const handleMemberLogin = async () => {
     };
 
     setLoggedInMember(member);
-    setUserRole('member');
+    {
+      const role = String((profile as any).role || '').toLowerCase();
+      const isAdmin = (profile as any).is_admin === true;
+      const nextRole: UserRole = (role === 'admin' || isAdmin) ? 'admin' : 'member';
+      setUserRole(nextRole);
+      localStorage.setItem('union_role', nextRole);
+    }
     setShowMemberLogin(false);
     setLoginPassword('');
 
-    localStorage.setItem('union_role', 'member');
+    
     localStorage.setItem('union_member', JSON.stringify(member));
   } catch (err: any) {
     console.error('❌ 회원 로그인 실패:', err);
@@ -281,13 +290,11 @@ const handleMemberLogin = async () => {
 };
 
   const handleLogout = async () => {
-    await cloud.signOutMember();
     if (!window.confirm('로그아웃 하시겠습니까?')) return;
+    await cloud.signOutMember();
     setUserRole('guest');
     setLoggedInMember(null);
-    setIsAdminAuth(false);
     localStorage.removeItem('union_role');
-    localStorage.removeItem('union_is_admin');
     localStorage.removeItem('union_member');
     handleTabChange('home');
   };
@@ -296,7 +303,8 @@ const handleMemberLogin = async () => {
     const targetType = specificType || activeTab;
     if (['notice', 'notice_all', 'family_events', 'resources'].includes(targetType as string) && userRole !== 'admin') {
       setWritingType(targetType as BoardType);
-      setShowAdminLogin(true);
+      alert('관리자만 작성할 수 있습니다.');
+      if (userRole === 'guest') setShowMemberLogin(true);
       return;
     }
     if (userRole === 'guest') { alert('회원 전용 기능입니다.'); handleTabChange('signup'); return; }
@@ -358,10 +366,10 @@ const handleMemberLogin = async () => {
         {isWriting ? (
           <PostEditor type={writingType || (activeTab as BoardType)} initialPost={editingPost} onSave={handleSavePost} onCancel={() => { setIsWriting(false); setEditingPost(null); }} />
         ) : activeTab === 'admin' ? (
-          isAdminAuth ? (
+          userRole === 'admin' ? (
             <AdminPanel settings={safeSettings} setSettings={handleUpdateSettings} members={members} posts={posts} deletedPosts={deletedPosts} onRestorePost={() => {}} onPermanentDelete={() => {}} onEditPost={handleEditClick} onViewPost={handleViewPostFromAdmin} onClose={() => handleTabChange('home')} onRemoveMember={handleRemoveMemberByAdmin} />
           ) : (
-            <div className="flex flex-col items-center justify-center py-20"><button onClick={() => setShowAdminLogin(true)} className="px-8 py-3 bg-sky-primary text-white rounded-xl font-bold">관리자 인증</button></div>
+            <div className="flex flex-col items-center justify-center py-20 text-gray-600 font-bold">관리자만 접근 가능합니다.</div>
           )
         ) : activeTab === 'home' ? (
           <Hero title={safeSettings.heroTitle} subtitle={safeSettings.heroSubtitle} imageUrl={safeSettings.heroImageUrl} onJoinClick={() => handleTabChange('signup')} />
@@ -394,20 +402,6 @@ const handleMemberLogin = async () => {
           </div>
         )}
       </main>
-      
-      {showAdminLogin && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-3xl p-10 max-w-[320px] w-full shadow-2xl relative">
-            <button onClick={() => setShowAdminLogin(false)} className="absolute top-5 right-5 text-gray-400 hover:text-gray-600"><i className="fas fa-times text-lg"></i></button>
-            <h3 className="text-xl font-black mb-6 text-center uppercase tracking-widest text-gray-900">Admin Login</h3>
-            <div className="space-y-4">
-              <input type="password" name="admin_pass" className="w-full border-2 border-gray-100 rounded-2xl p-3 text-center text-xl tracking-[0.4em] focus:border-sky-primary outline-none transition-all" autoFocus value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAdminLogin()} />
-              <button onClick={handleAdminLogin} className="w-full py-3 bg-gray-900 text-white rounded-2xl font-bold text-base hover:bg-black transition-all">인증하기</button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {showMemberLogin && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fadeIn">
           <div className="bg-white rounded-[2rem] p-8 max-w-[320px] w-[90%] shadow-2xl relative">

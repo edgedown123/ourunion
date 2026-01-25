@@ -115,6 +115,9 @@ export type ProfileRow = {
   phone: string | null;
   email: string | null;
   garage: string | null;
+  role?: string | null; // 'admin' | 'member' (권장)
+  is_admin?: boolean | null; // legacy/옵션
+
   created_at: string | null;
 };
 
@@ -241,6 +244,19 @@ export const fetchMembersFromCloud = async (): Promise<Member[] | null> => {
     password: '', // 절대 저장/로드하지 않음
   }));
 };
+
+// 현재 로그인 사용자의 역할(프로필 기반)
+export const getMyRole = async (): Promise<'guest' | 'member' | 'admin'> => {
+  if (!supabase) return 'guest';
+  const profile = await fetchMyProfile();
+  if (!profile) return 'guest';
+  const role = (profile as any).role;
+  const isAdmin = (profile as any).is_admin;
+  if (String(role).toLowerCase() === 'admin' || isAdmin === true) return 'admin';
+  return 'member';
+};
+
+
 
 // 프로필 수정(본인/관리자)
 export const saveMemberToCloud = async (member: Member) => {
