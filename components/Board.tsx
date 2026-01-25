@@ -28,6 +28,7 @@ const Board: React.FC<BoardProps> = ({
   
   const selectedPost = selectedPostId ? posts.find(p => p.id === selectedPostId) : null;
   
+  // 현재 보드 정보 찾기
   let boardInfo = NAV_ITEMS.find(item => item.id === type);
   if (!boardInfo) {
     for (const item of NAV_ITEMS) {
@@ -38,6 +39,21 @@ const Board: React.FC<BoardProps> = ({
       }
     }
   }
+
+  // 필터링 로직: 'notice'일 경우 하위 두 카테고리를 합침
+  const filteredPosts = posts.filter(p => {
+    if (type === 'notice') {
+      return p.type === 'notice_all' || p.type === 'family_events' || p.type === 'notice';
+    }
+    return p.type === type;
+  }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  // 배지 라벨 및 스타일 반환
+  const getBadgeInfo = (postType: string) => {
+    if (postType === 'notice_all') return { label: '공고', class: 'bg-sky-50 text-sky-600 border-sky-100' };
+    if (postType === 'family_events') return { label: '경조사', class: 'bg-orange-50 text-orange-600 border-orange-100' };
+    return null;
+  };
 
   const handleEditAttempt = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -90,6 +106,7 @@ const Board: React.FC<BoardProps> = ({
   if (selectedPost) {
     const imageAttachments = selectedPost.attachments?.filter(a => a.type.startsWith('image/')) || [];
     const hasPassword = !!selectedPost.password;
+    const badge = getBadgeInfo(selectedPost.type);
 
     return (
       <div className="max-w-4xl mx-auto py-8 px-5 animate-fadeIn">
@@ -99,7 +116,7 @@ const Board: React.FC<BoardProps> = ({
           </button>
           
           <div className="flex space-x-2">
-            {hasPassword && !isDeleteMode && !isEditVerifyMode && (
+            {(userRole === 'admin' || (hasPassword && !isDeleteMode && !isEditVerifyMode)) && (
               <>
                 <button 
                   onClick={handleEditAttempt} 
@@ -119,7 +136,7 @@ const Board: React.FC<BoardProps> = ({
         </div>
 
         <article className="bg-white rounded-[2.5rem] border p-10 md:p-14 shadow-sm relative overflow-hidden mb-10">
-          {(isDeleteMode || isEditVerifyMode) && (
+          {(isDeleteMode || isEditVerifyMode) && userRole !== 'admin' && (
             <div className="absolute inset-0 z-10 bg-white/95 backdrop-blur-md flex items-center justify-center p-8">
               <div className="max-w-xs w-full text-center">
                 <i className={`fas ${isEditVerifyMode ? 'fa-key' : 'fa-lock'} text-5xl ${isEditVerifyMode ? 'text-sky-500' : 'text-red-500'} mb-5`}></i>
@@ -142,10 +159,15 @@ const Board: React.FC<BoardProps> = ({
           )}
 
           <header className="mb-12">
+            {badge && (
+              <span className={`inline-block px-3 py-1 rounded-lg text-[10px] font-black border mb-4 ${badge.class}`}>
+                {badge.label}
+              </span>
+            )}
             <h1 className="text-3xl md:text-4xl font-black mb-8 text-gray-900 leading-tight">{selectedPost.title}</h1>
             <div className="flex flex-wrap items-center text-xs md:text-sm font-bold text-gray-400 border-b border-gray-50 pb-8">
               <span className="flex items-center mr-8"><i className="fas fa-user-circle mr-2.5 text-sky-primary/50"></i>{selectedPost.author}</span>
-              <span className="flex items-center mr-8"><i className="fas fa-calendar-alt mr-2.5"></i>{selectedPost.createdAt}</span>
+              <span className="flex items-center mr-8"><i className="fas fa-calendar-alt mr-2.5"></i>{selectedPost.createdAt?.split('T')[0]}</span>
               <span className="flex items-center mr-8"><i className="fas fa-eye mr-2.5"></i>조회 {selectedPost.views}</span>
             </div>
           </header>
@@ -203,7 +225,7 @@ const Board: React.FC<BoardProps> = ({
                     </div>
                     {comment.author}
                   </span>
-                  <span className="text-[11px] font-bold text-gray-300 uppercase">{comment.createdAt}</span>
+                  <span className="text-[11px] font-bold text-gray-300 uppercase">{comment.createdAt?.split('T')[0]}</span>
                 </div>
                 <p className="text-base text-gray-600 leading-relaxed pl-11 mb-3">{comment.content}</p>
                 
@@ -222,7 +244,7 @@ const Board: React.FC<BoardProps> = ({
                 </div>
 
                 {replyingToId === comment.id && (
-                  <form onSubmit={(e) => handleReplySubmit(e, comment.id)} className="mt-6 ml-11 animate-fadeInShort">
+                  <form onSubmit={(e) => handleReplySubmit(e, comment.id)} className="mt-6 ml-11 animate-fadeIn">
                     <div className="relative">
                       <textarea 
                         value={replyContent}
@@ -251,7 +273,7 @@ const Board: React.FC<BoardProps> = ({
                             <i className="fas fa-reply fa-rotate-180 mr-3 text-gray-300 text-xs"></i>
                             {reply.author}
                           </span>
-                          <span className="text-[10px] font-bold text-gray-300 uppercase">{reply.createdAt}</span>
+                          <span className="text-[10px] font-bold text-gray-300 uppercase">{reply.createdAt?.split('T')[0]}</span>
                         </div>
                         <p className="text-sm text-gray-500 leading-relaxed pl-7">{reply.content}</p>
                       </div>
@@ -284,21 +306,6 @@ const Board: React.FC<BoardProps> = ({
     );
   }
 
-  // 필터링 로직 수정: 'notice' 타입일 경우 하위 타입들(notice_all, family_events)을 모두 포함
-  const filteredPosts = posts.filter(p => {
-    if (type === 'notice') {
-      return p.type === 'notice_all' || p.type === 'family_events' || p.type === 'notice';
-    }
-    return p.type === type;
-  });
-
-  // 게시글 타입에 따른 한글 라벨 반환 (배지용)
-  const getTypeLabel = (postType: string) => {
-    if (postType === 'notice_all') return '공고';
-    if (postType === 'family_events') return '경조사';
-    return '';
-  };
-
   return (
     <div className="max-w-7xl mx-auto py-10 px-5 animate-fadeIn">
       <div className="flex justify-between items-center mb-12">
@@ -318,39 +325,43 @@ const Board: React.FC<BoardProps> = ({
           </button>
         )}
       </div>
+      
       <div className="bg-white shadow-xl rounded-[3rem] border border-gray-50 overflow-hidden">
         <ul className="divide-y divide-gray-100">
           {filteredPosts.length === 0 ? (
             <li className="px-6 py-40 text-center text-gray-300 font-bold italic text-lg">작성된 게시글이 없습니다.</li>
           ) : (
-            filteredPosts.map((post) => (
-              <li key={post.id}>
-                <button onClick={() => onSelectPost(post.id)} className="block w-full text-left p-8 md:p-10 hover:bg-gray-50/40 transition-all group">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1 pr-4">
-                      <div className="flex items-center space-x-2 mb-2">
-                        {type === 'notice' && getTypeLabel(post.type) && (
-                          <span className={`text-[10px] font-black px-2 py-0.5 rounded-md ${
-                            post.type === 'notice_all' ? 'bg-sky-50 text-sky-600' : 'bg-orange-50 text-orange-600'
-                          }`}>
-                            {getTypeLabel(post.type)}
-                          </span>
-                        )}
+            filteredPosts.map((post) => {
+              const badge = getBadgeInfo(post.type);
+              return (
+                <li key={post.id}>
+                  <button onClick={() => onSelectPost(post.id)} className="block w-full text-left p-8 md:p-10 hover:bg-gray-50/40 transition-all group">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex-1 pr-4">
+                        <div className="flex items-center space-x-2 mb-2">
+                          {type === 'notice' && badge && (
+                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${badge.class}`}>
+                              {badge.label}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-lg md:text-xl font-black text-gray-800 truncate group-hover:text-sky-primary transition-colors">{post.title}</p>
+                        <div className="mt-3 flex items-center space-x-4 text-xs md:text-sm text-gray-400 font-bold uppercase tracking-wider">
+                          <span className="flex items-center"><i className="fas fa-user-circle mr-2 text-sky-primary/30"></i>{post.author}</span>
+                          <span className="flex items-center"><i className="fas fa-eye mr-2"></i>조회 {post.views}</span>
+                          {(post.comments?.length || 0) > 0 && (
+                            <span className="flex items-center text-sky-500 font-black"><i className="fas fa-comment-dots mr-2"></i>{post.comments?.length}</span>
+                          )}
+                        </div>
                       </div>
-                      <p className="text-lg md:text-xl font-black text-gray-800 truncate group-hover:text-sky-primary transition-colors">{post.title}</p>
-                      <div className="mt-3 flex items-center space-x-4 text-xs md:text-sm text-gray-400 font-bold uppercase tracking-wider">
-                        <span className="flex items-center"><i className="fas fa-user-circle mr-2 text-sky-primary/30"></i>{post.author}</span>
-                        <span className="flex items-center"><i className="fas fa-eye mr-2"></i>조회 {post.views}</span>
-                        {(post.comments?.length || 0) > 0 && (
-                          <span className="flex items-center text-sky-500 font-black"><i className="fas fa-comment-dots mr-2"></i>{post.comments?.length}</span>
-                        )}
-                      </div>
+                      <span className="text-xs md:text-sm text-gray-300 font-black whitespace-nowrap pt-1">
+                        {post.createdAt?.split('T')[0]}
+                      </span>
                     </div>
-                    <span className="text-xs md:text-sm text-gray-300 font-black whitespace-nowrap pt-1">{post.createdAt?.split('T')[0]}</span>
-                  </div>
-                </button>
-              </li>
-            ))
+                  </button>
+                </li>
+              );
+            })
           )}
         </ul>
       </div>
