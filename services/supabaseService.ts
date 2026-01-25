@@ -126,7 +126,7 @@ export const fetchSettingsFromCloud = async (): Promise<SiteSettings | null> => 
 
   try {
     const { data, error } = await supabase
-      .from('settings')
+      .from('site_settings')
       .select('data')
       .eq('id', 'main')
       .single();
@@ -144,7 +144,7 @@ export const saveSettingsToCloud = async (settings: SiteSettings) => {
 
   try {
     const { error } = await supabase
-      .from('settings')
+      .from('site_settings')
       .upsert({ id: 'main', data: settings });
 
     if (error) throw error;
