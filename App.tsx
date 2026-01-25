@@ -57,7 +57,10 @@ const App: React.FC = () => {
         ]);
 
         if (pData) setPosts(pData);
-        if (mData) setMembers(mData);
+        if (mData) {
+          setMembers(mData);
+          localStorage.setItem('union_members', JSON.stringify(mData));
+        }
         if (sData) setSettings(sData);
       } else {
         const sPosts = localStorage.getItem('union_posts');
@@ -189,10 +192,20 @@ const App: React.FC = () => {
       id: Date.now().toString(), 
       signupDate: new Date().toISOString() 
     };
-    const updatedMembers = [newMember, ...members];
-    setMembers(updatedMembers);
-    saveToLocal('members', updatedMembers);
-    await cloud.saveMemberToCloud(newMember);
+    
+    try {
+      // 1. 상태 업데이트 및 로컬 저장
+      const updatedMembers = [newMember, ...members];
+      setMembers(updatedMembers);
+      saveToLocal('members', updatedMembers);
+      
+      // 2. 클라우드 저장 (Supabase)
+      await cloud.saveMemberToCloud(newMember);
+      console.log("신규 회원 가입 및 동기화 완료");
+    } catch (error) {
+      console.error("회원 가입 처리 중 오류:", error);
+      alert("서버 통신 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+    }
   };
 
   const handleRemoveMemberByAdmin = async (memberId: string) => {
@@ -231,10 +244,14 @@ const App: React.FC = () => {
   const handleMemberLogin = () => {
     if (!loginId || !loginPassword) return alert('아이디와 비밀번호를 입력해주세요.');
     
-    const found = members.find(m => m.loginId === loginId && m.password === loginPassword);
+    // 현재 메모리에 있는 members 리스트와 로컬 스토리지에 있는 리스트를 모두 확인
+    const localSavedMembersStr = localStorage.getItem('union_members');
+    const allMembers = localSavedMembersStr ? JSON.parse(localSavedMembersStr) : members;
+    
+    const found = allMembers.find((m: Member) => m.loginId === loginId && m.password === loginPassword);
+    
     if (found) {
       setUserRole('member');
-      // 보안상 비밀번호는 제외하고 세션 저장
       const { password, ...sessionData } = found;
       setLoggedInMember(found);
       localStorage.setItem('union_role', 'member');
@@ -244,7 +261,7 @@ const App: React.FC = () => {
       setLoginPassword('');
       alert(`${found.name}님, 환영합니다!`);
     } else {
-      alert('회원 정보를 찾을 수 없습니다. 아이디나 비밀번호를 확인해주세요.');
+      alert('회원 정보를 찾을 수 없습니다. 아이디나 비밀번호를 확인해주세요.\n(방금 가입하셨다면 잠시 후 다시 시도해주세요)');
     }
   };
 
@@ -261,7 +278,6 @@ const App: React.FC = () => {
 
   const handleWriteClick = (specificType?: BoardType) => {
     const targetType = specificType || activeTab;
-    // 관리자 전용 게시판 체크
     if (['notice', 'notice_all', 'family_events', 'resources'].includes(targetType as string) && userRole !== 'admin') {
       setShowAdminLogin(true);
       return;

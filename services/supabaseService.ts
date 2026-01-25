@@ -88,11 +88,14 @@ export const fetchMembersFromCloud = async (): Promise<Member[] | null> => {
 
     if (error) throw error;
 
-    // created_at 컬럼을 signupDate로 매핑하여 일관성 유지
-    return (data ?? []).map((m: any) => ({
-      ...m,
-      signupDate: m.created_at || m.signupDate
-    })) as Member[];
+    // DB의 created_at 컬럼을 앱 내부에서 사용하는 signupDate로 변환하여 리턴
+    return (data ?? []).map((m: any) => {
+      const { created_at, ...rest } = m;
+      return {
+        ...rest,
+        signupDate: created_at || m.signupDate
+      };
+    }) as Member[];
   } catch (err) {
     console.error('클라우드 회원 로드 실패:', err);
     return null;
@@ -103,15 +106,20 @@ export const saveMemberToCloud = async (member: Member) => {
   if (!supabase) return;
 
   try {
-    // DB의 created_at과 타입을 맞추기 위해 객체 정리
-    const { ...memberToSave } = member;
+    // 1. signupDate를 제외한 나머지 데이터 추출
+    // 2. DB 스키마(created_at)에 맞춰 데이터 구성하여 upsert
+    const { signupDate, ...dbMember } = member;
+    
     const { error } = await supabase.from('members').upsert({
-      ...memberToSave,
-      created_at: member.signupDate // signupDate를 created_at으로 저장
+      ...dbMember,
+      created_at: member.signupDate // signupDate를 created_at 컬럼에 저장
     });
+    
     if (error) throw error;
+    console.log(`회원 정보 클라우드 저장 완료: ${member.name}`);
   } catch (err) {
     console.error('클라우드 회원 저장 실패:', err);
+    throw err; // 상위에서 에러를 인지할 수 있게 던짐
   }
 };
 
