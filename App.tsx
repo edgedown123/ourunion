@@ -226,12 +226,6 @@ const syncData = useCallback(async (showLoading = true) => {
     throw err; // SignupForm의 submitted 처리 막기 위해 throw
   }
 };
-    const updatedMembers = [newMember, ...members];
-    setMembers(updatedMembers);
-    saveToLocal('members', updatedMembers);
-    await cloud.saveMemberToCloud(newMember);
-  };
-
   // 관리자용 회원 삭제 핸들러
   const handleRemoveMemberByAdmin = async (memberId: string) => {
     const updatedMembers = members.filter(m => m.id !== memberId);
