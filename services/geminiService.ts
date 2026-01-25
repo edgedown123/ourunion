@@ -1,18 +1,14 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 
 /**
- * Helper function to safely get the AI instance
+ * Helper function to safely get the AI instance.
+ * Always use new GoogleGenAI({apiKey: process.env.API_KEY}); as per guidelines.
  */
 const getAiInstance = () => {
-  const apiKey = typeof process !== 'undefined' ? process.env.API_KEY : '';
-  
-  if (!apiKey || apiKey === "undefined" || apiKey.length < 10) {
-    console.warn("Gemini API_KEY가 설정되지 않았거나 올바르지 않습니다. AI 기능이 제한됩니다.");
-    return null;
-  }
+  // Use process.env.API_KEY directly as required by guidelines.
+  // Assume the key is pre-configured and accessible.
   try {
-    return new GoogleGenAI({ apiKey });
+    return new GoogleGenAI({ apiKey: process.env.API_KEY });
   } catch (e) {
     console.error("GoogleGenAI 초기화 실패:", e);
     return null;
@@ -44,6 +40,7 @@ export const generatePostContent = async (topic: string, type: string) => {
       }
     });
     
+    // Use .text property directly (not a method call) as per guidelines.
     if (response.text) {
       return JSON.parse(response.text.trim());
     }
@@ -74,6 +71,7 @@ export const suggestSEOKeywords = async (content: string): Promise<string[]> => 
       }
     });
     
+    // Use .text property directly as per guidelines.
     if (response.text) {
       return JSON.parse(response.text.trim());
     }
@@ -96,6 +94,7 @@ export const generateMemberSummaryEmail = async (membersJson: string) => {
       model: 'gemini-3-pro-preview',
       contents: `다음은 노동조합 가입 신청자 명단(JSON)이야: ${membersJson}. 이 명단을 바탕으로 관리자에게 보낼 전문적이고 격식 있는 가입 현황 보고 메일 본문을 작성해줘. 메일 수신자는 edgedown@naver.com 이야.`,
     });
+    // Use .text property directly as per guidelines.
     return response.text;
   } catch (error) {
     console.error("Gemini API Error (generateMemberSummaryEmail):", error);
