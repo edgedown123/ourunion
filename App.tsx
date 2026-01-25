@@ -35,6 +35,9 @@ const App: React.FC = () => {
   });
   
   const [settings, setSettings] = useState<SiteSettings>(INITIAL_SETTINGS);
+
+  // ✅ 안전장치: Supabase에 site_safeSettings.data가 비어있거나 일부 키가 빠져도 화면이 죽지 않도록 초기값과 병합
+  const safeSettings: SiteSettings = { ...INITIAL_SETTINGS, ...(settings || ({} as SiteSettings)) };
   const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
   const [deletedPosts, setDeletedPosts] = useState<Post[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
@@ -59,7 +62,7 @@ const syncData = useCallback(async (showLoading = true) => {
 
       if (postsResult.status === 'fulfilled' && postsResult.value) setPosts(postsResult.value);
       if (membersResult.status === 'fulfilled' && membersResult.value) setMembers(membersResult.value);
-      if (settingsResult.status === 'fulfilled' && settingsResult.value) setSettings(settingsResult.value);
+      if (settingsResult.status === 'fulfilled' && settingsResult.value) setSettings({ ...INITIAL_SETTINGS, ...settingsResult.value });
 
       // 실패한 게 있으면 콘솔에 찍어두기(진단용)
       results.forEach((r, i) => {
@@ -73,7 +76,7 @@ const syncData = useCallback(async (showLoading = true) => {
       const sSettings = localStorage.getItem('union_settings');
       if (sPosts) setPosts(JSON.parse(sPosts));
       if (sMembers) setMembers(JSON.parse(sMembers));
-      if (sSettings) setSettings(JSON.parse(sSettings));
+      if (sSettings) setSettings({ ...INITIAL_SETTINGS, ...JSON.parse(sSettings) });
     }
   } catch (e) {
     console.error('syncData error:', e);
@@ -282,7 +285,7 @@ const handleMemberLogin = () => {
   return (
     <Layout settings={settings}>
       <Navbar 
-        siteName={settings.siteName} 
+        siteName={safeSettings.siteName} 
         activeTab={activeTab} 
         onTabChange={handleTabChange} 
         userRole={userRole} 
@@ -295,12 +298,12 @@ const handleMemberLogin = () => {
           <PostEditor type={writingType || (activeTab as BoardType)} initialPost={editingPost} onSave={handleSavePost} onCancel={() => { setIsWriting(false); setEditingPost(null); }} />
         ) : activeTab === 'admin' ? (
           isAdminAuth ? (
-            <AdminPanel settings={settings} setSettings={handleUpdateSettings} members={members} posts={posts} deletedPosts={deletedPosts} onRestorePost={() => {}} onPermanentDelete={() => {}} onEditPost={handleEditClick} onViewPost={handleViewPostFromAdmin} onClose={() => handleTabChange('home')} onRemoveMember={handleRemoveMemberByAdmin} />
+            <AdminPanel settings={safeSettings} setSettings={handleUpdateSettings} members={members} posts={posts} deletedPosts={deletedPosts} onRestorePost={() => {}} onPermanentDelete={() => {}} onEditPost={handleEditClick} onViewPost={handleViewPostFromAdmin} onClose={() => handleTabChange('home')} onRemoveMember={handleRemoveMemberByAdmin} />
           ) : (
             <div className="flex flex-col items-center justify-center py-20"><button onClick={() => setShowAdminLogin(true)} className="px-8 py-3 bg-sky-primary text-white rounded-xl font-bold">관리자 인증</button></div>
           )
         ) : activeTab === 'home' ? (
-          <Hero title={settings.heroTitle} subtitle={settings.heroSubtitle} imageUrl={settings.heroImageUrl} onJoinClick={() => handleTabChange('signup')} />
+          <Hero title={safeSettings.heroTitle} subtitle={safeSettings.heroSubtitle} imageUrl={safeSettings.heroImageUrl} onJoinClick={() => handleTabChange('signup')} />
         ) : ['intro', 'greeting', 'history', 'map'].includes(activeTab) ? (
           <Introduction settings={settings} activeTab={activeTab} />
         ) : activeTab === 'signup' ? (
@@ -362,7 +365,7 @@ const handleMemberLogin = () => {
         </div>
       )}
 
-      <Footer siteName={settings.siteName} onTabChange={handleTabChange} />
+      <Footer siteName={safeSettings.siteName} onTabChange={handleTabChange} />
     </Layout>
   );
 };
