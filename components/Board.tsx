@@ -40,21 +40,6 @@ const Board: React.FC<BoardProps> = ({
     }
   }
 
-  // 필터링 로직: 'notice'일 경우 하위 두 카테고리를 합침
-  const filteredPosts = posts.filter(p => {
-    if (type === 'notice') {
-      return p.type === 'notice_all' || p.type === 'family_events' || p.type === 'notice';
-    }
-    return p.type === type;
-  }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-  // 배지 라벨 및 스타일 반환
-  const getBadgeInfo = (postType: string) => {
-    if (postType === 'notice_all') return { label: '공고', class: 'bg-sky-50 text-sky-600 border-sky-100' };
-    if (postType === 'family_events') return { label: '경조사', class: 'bg-orange-50 text-orange-600 border-orange-100' };
-    return null;
-  };
-
   const handleEditAttempt = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!selectedPost) return;
@@ -103,10 +88,11 @@ const Board: React.FC<BoardProps> = ({
     setReplyingToId(null);
   };
 
+  // 상세 보기 모드
   if (selectedPost) {
     const imageAttachments = selectedPost.attachments?.filter(a => a.type.startsWith('image/')) || [];
     const hasPassword = !!selectedPost.password;
-    const badge = getBadgeInfo(selectedPost.type);
+    const isNoticeCategory = selectedPost.type === 'notice_all' || selectedPost.type === 'family_events';
 
     return (
       <div className="max-w-4xl mx-auto py-8 px-5 animate-fadeIn">
@@ -159,9 +145,9 @@ const Board: React.FC<BoardProps> = ({
           )}
 
           <header className="mb-12">
-            {badge && (
-              <span className={`inline-block px-3 py-1 rounded-lg text-[10px] font-black border mb-4 ${badge.class}`}>
-                {badge.label}
+            {isNoticeCategory && (
+              <span className={`inline-block px-3 py-1 rounded-lg text-[10px] font-black border mb-4 ${selectedPost.type === 'notice_all' ? 'bg-sky-50 text-sky-600 border-sky-100' : 'bg-orange-50 text-orange-600 border-orange-100'}`}>
+                {selectedPost.type === 'notice_all' ? '공고/공지' : '경조사'}
               </span>
             )}
             <h1 className="text-3xl md:text-4xl font-black mb-8 text-gray-900 leading-tight">{selectedPost.title}</h1>
@@ -306,17 +292,65 @@ const Board: React.FC<BoardProps> = ({
     );
   }
 
+  // 듀얼 보드 렌더링 함수 (메인 공지사항 탭용)
+  const renderDualBoard = () => {
+    const noticeAllPosts = posts.filter(p => p.type === 'notice_all').sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
+    const familyEventPosts = posts.filter(p => p.type === 'family_events').sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
+
+    const PostList = ({ title, icon, colorClass, data, typeKey }: { title: string, icon: string, colorClass: string, data: Post[], typeKey: BoardType }) => (
+      <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden flex flex-col h-full">
+        <div className={`p-8 border-b border-gray-50 flex justify-between items-center ${colorClass}`}>
+          <h3 className="text-xl font-black flex items-center">
+            <i className={`fas ${icon} mr-3`}></i>
+            {title}
+          </h3>
+          {/* 글쓰기 버튼 삭제 */}
+        </div>
+        <div className="flex-grow">
+          {data.length === 0 ? (
+            <div className="py-20 text-center text-gray-300 font-bold italic">최근 게시글이 없습니다.</div>
+          ) : (
+            <ul className="divide-y divide-gray-50">
+              {data.map(post => (
+                <li key={post.id}>
+                  <button onClick={() => onSelectPost(post.id)} className="w-full text-left p-6 hover:bg-gray-50 transition-colors group">
+                    <div className="flex justify-between items-center">
+                      <p className="font-bold text-gray-700 truncate group-hover:text-sky-primary transition-colors flex-1 mr-4">{post.title}</p>
+                      <span className="text-[11px] text-gray-300 font-black whitespace-nowrap">{post.createdAt?.split('T')[0]}</span>
+                    </div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+    );
+
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fadeIn">
+        <PostList title="공고/공지" icon="fa-bullhorn" colorClass="bg-sky-primary text-white" data={noticeAllPosts} typeKey="notice_all" />
+        {/* 색상: sky-primary로 변경, 아이콘: fa-bullhorn으로 변경 */}
+        <PostList title="경조사" icon="fa-bullhorn" colorClass="bg-sky-primary text-white" data={familyEventPosts} typeKey="family_events" />
+      </div>
+    );
+  };
+
+  // 일반 단일 보드 렌더링
+  const filteredPosts = posts.filter(p => p.type === type).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
   return (
     <div className="max-w-7xl mx-auto py-10 px-5 animate-fadeIn">
       <div className="flex justify-between items-center mb-12">
         <div>
           <h2 className="text-3xl md:text-4xl font-black text-gray-900 flex items-center tracking-tight">
             <i className={`fas ${boardInfo?.icon || 'fa-list'} mr-5 text-sky-primary`}></i>
-            {boardInfo?.label || '게시판'}
+            {boardInfo?.label}
           </h2>
           <p className="text-gray-400 font-bold text-xs mt-2 ml-1">우리노동조합 소통 공간</p>
         </div>
-        {userRole !== 'guest' && (userRole === 'admin' || type === 'free') && (
+        {/* type이 notice가 아닐 때만 상단 글쓰기 버튼 노출 */}
+        {userRole !== 'guest' && (userRole === 'admin' || type === 'free') && type !== 'notice' && (
           <button 
             onClick={() => onWriteClick()} 
             className="bg-sky-primary text-white px-8 py-4 rounded-[1.5rem] font-black text-sm md:text-base shadow-xl shadow-sky-100 hover:opacity-90 active:scale-95 transition-all"
@@ -325,26 +359,21 @@ const Board: React.FC<BoardProps> = ({
           </button>
         )}
       </div>
-      
-      <div className="bg-white shadow-xl rounded-[3rem] border border-gray-50 overflow-hidden">
-        <ul className="divide-y divide-gray-100">
-          {filteredPosts.length === 0 ? (
-            <li className="px-6 py-40 text-center text-gray-300 font-bold italic text-lg">작성된 게시글이 없습니다.</li>
-          ) : (
-            filteredPosts.map((post) => {
-              const badge = getBadgeInfo(post.type);
-              return (
+
+      {/* 공지사항 메인 탭일 경우 듀얼 보드 출력, 아니면 일반 리스트 출력 */}
+      {type === 'notice' ? (
+        renderDualBoard()
+      ) : (
+        <div className="bg-white shadow-xl rounded-[3rem] border border-gray-50 overflow-hidden">
+          <ul className="divide-y divide-gray-100">
+            {filteredPosts.length === 0 ? (
+              <li className="px-6 py-40 text-center text-gray-300 font-bold italic text-lg">작성된 게시글이 없습니다.</li>
+            ) : (
+              filteredPosts.map((post) => (
                 <li key={post.id}>
                   <button onClick={() => onSelectPost(post.id)} className="block w-full text-left p-8 md:p-10 hover:bg-gray-50/40 transition-all group">
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex-1 pr-4">
-                        <div className="flex items-center space-x-2 mb-2">
-                          {type === 'notice' && badge && (
-                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${badge.class}`}>
-                              {badge.label}
-                            </span>
-                          )}
-                        </div>
                         <p className="text-lg md:text-xl font-black text-gray-800 truncate group-hover:text-sky-primary transition-colors">{post.title}</p>
                         <div className="mt-3 flex items-center space-x-4 text-xs md:text-sm text-gray-400 font-bold uppercase tracking-wider">
                           <span className="flex items-center"><i className="fas fa-user-circle mr-2 text-sky-primary/30"></i>{post.author}</span>
@@ -354,17 +383,15 @@ const Board: React.FC<BoardProps> = ({
                           )}
                         </div>
                       </div>
-                      <span className="text-xs md:text-sm text-gray-300 font-black whitespace-nowrap pt-1">
-                        {post.createdAt?.split('T')[0]}
-                      </span>
+                      <span className="text-xs md:text-sm text-gray-300 font-black whitespace-nowrap pt-1">{post.createdAt?.split('T')[0]}</span>
                     </div>
                   </button>
                 </li>
-              );
-            })
-          )}
-        </ul>
-      </div>
+              ))
+            )}
+          </ul>
+        </div>
+      )}
     </div>
   );
 };
