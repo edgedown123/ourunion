@@ -1,6 +1,5 @@
-
 import { useEffect, useState } from "react";
-import { supabase } from "./supabase";
+import { supabase } from "../lib/supabase";
 
 type BoardType = "ADMIN_WRITE" | "MEMBER_WRITE" | "READ_ONLY";
 
@@ -24,8 +23,9 @@ export default function BoardGuard({
   if (loading) return <div>로딩중...</div>;
   if (!session) return <div>로그인이 필요합니다</div>;
 
+  // 관리자 전용 작성 페이지는 AdminGate로 감싸서 사용하세요.
   if (type === "ADMIN_WRITE") {
-    return <div>관리자만 작성 가능 (AdminGate로 감싸세요)</div>;
+    return <div>관리자만 작성 가능</div>;
   }
 
   return <>{children}</>;
