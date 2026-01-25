@@ -57,16 +57,9 @@ const syncData = useCallback(async (showLoading = true) => {
       const membersResult = results[1];
       const settingsResult = results[2];
 
-      // ✅ 빈 배열([])도 '정상 데이터'이므로 Array.isArray로 체크해야 새로고침 시 초기값으로 돌아가지 않습니다.
-      if (postsResult.status === 'fulfilled' && Array.isArray(postsResult.value)) {
-        setPosts(postsResult.value);
-      }
-      if (membersResult.status === 'fulfilled' && Array.isArray(membersResult.value)) {
-        setMembers(membersResult.value);
-      }
-      if (settingsResult.status === 'fulfilled' && settingsResult.value) {
-        setSettings(settingsResult.value);
-      }
+      if (postsResult.status === 'fulfilled' && postsResult.value) setPosts(postsResult.value);
+      if (membersResult.status === 'fulfilled' && membersResult.value) setMembers(membersResult.value);
+      if (settingsResult.status === 'fulfilled' && settingsResult.value) setSettings(settingsResult.value);
 
       // 실패한 게 있으면 콘솔에 찍어두기(진단용)
       results.forEach((r, i) => {
