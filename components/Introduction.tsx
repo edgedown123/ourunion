@@ -62,7 +62,7 @@ const Introduction: React.FC<IntroductionProps> = ({ settings, activeTab }) => {
     <div className="max-w-4xl mx-auto py-12 px-4">
       <div className="text-center mb-16">
         <h2 className="text-3xl font-bold text-gray-900 mb-4">
-          {activeTab === 'greeting' ? '인사말' : activeTab === 'history' ? '연혁' : '조합 소개'}
+          {activeTab === 'history' ? '연혁' : '인사말'}
         </h2>
         <div className="h-1 w-20 bg-sky-primary mx-auto"></div>
         <p className="mt-6 text-lg text-gray-600">
