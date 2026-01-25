@@ -284,7 +284,21 @@ const Board: React.FC<BoardProps> = ({
     );
   }
 
-  const filteredPosts = posts.filter(p => p.type === type);
+  // 필터링 로직 수정: 'notice' 타입일 경우 하위 타입들(notice_all, family_events)을 모두 포함
+  const filteredPosts = posts.filter(p => {
+    if (type === 'notice') {
+      return p.type === 'notice_all' || p.type === 'family_events' || p.type === 'notice';
+    }
+    return p.type === type;
+  });
+
+  // 게시글 타입에 따른 한글 라벨 반환 (배지용)
+  const getTypeLabel = (postType: string) => {
+    if (postType === 'notice_all') return '공고';
+    if (postType === 'family_events') return '경조사';
+    return '';
+  };
+
   return (
     <div className="max-w-7xl mx-auto py-10 px-5 animate-fadeIn">
       <div className="flex justify-between items-center mb-12">
@@ -314,6 +328,15 @@ const Board: React.FC<BoardProps> = ({
                 <button onClick={() => onSelectPost(post.id)} className="block w-full text-left p-8 md:p-10 hover:bg-gray-50/40 transition-all group">
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex-1 pr-4">
+                      <div className="flex items-center space-x-2 mb-2">
+                        {type === 'notice' && getTypeLabel(post.type) && (
+                          <span className={`text-[10px] font-black px-2 py-0.5 rounded-md ${
+                            post.type === 'notice_all' ? 'bg-sky-50 text-sky-600' : 'bg-orange-50 text-orange-600'
+                          }`}>
+                            {getTypeLabel(post.type)}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-lg md:text-xl font-black text-gray-800 truncate group-hover:text-sky-primary transition-colors">{post.title}</p>
                       <div className="mt-3 flex items-center space-x-4 text-xs md:text-sm text-gray-400 font-bold uppercase tracking-wider">
                         <span className="flex items-center"><i className="fas fa-user-circle mr-2 text-sky-primary/30"></i>{post.author}</span>
@@ -323,7 +346,7 @@ const Board: React.FC<BoardProps> = ({
                         )}
                       </div>
                     </div>
-                    <span className="text-xs md:text-sm text-gray-300 font-black whitespace-nowrap pt-1">{post.createdAt}</span>
+                    <span className="text-xs md:text-sm text-gray-300 font-black whitespace-nowrap pt-1">{post.createdAt?.split('T')[0]}</span>
                   </div>
                 </button>
               </li>
