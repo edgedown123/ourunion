@@ -62,13 +62,17 @@ const SignupForm: React.FC<SignupFormProps> = ({ onGoHome, onAddMember, onRemove
     else { setIdError(''); setIsIdChecked(true); alert('사용 가능한 아이디입니다.'); }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isIdChecked) return alert('아이디 중복 확인을 해주세요.');
     if (formData.password !== formData.passwordConfirm) return alert('비밀번호가 일치하지 않습니다.');
     const { passwordConfirm, ...submitData } = formData;
-    onAddMember(submitData);
-    setSubmitted(true);
+    try {
+      await onAddMember(submitData);
+      setSubmitted(true);
+    } catch (e) {
+      // onAddMember에서 alert 처리
+    }
   };
 
   const handleWithdrawSubmit = (e: React.FormEvent) => {

@@ -36,6 +36,35 @@ const App: React.FC = () => {
   
   const [settings, setSettings] = useState<SiteSettings>(INITIAL_SETTINGS);
 
+
+// ✅ 새로고침/다른 기기에서도 로그인 유지(Supabase session)
+useEffect(() => {
+  (async () => {
+    try {
+      const profile = await cloud.fetchMyProfile();
+      if (!profile) return;
+
+      const member: Member = {
+        id: profile.id,
+        loginId: profile.login_id || '',
+        name: profile.name || '',
+        birthDate: profile.birth_date || '',
+        phone: profile.phone || '',
+        email: profile.email || '',
+        garage: profile.garage || '',
+        signupDate: (profile.created_at || '').split('T')[0] || '',
+      };
+
+      setLoggedInMember(member);
+      setUserRole('member');
+      localStorage.setItem('union_role', 'member');
+      localStorage.setItem('union_member', JSON.stringify(member));
+    } catch (e) {
+      // ignore
+    }
+  })();
+}, []);
+
   // ✅ 안전장치: Supabase에 site_safeSettings.data가 비어있거나 일부 키가 빠져도 화면이 죽지 않도록 초기값과 병합
   const safeSettings: SiteSettings = { ...INITIAL_SETTINGS, ...(settings || ({} as SiteSettings)) };
   const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
@@ -183,7 +212,20 @@ const syncData = useCallback(async (showLoading = true) => {
   };
 
   const handleAddMember = async (memberData: Omit<Member, 'id' | 'signupDate'>) => {
-    const newMember: Member = { ...memberData, id: crypto.randomUUID(), signupDate: new Date().toISOString().split('T')[0] };
+  try {
+    // ✅ 정석: Supabase Auth + profiles 저장
+    await cloud.signUpMember(memberData);
+
+    // 가입 후 profiles 재로드(아이디 중복 체크/관리자 목록용)
+    const refreshed = await cloud.fetchMembersFromCloud();
+    if (refreshed) setMembers(refreshed);
+
+  } catch (err: any) {
+    console.error('❌ 회원가입 실패:', err);
+    alert(err?.message || '회원가입에 실패했습니다.');
+    throw err; // SignupForm의 submitted 처리 막기 위해 throw
+  }
+};
     const updatedMembers = [newMember, ...members];
     setMembers(updatedMembers);
     saveToLocal('members', updatedMembers);
@@ -216,11 +258,36 @@ const syncData = useCallback(async (showLoading = true) => {
     } else alert('비밀번호 오류');
   };
 
-const handleMemberLogin = () => {
-  alert('현재 회원 로그인 기능은 준비 중입니다.');
+const handleMemberLogin = async () => {
+  try {
+    const profile = await cloud.signInMember(loginId, loginPassword);
+
+    const member: Member = {
+      id: profile.id,
+      loginId: profile.login_id || loginId,
+      name: profile.name || '',
+      birthDate: profile.birth_date || '',
+      phone: profile.phone || '',
+      email: profile.email || '',
+      garage: profile.garage || '',
+      signupDate: (profile.created_at || '').split('T')[0] || '',
+    };
+
+    setLoggedInMember(member);
+    setUserRole('member');
+    setShowMemberLogin(false);
+    setLoginPassword('');
+
+    localStorage.setItem('union_role', 'member');
+    localStorage.setItem('union_member', JSON.stringify(member));
+  } catch (err: any) {
+    console.error('❌ 회원 로그인 실패:', err);
+    alert(err?.message || '로그인에 실패했습니다.');
+  }
 };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await cloud.signOutMember();
     if (!window.confirm('로그아웃 하시겠습니까?')) return;
     setUserRole('guest');
     setLoggedInMember(null);
