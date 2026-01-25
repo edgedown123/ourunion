@@ -26,12 +26,6 @@ const Hero: React.FC<HeroProps> = ({ title, subtitle, imageUrls, onJoinClick }) 
     return () => clearInterval(timer);
   }, [displayImages.length]);
 
-  const benefits = [
-    { icon: 'fa-shield-alt', title: '권익 보호', desc: '부당한 대우와 차별로부터 당신을 지키는 든든한 방패가 됩니다.' },
-    { icon: 'fa-handshake', title: '고용 안정', desc: '안정적인 근로 환경과 공정한 임금 체계를 위해 함께 협상합니다.' },
-    { icon: 'fa-heart', title: '복지 증진', desc: '조합원만을 위한 다양한 교육, 여가 및 의료 지원 혜택을 제공합니다.' }
-  ];
-
   return (
     <div className="flex flex-col">
       <section className="relative bg-white lg:flex lg:items-center lg:min-h-[600px] xl:min-h-[700px] overflow-hidden">
@@ -99,28 +93,6 @@ const Hero: React.FC<HeroProps> = ({ title, subtitle, imageUrls, onJoinClick }) 
         {/* 배경 장식 요소 */}
         <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-96 h-96 bg-sky-50 rounded-full blur-3xl opacity-50 -z-10"></div>
         <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-64 h-64 bg-sky-50 rounded-full blur-3xl opacity-50 -z-10"></div>
-      </section>
-
-      {/* 가입 홍보 섹션 */}
-      <section className="bg-gray-50 py-16 md:py-24 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-2xl md:text-3xl font-black text-gray-900 mb-4 tracking-tight">왜 우리노동조합과 함께해야 할까요?</h2>
-            <p className="text-gray-400 font-bold text-sm">당신의 내일을 바꾸는 3가지 핵심 약속</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
-            {benefits.map((item, idx) => (
-              <div key={idx} className="bg-white p-10 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 group">
-                <div className="w-16 h-16 bg-sky-50 rounded-2xl flex items-center justify-center mb-8 group-hover:bg-sky-primary transition-colors">
-                  <i className={`fas ${item.icon} text-2xl text-sky-primary group-hover:text-white transition-colors`}></i>
-                </div>
-                <h3 className="text-xl font-black text-gray-900 mb-4">{item.title}</h3>
-                <p className="text-gray-500 leading-relaxed font-medium">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
       </section>
     </div>
   );
