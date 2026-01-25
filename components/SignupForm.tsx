@@ -65,6 +65,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onGoHome, onAddMember, onRemove
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isIdChecked) return alert('아이디 중복 확인을 해주세요.');
+    if (formData.password.length < 6) return alert('비밀번호는 6자리 이상이어야 합니다.');
     if (formData.password !== formData.passwordConfirm) return alert('비밀번호가 일치하지 않습니다.');
     const { passwordConfirm, ...submitData } = formData;
     onAddMember(submitData);
@@ -78,6 +79,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onGoHome, onAddMember, onRemove
   };
 
   const isPasswordMismatch = formData.password && formData.passwordConfirm && formData.password !== formData.passwordConfirm;
+  const isPasswordTooShort = formData.password && formData.password.length < 6;
 
   if (submitted) {
     return (
@@ -137,8 +139,9 @@ const SignupForm: React.FC<SignupFormProps> = ({ onGoHome, onAddMember, onRemove
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">비밀번호</label>
-                  <input required type="password" name="password" value={formData.password} onChange={handleChange} className={`w-full border-gray-300 rounded-lg p-3 border focus:ring-2 focus:ring-sky-primary outline-none ${isPasswordMismatch ? 'border-red-300 bg-red-50' : ''}`} />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">비밀번호(6자리 이상 입력)</label>
+                  <input required type="password" name="password" value={formData.password} onChange={handleChange} className={`w-full border-gray-300 rounded-lg p-3 border focus:ring-2 focus:ring-sky-primary outline-none ${isPasswordTooShort ? 'border-orange-300 bg-orange-50' : ''}`} placeholder="6자리 이상" />
+                  {isPasswordTooShort && <p className="text-orange-500 text-xs mt-1 font-medium">최소 6자리 이상 입력해주세요.</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">비밀번호 확인</label>
@@ -174,7 +177,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onGoHome, onAddMember, onRemove
               </div>
             </div>
 
-            <button type="submit" className="w-full bg-sky-primary text-white py-4 rounded-xl font-bold text-lg hover:opacity-90 shadow-md">가입 신청하기</button>
+            <button type="submit" className="w-full bg-sky-primary text-white py-4 rounded-xl font-bold text-lg hover:opacity-90 shadow-md transition-all active:scale-[0.98]">가입 신청하기</button>
 
             <div className="pt-4 text-center border-t border-gray-100">
               <button type="button" onClick={() => setIsWithdrawMode(true)} className="text-[11px] text-gray-300 font-bold hover:text-red-400 transition-colors">이미 회원이신가요? 회원 탈퇴하기</button>
