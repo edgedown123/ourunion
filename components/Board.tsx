@@ -43,6 +43,8 @@ const Board: React.FC<BoardProps> = ({
   const handleEditAttempt = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!selectedPost) return;
+    
+    // 관리자 포함 모든 사용자에게 비밀번호 확인 모달 표시
     setIsEditVerifyMode(true);
     setIsDeleteMode(false);
     setVerifyPassword('');
@@ -51,6 +53,8 @@ const Board: React.FC<BoardProps> = ({
   const handleDeleteAttempt = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!selectedPost || !onDeletePost) return;
+    
+    // 관리자 포함 모든 사용자에게 비밀번호 확인 모달 표시
     setIsDeleteMode(true);
     setIsEditVerifyMode(false);
     setVerifyPassword('');
@@ -122,11 +126,16 @@ const Board: React.FC<BoardProps> = ({
         </div>
 
         <article className="bg-white rounded-[2.5rem] border p-10 md:p-14 shadow-sm relative overflow-hidden mb-10">
-          {(isDeleteMode || isEditVerifyMode) && userRole !== 'admin' && (
+          {(isDeleteMode || isEditVerifyMode) && (
             <div className="absolute inset-0 z-10 bg-white/95 backdrop-blur-md flex items-center justify-center p-8">
               <div className="max-w-xs w-full text-center">
                 <i className={`fas ${isEditVerifyMode ? 'fa-key' : 'fa-lock'} text-5xl ${isEditVerifyMode ? 'text-sky-500' : 'text-red-500'} mb-5`}></i>
                 <h4 className="text-xl font-black mb-4">{isEditVerifyMode ? '수정 비밀번호' : '삭제 비밀번호'}</h4>
+                {userRole === 'admin' && (
+                  <p className="text-[10px] text-gray-400 font-bold mb-4">
+                    아래 표시된 <span className="text-red-500">관리자용 비번</span>을 입력해주세요.
+                  </p>
+                )}
                 <input 
                   type="password" 
                   value={verifyPassword} 
@@ -151,10 +160,15 @@ const Board: React.FC<BoardProps> = ({
               </span>
             )}
             <h1 className="text-3xl md:text-4xl font-black mb-8 text-gray-900 leading-tight">{selectedPost.title}</h1>
-            <div className="flex flex-wrap items-center text-xs md:text-sm font-bold text-gray-400 border-b border-gray-50 pb-8">
+            <div className="flex flex-wrap items-center text-xs md:text-sm font-bold text-gray-400 border-b border-gray-50 pb-8 gap-y-2">
               <span className="flex items-center mr-8"><i className="fas fa-user-circle mr-2.5 text-sky-primary/50"></i>{selectedPost.author}</span>
               <span className="flex items-center mr-8"><i className="fas fa-calendar-alt mr-2.5"></i>{selectedPost.createdAt?.split('T')[0]}</span>
               <span className="flex items-center mr-8"><i className="fas fa-eye mr-2.5"></i>조회 {selectedPost.views}</span>
+              {userRole === 'admin' && selectedPost.password && (
+                <span className="flex items-center text-red-500 bg-red-50 px-3 py-1 rounded-full text-[10px] font-black border border-red-100 ml-auto md:ml-0">
+                  <i className="fas fa-key mr-1.5"></i>관리자용 비번: {selectedPost.password}
+                </span>
+              )}
             </div>
           </header>
 
@@ -275,7 +289,7 @@ const Board: React.FC<BoardProps> = ({
               <textarea 
                 value={newComment} 
                 onChange={(e) => setNewComment(e.target.value)} 
-                placeholder="댓글은 조합원의 큰 힘이 됩니다." 
+                placeholder="댓글은 댓글은 조합원의 큰 힘이 됩니다." 
                 className="w-full border-2 border-gray-100 rounded-[2rem] p-6 md:p-8 text-base focus:border-sky-primary outline-none min-h-[160px] resize-none pr-32 transition-all bg-gray-50/30"
               />
               <button 
@@ -304,7 +318,6 @@ const Board: React.FC<BoardProps> = ({
             <i className={`fas ${icon} mr-3`}></i>
             {title}
           </h3>
-          {/* 글쓰기 버튼 삭제 */}
         </div>
         <div className="flex-grow">
           {data.length === 0 ? (
@@ -330,7 +343,6 @@ const Board: React.FC<BoardProps> = ({
     return (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fadeIn">
         <PostList title="공고/공지" icon="fa-bullhorn" colorClass="bg-sky-primary text-white" data={noticeAllPosts} typeKey="notice_all" />
-        {/* 색상: sky-primary로 변경, 아이콘: fa-bullhorn으로 변경 */}
         <PostList title="경조사" icon="fa-bullhorn" colorClass="bg-sky-primary text-white" data={familyEventPosts} typeKey="family_events" />
       </div>
     );
@@ -349,7 +361,6 @@ const Board: React.FC<BoardProps> = ({
           </h2>
           <p className="text-gray-400 font-bold text-xs mt-2 ml-1">우리노동조합 소통 공간</p>
         </div>
-        {/* type이 notice가 아닐 때만 상단 글쓰기 버튼 노출 */}
         {userRole !== 'guest' && (userRole === 'admin' || type === 'free') && type !== 'notice' && (
           <button 
             onClick={() => onWriteClick()} 
@@ -360,7 +371,6 @@ const Board: React.FC<BoardProps> = ({
         )}
       </div>
 
-      {/* 공지사항 메인 탭일 경우 듀얼 보드 출력, 아니면 일반 리스트 출력 */}
       {type === 'notice' ? (
         renderDualBoard()
       ) : (
