@@ -20,7 +20,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   settings, setSettings, members, posts, deletedPosts, 
   onRestorePost, onPermanentDelete, onEditPost, onViewPost, onClose, onRemoveMember
 }) => {
-  const heroImageRef = useRef<HTMLInputElement>(null);
+  // 히어로 이미지 5장 관리를 위한 Refs
+  const heroImageRefs = [
+    useRef<HTMLInputElement>(null), 
+    useRef<HTMLInputElement>(null), 
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null)
+  ];
   const greetingImageRef = useRef<HTMLInputElement>(null);
   const officeMapInputRef = useRef<HTMLInputElement>(null);
   const importFileInputRef = useRef<HTMLInputElement>(null);
@@ -44,6 +51,37 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
       const reader = new FileReader();
       reader.onloadend = () => { setSettings({ ...settings, [field]: reader.result as string }); };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleHeroImageUpload = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const currentUrls = settings.heroImageUrls || [settings.heroImageUrl];
+        const newUrls = [...currentUrls];
+        // 배열 크기가 작으면 빈 문자열로 채워줌 (최대 5개)
+        while (newUrls.length < 5) newUrls.push('');
+        
+        newUrls[index] = reader.result as string;
+        
+        // 첫 번째 사진은 heroImageUrl과도 동기화 (하위호환)
+        if (index === 0) {
+          setSettings({ ...settings, heroImageUrls: newUrls, heroImageUrl: newUrls[0] });
+        } else {
+          setSettings({ ...settings, heroImageUrls: newUrls });
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const clearHeroImage = (index: number) => {
+    const newUrls = [...(settings.heroImageUrls || [])];
+    if (newUrls[index]) {
+      newUrls[index] = '';
+      setSettings({ ...settings, heroImageUrls: newUrls });
     }
   };
 
@@ -280,6 +318,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         
         {adminTab === 'posts' && (
           <div className="space-y-8 animate-fadeIn">
+            {/* 게시글 관리 및 휴지통 테이블 (기존과 동일) */}
             <div className="bg-white rounded-[2.5rem] border shadow-sm overflow-hidden">
               <div className="p-8 border-b bg-gray-50/30 flex justify-between items-center">
                 <h3 className="font-black text-gray-900">게시글 관리</h3>
@@ -308,7 +347,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 </table>
               </div>
             </div>
-
             <div className="bg-white rounded-[2.5rem] border border-red-100 shadow-sm overflow-hidden">
               <div className="p-8 border-b bg-red-50/30 flex justify-between items-center">
                 <h3 className="font-black text-red-900 flex items-center"><i className="fas fa-trash-alt mr-3"></i> 휴지통</h3>
@@ -339,19 +377,38 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           <div className="space-y-8 animate-fadeIn">
             <div className="bg-white p-10 rounded-[2.5rem] border shadow-sm space-y-12">
               <div>
-                <h3 className="font-black text-gray-900 text-lg mb-8 flex items-center"><i className="fas fa-palette mr-3 text-sky-primary"></i> 메인 화면 설정</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                  <div className="space-y-4">
-                    <label className="block text-[10px] font-black text-gray-400 mb-1 tracking-widest uppercase">대표 이미지</label>
-                    <div className="aspect-video bg-gray-50 rounded-[2rem] overflow-hidden border-4 border-white shadow-xl relative group">
-                      <img src={settings.heroImageUrl} className="w-full h-full object-cover" />
-                      <button onClick={() => heroImageRef.current?.click()} className="absolute inset-0 bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center font-black"><i className="fas fa-camera text-3xl mb-2"></i>사진 변경하기</button>
-                      <input type="file" ref={heroImageRef} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'heroImageUrl')} />
+                <h3 className="font-black text-gray-900 text-lg mb-8 flex items-center"><i className="fas fa-palette mr-3 text-sky-primary"></i> 메인 슬라이드 관리 (최대 5장)</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-12">
+                  {[0, 1, 2, 3, 4].map((idx) => (
+                    <div key={idx} className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <label className="block text-[10px] font-black text-gray-400 tracking-widest uppercase">슬라이드 {idx + 1}</label>
+                        {idx > 0 && (settings.heroImageUrls || [])[idx] && (
+                          <button onClick={() => clearHeroImage(idx)} className="text-red-400 hover:text-red-600 transition-colors">
+                            <i className="fas fa-times-circle text-xs"></i>
+                          </button>
+                        )}
+                      </div>
+                      <div className="aspect-[4/3] bg-gray-50 rounded-[1.5rem] overflow-hidden border-2 border-white shadow-md relative group">
+                        <img 
+                          src={(settings.heroImageUrls || [])[idx] || (idx === 0 ? settings.heroImageUrl : '') || 'https://via.placeholder.com/400x300?text=Empty'} 
+                          className="w-full h-full object-cover" 
+                        />
+                        <button onClick={() => heroImageRefs[idx].current?.click()} className="absolute inset-0 bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center font-black">
+                          <i className="fas fa-camera text-xl mb-1"></i>
+                          { (settings.heroImageUrls || [])[idx] ? '변경' : '추가' }
+                        </button>
+                        <input type="file" ref={heroImageRefs[idx]} className="hidden" accept="image/*" onChange={(e) => handleHeroImageUpload(e, idx)} />
+                      </div>
                     </div>
-                  </div>
+                  ))}
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-8 border-t border-gray-50">
                   <div className="space-y-6 flex flex-col justify-center">
                     <div><label className="block text-[10px] font-black text-gray-400 mb-2 tracking-widest uppercase">사이트 이름</label><input type="text" name="siteName" value={settings.siteName} onChange={handleSettingsChange} className="w-full border-2 border-gray-100 rounded-2xl p-4 font-black text-xl text-sky-primary outline-none focus:border-sky-primary shadow-sm" /></div>
                     <div><label className="block text-[10px] font-black text-gray-400 mb-2 tracking-widest uppercase">메인 슬로건</label><input type="text" name="heroTitle" value={settings.heroTitle} onChange={handleSettingsChange} className="w-full border-2 border-gray-100 rounded-2xl p-4 font-bold text-gray-700 outline-none focus:border-sky-primary" /></div>
+                    <div><label className="block text-[10px] font-black text-gray-400 mb-2 tracking-widest uppercase">보조 슬로건</label><input type="text" name="heroSubtitle" value={settings.heroSubtitle} onChange={handleSettingsChange} className="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm text-gray-500 outline-none focus:border-sky-primary" /></div>
                   </div>
                 </div>
               </div>

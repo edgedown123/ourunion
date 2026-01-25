@@ -355,7 +355,7 @@ const App: React.FC = () => {
             </div>
           )
         ) : activeTab === 'home' ? (
-          <Hero title={settings.heroTitle} subtitle={settings.heroSubtitle} imageUrl={settings.heroImageUrl} onJoinClick={() => handleTabChange('signup')} />
+          <Hero title={settings.heroTitle} subtitle={settings.heroSubtitle} imageUrls={settings.heroImageUrls || [settings.heroImageUrl]} onJoinClick={() => handleTabChange('signup')} />
         ) : ['intro', 'greeting', 'history', 'map'].includes(activeTab) ? (
           <Introduction settings={settings} activeTab={activeTab} />
         ) : activeTab === 'signup' ? (

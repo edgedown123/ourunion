@@ -1,3 +1,4 @@
+
 export type BoardType = 'intro' | 'notice' | 'notice_all' | 'family_events' | 'free' | 'resources' | 'signup' | 'trash';
 export type UserRole = 'guest' | 'member' | 'admin';
 
@@ -59,7 +60,8 @@ export interface SiteSettings {
   pointColor: string;
   heroTitle: string;
   heroSubtitle: string;
-  heroImageUrl: string;
+  heroImageUrl: string; // 하위 호환성을 위해 유지
+  heroImageUrls: string[]; // 슬라이드쇼를 위한 배열
   fontFamily: string;
   greetingTitle: string;
   greetingMessage: string;

@@ -7,6 +7,11 @@ export const INITIAL_SETTINGS: SiteSettings = {
   heroTitle: '함께 만드는 더 나은 내일',
   heroSubtitle: '우리노동조합은 노동자의 권익과 정의로운 노동 환경을 위해 행동합니다.',
   heroImageUrl: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1200',
+  heroImageUrls: [
+    'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1200',
+    'https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&q=80&w=1200',
+    'https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?auto=format&fit=crop&q=80&w=1200'
+  ],
   fontFamily: 'Noto Sans KR',
   greetingTitle: '우리의 사명과 약속',
   greetingMessage: '우리는 공정한 분배와 안전한 작업 환경, 그리고 민주적인 노사 관계를 지향합니다. 모든 노동자가 존중받는 세상을 만드는 것이 우리의 최종 목표입니다.',
