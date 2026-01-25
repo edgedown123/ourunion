@@ -118,12 +118,12 @@ const syncData = useCallback(async (showLoading = true) => {
       targetPost = { ...existing!, title, content, attachments, password: postPassword };
     } else {
       targetPost = {
-        id: Date.now().toString(),
+        id: crypto.randomUUID(),
         type: (writingType || activeTab) as BoardType,
         title,
         content,
         author: userRole === 'admin' ? '관리자' : (loggedInMember?.name || '조합원'),
-        createdAt: new Date().toISOString().split('T')[0],
+        createdAt: new Date().toISOString(),
         views: 0,
         attachments: attachments,
         password: postPassword,
@@ -144,7 +144,7 @@ const syncData = useCallback(async (showLoading = true) => {
   const handleSaveComment = async (postId: string, content: string, parentId?: string) => {
     if (userRole === 'guest') return alert('댓글은 회원만 작성 가능합니다.');
     const newComment: Comment = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       author: userRole === 'admin' ? '관리자' : (loggedInMember?.name || '조합원'),
       content,
       createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
@@ -183,7 +183,7 @@ const syncData = useCallback(async (showLoading = true) => {
   };
 
   const handleAddMember = async (memberData: Omit<Member, 'id' | 'signupDate'>) => {
-    const newMember: Member = { ...memberData, id: Date.now().toString(), signupDate: new Date().toISOString().split('T')[0] };
+    const newMember: Member = { ...memberData, id: crypto.randomUUID(), signupDate: new Date().toISOString().split('T')[0] };
     const updatedMembers = [newMember, ...members];
     setMembers(updatedMembers);
     saveToLocal('members', updatedMembers);

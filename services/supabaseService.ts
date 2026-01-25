@@ -44,7 +44,11 @@ export const fetchPostsFromCloud = async (): Promise<Post[] | null> => {
 };
 
 export const savePostToCloud = async (post: Post) => {
-  if (!supabase) return;
+  console.log('✅ savePostToCloud called', post.id);
+  if (!supabase) {
+    console.log('❌ supabase is null (env missing)');
+    return;
+  }
 
   try {
     const { error } = await supabase.from('posts').upsert({
@@ -99,13 +103,17 @@ export const fetchMembersFromCloud = async (): Promise<Member[] | null> => {
 export const saveMemberToCloud = async (member: Member) => {
   if (!supabase) return;
 
-  try {
-    const { error } = await supabase.from('members').upsert(member);
-    if (error) throw error;
-  } catch (err) {
-    console.error('클라우드 회원 저장 실패:', err);
-  }
+  // ✅ members 테이블(현재 스키마: id/email/name/created_at)에 맞춰 최소 컬럼만 저장
+  const payload: any = {
+    id: (member as any).id,
+    email: (member as any).email,
+    name: (member as any).name ?? '',
+  };
+
+  const { error } = await supabase.from('members').upsert(payload);
+  if (error) console.error('❌ 클라우드 회원 저장 실패:', error);
 };
+
 
 export const deleteMemberFromCloud = async (id: string) => {
   if (!supabase) return;
