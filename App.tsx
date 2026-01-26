@@ -62,8 +62,17 @@ const App: React.FC = () => {
           localStorage.setItem('union_members', JSON.stringify(mData));
         }
         if (sData) {
-          setSettings(sData);
-          localStorage.setItem('union_settings', JSON.stringify(sData));
+          // 클라우드에서 불러온 설정이 일부 필드만 가진 경우가 있어(예: data에 history만 있음)
+          // 초기값과 병합해서 undefined로 인한 화면 크래시(특히 관리자 패널)를 방지한다.
+          const merged = { ...INITIAL_SETTINGS, ...sData };
+          setSettings(merged);
+          localStorage.setItem('union_settings', JSON.stringify(merged));
+        } else {
+          // 클라우드 설정을 못 불러왔을 때(테이블/RLS/네트워크 문제 등) 로컬에 저장된 설정으로 fallback
+          const sSettings = localStorage.getItem('union_settings');
+          if (sSettings) {
+            try { setSettings(JSON.parse(sSettings)); } catch {}
+          }
         }
       } else {
         const sPosts = localStorage.getItem('union_posts');

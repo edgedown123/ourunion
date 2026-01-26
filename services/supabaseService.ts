@@ -17,11 +17,7 @@ export const isSupabaseEnabled = () =>
   supabaseAnonKey !== 'undefined';
 
 const supabase = isSupabaseEnabled()
-  ? createClient(supabaseUrl, supabaseAnonKey, {
-    global: {
-      fetch: (url, options) => fetch(url as any, { ...(options as any), cache: 'no-store' as any }),
-    },
-  })
+  ? createClient(supabaseUrl, supabaseAnonKey)
   : null;
 
 // --------------------------------------
