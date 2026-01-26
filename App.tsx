@@ -194,7 +194,7 @@ const App: React.FC = () => {
     };
 
     try {
-      // 1) 먼저 클라우드 저장 (Supabase)
+      // 1) 클라우드 저장 먼저 시도 (Supabase)
       await cloud.saveMemberToCloud(newMember);
 
       // 2) 클라우드 저장 성공 후에만 로컬 상태/저장 반영
@@ -206,31 +206,18 @@ const App: React.FC = () => {
     } catch (error: any) {
       console.error('회원 가입 처리 중 오류:', error);
 
-      // Supabase 에러 메시지를 최대한 표시
       const msg =
         error?.message ||
         error?.error_description ||
         (typeof error === 'string' ? error : null) ||
-        '회원가입 정보가 서버에 저장되지 않았습니다. (권한/RLS 정책 또는 네트워크 문제일 수 있어요)';
+        '회원가입 정보가 서버에 저장되지 않았습니다.';
 
-      alert(`${msg}
-
-잠시 후 다시 시도해주세요.`);
-    }
-  };
-    
-    try {
-      // 1. 상태 업데이트 및 로컬 저장
-      const updatedMembers = [newMember, ...members];
-      setMembers(updatedMembers);
-      saveToLocal('members', updatedMembers);
-      
-      // 2. 클라우드 저장 (Supabase)
-      await cloud.saveMemberToCloud(newMember);
-      console.log("신규 회원 가입 및 동기화 완료");
-    } catch (error) {
-      console.error("회원 가입 처리 중 오류:", error);
-      alert("서버 통신 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+      alert(
+        msg +
+          '
+(권한/RLS 정책 또는 네트워크 문제일 수 있어요)
+잠시 후 다시 시도해주세요.'
+      );
     }
   };
 

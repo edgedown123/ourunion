@@ -88,17 +88,14 @@ export const fetchMembersFromCloud = async (): Promise<Member[] | null> => {
 
     if (error) throw error;
 
-    return (data ?? []).map((m: any) => ({
-      id: m.id ?? m.member_id ?? m.user_id ?? (m.login_id || m.loginId) ?? String(Math.random()),
-      loginId: m.login_id ?? m.loginId ?? '',
-      password: m.password ?? undefined,
-      name: m.name ?? '',
-      birthDate: m.birth_date ?? m.birthDate ?? '',
-      phone: m.phone ?? '',
-      email: m.email ?? '',
-      garage: m.garage ?? '',
-      signupDate: m.created_at ?? m.signupDate ?? new Date().toISOString(),
-    })) as Member[];
+    // DB의 created_at 컬럼을 앱 내부에서 사용하는 signupDate로 변환하여 리턴
+    return (data ?? []).map((m: any) => {
+      const { created_at, ...rest } = m;
+      return {
+        ...rest,
+        signupDate: created_at || m.signupDate
+      };
+    }) as Member[];
   } catch (err) {
     console.error('클라우드 회원 로드 실패:', err);
     return null;
@@ -108,55 +105,52 @@ export const fetchMembersFromCloud = async (): Promise<Member[] | null> => {
 export const saveMemberToCloud = async (member: Member) => {
   if (!supabase) throw new Error('Supabase not enabled');
 
-  // NOTE:
-  // Supabase 테이블 컬럼명이 프로젝트마다 다를 수 있어 (camelCase vs snake_case).
-  // 그래서 1) snake_case로 먼저 저장 시도 → 2) 실패하면 camelCase로 재시도한다.
+  // Supabase 테이블 컬럼명이 camelCase / snake_case 혼재할 수 있어서
+  // 1) snake_case로 저장 시도 → 2) 실패하면 camelCase로 재시도
   const tryUpsert = async (payload: any, onConflict?: string) => {
-    const q = supabase.from('members').upsert(payload, onConflict ? { onConflict } : undefined as any);
-    const { error } = await q;
+    const { error } = await supabase
+      .from('members')
+      .upsert(payload, onConflict ? { onConflict } : undefined as any);
     if (error) throw error;
   };
 
+  // Member 타입의 signupDate는 DB의 created_at으로 저장
+  // (프로젝트에서 created_at 컬럼을 쓰고 있는 것으로 보임)
+  const createdAt = member.signupDate ?? new Date().toISOString();
+
   try {
-    // ✅ 1차 시도: snake_case 컬럼 (일반적인 DB 스키마)
+    // ✅ 1차: snake_case 컬럼(권장)
     const payload1 = {
-      // id가 text PK가 아닌 경우도 있어서, onConflict를 login_id로 걸어둠
-      login_id: member.loginId,
-      password: member.password ?? null,
-      name: member.name,
-      birth_date: member.birthDate,
-      phone: member.phone,
-      email: member.email,
-      garage: member.garage,
-      created_at: member.signupDate,
+      login_id: (member as any).loginId ?? (member as any).login_id ?? null,
+      password: (member as any).password ?? null,
+      name: (member as any).name ?? null,
+      birth_date: (member as any).birthDate ?? (member as any).birth_date ?? null,
+      phone: (member as any).phone ?? null,
+      email: (member as any).email ?? null,
+      garage: (member as any).garage ?? null,
+      role: (member as any).role ?? 'member',
+      status: (member as any).status ?? 'pending',
+      created_at: createdAt,
     };
-    await tryUpsert(payload1, 'login_id');
-    console.log(`회원 정보 클라우드 저장 완료(snake_case): ${member.name}`);
+
+    // login_id가 없으면 onConflict를 걸 수 없어서 그냥 upsert
+    await tryUpsert(payload1, payload1.login_id ? 'login_id' : undefined);
+    console.log(`회원 정보 클라우드 저장 완료(snake_case): ${(member as any).name ?? ''}`);
     return;
-  } catch (err1: any) {
+  } catch (err1) {
     console.warn('snake_case 저장 실패, camelCase로 재시도:', err1);
-
-    // ✅ 2차 시도: camelCase 컬럼 (앱 타입 그대로)
-    const payload2 = {
-      id: member.id,
-      loginId: member.loginId,
-      password: member.password ?? null,
-      name: member.name,
-      birthDate: member.birthDate,
-      phone: member.phone,
-      email: member.email,
-      garage: member.garage,
-      created_at: member.signupDate,
-    };
-
-    const { error } = await supabase.from('members').upsert(payload2);
-    if (error) {
-      console.error('클라우드 회원 저장 실패:', error);
-      throw error;
-    }
-    console.log(`회원 정보 클라우드 저장 완료(camelCase): ${member.name}`);
   }
+
+  // ✅ 2차: camelCase 컬럼(기존 코드 호환)
+  const payload2 = {
+    ...(member as any),
+    created_at: createdAt,
+  };
+
+  await tryUpsert(payload2);
+  console.log(`회원 정보 클라우드 저장 완료(camelCase): ${(member as any).name ?? ''}`);
 };
+
 
 export const deleteMemberFromCloud = async (id: string) => {
   if (!supabase) return;
