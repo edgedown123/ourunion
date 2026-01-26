@@ -60,9 +60,9 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
         </div>
       </div>
 
-      <div className="bg-white px-4 border-b border-gray-50">
+      <div className="bg-white px-2 md:px-4 border-b border-gray-50">
         <div className="max-w-7xl mx-auto md:overflow-visible overflow-x-auto scrollbar-hide flex items-center h-14">
-          <div className="flex space-x-2 h-full items-center min-w-max md:min-w-0 md:w-full md:justify-start">
+          <div className="flex space-x-0.5 md:space-x-2 h-full items-center min-w-max md:min-w-0 md:w-full md:justify-start">
             {NAV_ITEMS.map((item) => {
               const isActive = activeParent?.id === item.id;
               const isSignup = item.id === 'signup';
@@ -74,7 +74,7 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
                     isActive
                       ? 'text-sky-primary font-black'
                       : 'text-gray-500 hover:text-gray-800'
-                  } px-5 py-2 text-sm md:text-base font-bold transition-all h-full border-b-2 ${
+                  } px-2.5 md:px-5 py-2 text-[13px] md:text-base font-bold transition-all h-full border-b-2 ${
                     isActive ? 'border-sky-primary' : 'border-transparent'
                   } ${isSignup ? 'hidden sm:flex' : 'flex'} items-center whitespace-nowrap`}
                 >
