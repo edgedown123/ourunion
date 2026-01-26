@@ -30,6 +30,9 @@ const App: React.FC = () => {
   const [showMemberLogin, setShowMemberLogin] = useState(false);
   const [showPasswordCreation, setShowPasswordCreation] = useState(false);
   const [showApprovalPending, setShowApprovalPending] = useState(false);
+
+  const [approvalTitle, setApprovalTitle] = useState('');
+  const [approvalMessage, setApprovalMessage] = useState('');
   
   const [showPassword, setShowPassword] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
@@ -269,8 +272,21 @@ const App: React.FC = () => {
     
     const found = members.find((m: Member) => m.email === loginEmail);
     
-    // 1. 미가입자 또는 미승인자
-    if (!found || !found.isApproved) {
+    // 1. 미가입자
+    if (!found) {
+      setApprovalTitle('가입 신청 필요');
+      setApprovalMessage('아직 가입 신청이 확인되지 않습니다.
+먼저 회원가입 신청서를 제출해주세요.');
+      setShowMemberLogin(false);
+      setShowApprovalPending(true);
+      return;
+    }
+
+    // 2. 미승인자
+    if (!found.isApproved) {
+      setApprovalTitle('관리자 승인이 필요합니다');
+      setApprovalMessage('가입 신청은 접수되었지만 아직 승인되지 않았습니다.
+관리자 승인 후 로그인할 수 있습니다.');
       setShowMemberLogin(false);
       setShowApprovalPending(true);
       return;
@@ -318,6 +334,7 @@ const App: React.FC = () => {
     setConfirmPassword('');
     setPendingMember(null);
     alert('비밀번호 설정이 완료되었습니다. 방금 설정한 비밀번호로 로그인해주세요.');
+    setLoginPassword('');
     setShowMemberLogin(true);
   };
 
@@ -505,12 +522,10 @@ const App: React.FC = () => {
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn">
           <div className="bg-white rounded-[3rem] p-10 max-w-[360px] w-[90%] shadow-2xl relative text-center">
             <button onClick={() => setShowApprovalPending(false)} className="absolute top-8 right-8 text-gray-300 hover:text-gray-500 transition-colors"><i className="fas fa-times text-xl"></i></button>
-            <div className="w-20 h-20 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner"><i className="fas fa-user-clock text-orange-400 text-3xl"></i></div>
-            <h3 className="text-2xl font-black text-gray-900 mb-4">승인 대기 중</h3>
-            <p className="text-sm text-gray-500 font-medium leading-relaxed mb-8">
-              가입 신청이 접수되어<br/>
-              <span className="text-orange-500 font-bold">관리자의 승인</span>을 기다리고 있습니다.<br/>
-              조금만 더 기다려주세요!
+            <div className="w-20 h-20 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner"><i className="fas fa-user-lock text-orange-400 text-3xl"></i></div>
+            <h3 className="text-2xl font-black text-gray-900 mb-4">{approvalTitle || '관리자 승인이 필요합니다'}</h3>
+            <p className="text-sm text-gray-500 font-medium leading-relaxed mb-8" style={{whiteSpace: 'pre-line'}}>
+              {approvalMessage || '관리자 승인이 필요합니다.'}
             </p>
             <button 
               onClick={() => setShowApprovalPending(false)} 
