@@ -32,7 +32,7 @@ export interface Post {
 
 export interface Member {
   id: string;
-  loginId: string;
+  loginId?: string; // 로그인 정보 제거 대응을 위해 선택 사항으로 변경
   password?: string; 
   name: string;
   birthDate: string;
