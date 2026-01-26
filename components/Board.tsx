@@ -28,7 +28,7 @@ const Board: React.FC<BoardProps> = ({
   
   const selectedPost = selectedPostId ? posts.find(p => p.id === selectedPostId) : null;
 
-  // 날짜 포맷팅 유틸리티 함수
+  // 날짜 포맷팅 유틸리티 함수 (YYYY.MM.DD HH:mm)
   const formatDate = (dateStr: string | undefined) => {
     if (!dateStr) return '';
     const date = new Date(dateStr);
@@ -59,7 +59,6 @@ const Board: React.FC<BoardProps> = ({
     e.stopPropagation();
     if (!selectedPost) return;
     
-    // 관리자 포함 모든 사용자에게 비밀번호 확인 모달 표시
     setIsEditVerifyMode(true);
     setIsDeleteMode(false);
     setVerifyPassword('');
@@ -69,7 +68,6 @@ const Board: React.FC<BoardProps> = ({
     e.stopPropagation();
     if (!selectedPost || !onDeletePost) return;
     
-    // 관리자 포함 모든 사용자에게 비밀번호 확인 모달 표시
     setIsDeleteMode(true);
     setIsEditVerifyMode(false);
     setVerifyPassword('');
@@ -304,8 +302,8 @@ const Board: React.FC<BoardProps> = ({
               <textarea 
                 value={newComment} 
                 onChange={(e) => setNewComment(e.target.value)} 
-                placeholder="댓글은 조합원의 큰 힘이 됩니다." 
-                className="w-full border-2 border-gray-100 rounded-[2rem] p-6 md:p-8 text-base focus:border-sky-primary outline-none min-h-[160px] resize-none pr-32 transition-all bg-gray-50/30"
+                placeholder={"댓글은 조합원의\n큰 힘이 됩니다."} 
+                className="w-full border-2 border-gray-100 rounded-[2rem] p-6 md:p-8 text-sm md:text-base focus:border-sky-primary outline-none min-h-[160px] resize-none pr-32 transition-all bg-gray-50/30"
               />
               <button 
                 type="submit" 
@@ -321,12 +319,12 @@ const Board: React.FC<BoardProps> = ({
     );
   }
 
-  // 듀얼 보드 렌더링 함수 (메인 공지사항 탭용)
+  // 듀얼 보드 렌더링 함수
   const renderDualBoard = () => {
     const noticeAllPosts = posts.filter(p => p.type === 'notice_all').sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
     const familyEventPosts = posts.filter(p => p.type === 'family_events').sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
 
-    const PostList = ({ title, icon, colorClass, data, typeKey }: { title: string, icon: string, colorClass: string, data: Post[], typeKey: BoardType }) => (
+    const PostList = ({ title, icon, colorClass, data }: { title: string, icon: string, colorClass: string, data: Post[] }) => (
       <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden flex flex-col h-full">
         <div className={`p-8 border-b border-gray-50 flex justify-between items-center ${colorClass}`}>
           <h3 className="text-xl font-black flex items-center">
@@ -357,13 +355,12 @@ const Board: React.FC<BoardProps> = ({
 
     return (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fadeIn">
-        <PostList title="공고/공지" icon="fa-bullhorn" colorClass="bg-sky-primary text-white" data={noticeAllPosts} typeKey="notice_all" />
-        <PostList title="경조사" icon="fa-bullhorn" colorClass="bg-sky-primary text-white" data={familyEventPosts} typeKey="family_events" />
+        <PostList title="공고/공지" icon="fa-bullhorn" colorClass="bg-sky-primary text-white" data={noticeAllPosts} />
+        <PostList title="경조사" icon="fa-bullhorn" colorClass="bg-sky-primary text-white" data={familyEventPosts} />
       </div>
     );
   };
 
-  // 일반 단일 보드 렌더링
   const filteredPosts = posts.filter(p => p.type === type).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return (
