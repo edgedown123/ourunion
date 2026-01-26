@@ -225,9 +225,7 @@ const App: React.FC = () => {
       saveToLocal('members', rolledBack);
 
       console.error('회원 가입 처리 중 오류:', error);
-      alert('회원가입 정보가 서버에 저장되지 않았습니다.
-(권한/RLS 정책 또는 네트워크 문제일 수 있어요)
-잠시 후 다시 시도해주세요.');
+      alert('회원가입 정보가 서버에 저장되지 않았습니다.\n(권한/RLS 정책 또는 네트워크 문제일 수 있어요)\n잠시 후 다시 시도해주세요.');
     }
   };
 
@@ -315,8 +313,7 @@ const App: React.FC = () => {
       setLoginPassword('');
       alert(`${found.name}님, 환영합니다!`);
     } else {
-      alert('회원 정보를 찾을 수 없습니다.
-아이디나 비밀번호를 확인해주세요.');
+      alert('회원 정보를 찾을 수 없습니다.\n아이디나 비밀번호를 확인해주세요.');
     }
   };
 
