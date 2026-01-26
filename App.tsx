@@ -96,12 +96,16 @@ const App: React.FC = () => {
   };
 
   const handleTabChange = (tab: string) => {
-    const restrictedTabs = ['notice', 'notice_all', 'family_events', 'resources'];
+    // 제한된 메뉴: 자유게시판(free), 자료실(resources)
+    // 허용된 메뉴: 공지사항 관련(notice, notice_all, family_events), 조합소개 관련(intro, greeting, history, map)
+    const restrictedTabs = ['free', 'resources'];
+    
     if (userRole === 'guest' && restrictedTabs.includes(tab)) {
-      // 비회원이 제한된 탭 접근 시 승인 대기 팝업 노출
+      // 비회원이 '자유게시판'이나 '자료실' 접근 시 승인 대기 팝업 노출
       setShowApprovalPending(true);
       return;
     }
+    
     setActiveTab(tab);
     setIsWriting(false);
     setWritingType(null);
