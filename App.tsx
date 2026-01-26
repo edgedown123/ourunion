@@ -24,9 +24,13 @@ const App: React.FC = () => {
   const [writingType, setWritingType] = useState<BoardType | null>(null);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+  
+  // 모달 상태 관리
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [showMemberLogin, setShowMemberLogin] = useState(false);
   const [showPasswordCreation, setShowPasswordCreation] = useState(false);
+  const [showApprovalPending, setShowApprovalPending] = useState(false); // 승인 대기 팝업 상태
+  
   const [showPassword, setShowPassword] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   const [loginEmail, setLoginEmail] = useState('');
@@ -262,10 +266,12 @@ const App: React.FC = () => {
     
     if (found) {
       if (!found.isApproved) {
-        return alert('관리자 승인이 필요합니다.');
+        // 브라우저 alert 대신 커스텀 팝업 노출
+        setShowMemberLogin(false);
+        setShowApprovalPending(true);
+        return;
       }
       
-      // 승인은 되었으나 비밀번호가 아직 없는 경우 (최초 로그인)
       if (!found.password) {
         setPendingMember(found);
         setShowMemberLogin(false);
@@ -273,7 +279,6 @@ const App: React.FC = () => {
         return;
       }
       
-      // 비밀번호가 있는 경우 검증
       if (found.password === loginPassword) {
         setUserRole('member');
         const { password, ...sessionData } = found;
@@ -304,7 +309,6 @@ const App: React.FC = () => {
     saveToLocal('members', updatedMembers);
     await cloud.saveMemberToCloud(updatedMember);
 
-    // 자동 로그인 처리
     setUserRole('member');
     const { password, ...sessionData } = updatedMember;
     setLoggedInMember(updatedMember);
@@ -494,6 +498,28 @@ const App: React.FC = () => {
               <button onClick={handleMemberLogin} className="w-full py-4.5 bg-sky-primary text-white rounded-2xl font-black text-base shadow-xl shadow-sky-100 hover:opacity-95 active:scale-95 transition-all mt-4">로그인</button>
               <button onClick={() => { handleTabChange('signup'); setShowMemberLogin(false); }} className="w-full text-center text-xs text-gray-400 font-bold hover:text-sky-primary mt-6 transition-colors">아직 회원이 아니신가요? <span className="underline decoration-2 underline-offset-4 ml-1">신규 가입하기</span></button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 관리자 승인 대기 모달 */}
+      {showApprovalPending && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-[3rem] p-10 max-w-[360px] w-[90%] shadow-2xl relative text-center">
+            <button onClick={() => setShowApprovalPending(false)} className="absolute top-8 right-8 text-gray-300 hover:text-gray-500 transition-colors"><i className="fas fa-times text-xl"></i></button>
+            <div className="w-20 h-20 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner"><i className="fas fa-user-clock text-orange-400 text-3xl"></i></div>
+            <h3 className="text-2xl font-black text-gray-900 mb-4">승인 대기 중</h3>
+            <p className="text-sm text-gray-500 font-medium leading-relaxed mb-8">
+              가입 신청이 접수되어<br/>
+              <span className="text-orange-500 font-bold">관리자의 승인</span>을 기다리고 있습니다.<br/>
+              조금만 더 기다려주세요!
+            </p>
+            <button 
+              onClick={() => setShowApprovalPending(false)} 
+              className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-base shadow-xl hover:bg-black transition-all active:scale-95"
+            >
+              확인
+            </button>
           </div>
         </div>
       )}
