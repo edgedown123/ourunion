@@ -61,19 +61,7 @@ const App: React.FC = () => {
           setMembers(mData);
           localStorage.setItem('union_members', JSON.stringify(mData));
         }
-        if (sData) {
-          // 클라우드에서 불러온 설정이 일부 필드만 가진 경우가 있어(예: data에 history만 있음)
-          // 초기값과 병합해서 undefined로 인한 화면 크래시(특히 관리자 패널)를 방지한다.
-          const merged = { ...INITIAL_SETTINGS, ...sData };
-          setSettings(merged);
-          localStorage.setItem('union_settings', JSON.stringify(merged));
-        } else {
-          // 클라우드 설정을 못 불러왔을 때(테이블/RLS/네트워크 문제 등) 로컬에 저장된 설정으로 fallback
-          const sSettings = localStorage.getItem('union_settings');
-          if (sSettings) {
-            try { setSettings(JSON.parse(sSettings)); } catch {}
-          }
-        }
+        if (sData) setSettings(sData);
       } else {
         const sPosts = localStorage.getItem('union_posts');
         const sMembers = localStorage.getItem('union_members');
@@ -205,30 +193,46 @@ const App: React.FC = () => {
       signupDate: new Date().toISOString()
     };
 
-    // 1) 먼저 UI에 즉시 반영(낙관적 업데이트)
-    const optimisticMembers = [newMember, ...members];
-    setMembers(optimisticMembers);
-    saveToLocal('members', optimisticMembers);
-
     try {
-      // 2) 클라우드 저장 (Supabase)
+      // 1) 먼저 클라우드 저장 (Supabase)
       await cloud.saveMemberToCloud(newMember);
 
-      // 3) 저장 성공 시: 클라우드에서 다시 불러와서(진짜 소스) PC/모바일 동기화
-      await syncData(false);
+      // 2) 클라우드 저장 성공 후에만 로컬 상태/저장 반영
+      const updatedMembers = [newMember, ...members];
+      setMembers(updatedMembers);
+      saveToLocal('members', updatedMembers);
 
       console.log('신규 회원 가입 및 동기화 완료');
-    } catch (error) {
-      // 저장 실패 시: 방금 추가한 데이터는 로컬에서도 제거(새로고침 시 사라지는 혼란 방지)
-      const rolledBack = members; // 이전 상태로 롤백
-      setMembers(rolledBack);
-      saveToLocal('members', rolledBack);
-
+    } catch (error: any) {
       console.error('회원 가입 처리 중 오류:', error);
-      alert('회원가입 정보가 서버에 저장되지 않았습니다.\n(권한/RLS 정책 또는 네트워크 문제일 수 있어요)\n잠시 후 다시 시도해주세요.');
+
+      // Supabase 에러 메시지를 최대한 표시
+      const msg =
+        error?.message ||
+        error?.error_description ||
+        (typeof error === 'string' ? error : null) ||
+        '회원가입 정보가 서버에 저장되지 않았습니다. (권한/RLS 정책 또는 네트워크 문제일 수 있어요)';
+
+      alert(`${msg}
+
+잠시 후 다시 시도해주세요.`);
     }
   };
-
+    
+    try {
+      // 1. 상태 업데이트 및 로컬 저장
+      const updatedMembers = [newMember, ...members];
+      setMembers(updatedMembers);
+      saveToLocal('members', updatedMembers);
+      
+      // 2. 클라우드 저장 (Supabase)
+      await cloud.saveMemberToCloud(newMember);
+      console.log("신규 회원 가입 및 동기화 완료");
+    } catch (error) {
+      console.error("회원 가입 처리 중 오류:", error);
+      alert("서버 통신 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+    }
+  };
 
   const handleRemoveMemberByAdmin = async (memberId: string) => {
     const memberToRemove = members.find(m => m.id === memberId);
@@ -263,30 +267,15 @@ const App: React.FC = () => {
     }
   };
 
-  const handleMemberLogin = async () => {
+  const handleMemberLogin = () => {
     if (!loginId || !loginPassword) return alert('아이디와 비밀번호를 입력해주세요.');
-
-    const findMember = (list: Member[]) =>
-      list.find((m: Member) => m.loginId === loginId && m.password === loginPassword);
-
-    // 1) 우선 로컬/메모리에서 확인
+    
+    // 현재 메모리에 있는 members 리스트와 로컬 스토리지에 있는 리스트를 모두 확인
     const localSavedMembersStr = localStorage.getItem('union_members');
-    const localMembers: Member[] = localSavedMembersStr ? JSON.parse(localSavedMembersStr) : members;
-
-    let found = findMember(localMembers);
-
-    // 2) 없으면 클라우드에서 최신 목록을 받아와서 다시 확인 (PC/모바일 동기화 대응)
-    if (!found && cloud.isSupabaseEnabled()) {
-      try {
-        await syncData(false);
-        const latestStr = localStorage.getItem('union_members');
-        const latestMembers: Member[] = latestStr ? JSON.parse(latestStr) : members;
-        found = findMember(latestMembers);
-      } catch (e) {
-        console.error('로그인 전 클라우드 동기화 실패:', e);
-      }
-    }
-
+    const allMembers = localSavedMembersStr ? JSON.parse(localSavedMembersStr) : members;
+    
+    const found = allMembers.find((m: Member) => m.loginId === loginId && m.password === loginPassword);
+    
     if (found) {
       setUserRole('member');
       const { password, ...sessionData } = found;
@@ -298,10 +287,9 @@ const App: React.FC = () => {
       setLoginPassword('');
       alert(`${found.name}님, 환영합니다!`);
     } else {
-      alert('회원 정보를 찾을 수 없습니다.\n아이디나 비밀번호를 확인해주세요.');
+      alert('회원 정보를 찾을 수 없습니다. 아이디나 비밀번호를 확인해주세요.\n(방금 가입하셨다면 잠시 후 다시 시도해주세요)');
     }
   };
-
 
   const handleLogout = () => {
     if (!window.confirm('로그아웃 하시겠습니까?')) return;
