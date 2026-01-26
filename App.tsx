@@ -61,7 +61,15 @@ const App: React.FC = () => {
           setMembers(mData);
           localStorage.setItem('union_members', JSON.stringify(mData));
         }
-        if (sData) setSettings(sData);
+        if (sData) {
+          setSettings(sData);
+        } else {
+          // 클라우드 설정을 못 불러왔을 때(테이블/RLS/네트워크 문제 등) 로컬에 저장된 설정으로 fallback
+          const sSettings = localStorage.getItem('union_settings');
+          if (sSettings) {
+            try { setSettings(JSON.parse(sSettings)); } catch {}
+          }
+        }
       } else {
         const sPosts = localStorage.getItem('union_posts');
         const sMembers = localStorage.getItem('union_members');

@@ -136,35 +136,84 @@ export const deleteMemberFromCloud = async (id: string) => {
 
 // --------------------------------------
 // 사이트 설정 동기화
+// - 기본: public.site_settings (id='main', data jsonb NOT NULL)
+// - 호환: public.settings (id='main', data jsonb)
 // --------------------------------------
 export const fetchSettingsFromCloud = async (): Promise<SiteSettings | null> => {
   if (!supabase) return null;
 
+  // 1) 우선 site_settings에서 읽기 (권장)
   try {
     const { data, error } = await supabase
-      .from('settings')
-      .select('data')
+      .from('site_settings')
+      .select('data, main_slogan, sub_slogan')
       .eq('id', 'main')
       .single();
 
     if (error) throw error;
-    return (data?.data ?? null) as SiteSettings | null;
+
+    const settings = (data as any)?.data as SiteSettings | null;
+
+    // data(jsonb)가 비어있는 경우는 null로 처리 (App에서 로컬 fallback)
+    if (!settings) return null;
+
+    // 컬럼(main_slogan/sub_slogan)이 있으면 heroTitle/Subtitle을 덮어써서 일관성 유지
+    const main = (data as any)?.main_slogan;
+    const sub = (data as any)?.sub_slogan;
+
+    return {
+      ...settings,
+      heroTitle: typeof main === 'string' && main.length ? main : settings.heroTitle,
+      heroSubtitle: typeof sub === 'string' && sub.length ? sub : settings.heroSubtitle,
+    };
   } catch (err) {
-    console.error('클라우드 설정 로드 실패:', err);
-    return null;
+    // 2) (구버전) settings 테이블 fallback
+    try {
+      const { data, error } = await supabase
+        .from('settings')
+        .select('data')
+        .eq('id', 'main')
+        .single();
+
+      if (error) throw error;
+      return ((data as any)?.data ?? null) as SiteSettings | null;
+    } catch (err2) {
+      console.error('클라우드 설정 로드 실패:', err2);
+      return null;
+    }
   }
 };
 
 export const saveSettingsToCloud = async (settings: SiteSettings) => {
   if (!supabase) return;
 
+  // 1) 우선 site_settings에 저장 (권장)
   try {
+    const payload: any = {
+      id: 'main',
+      data: settings, // NOT NULL 컬럼
+      main_slogan: settings.heroTitle ?? null,
+      sub_slogan: settings.heroSubtitle ?? null,
+      updated_at: new Date().toISOString(),
+    };
+
     const { error } = await supabase
-      .from('settings')
-      .upsert({ id: 'main', data: settings });
+      .from('site_settings')
+      .upsert(payload, { onConflict: 'id' });
 
     if (error) throw error;
+    return;
   } catch (err) {
-    console.error('클라우드 설정 저장 실패:', err);
+    // 2) (구버전) settings 테이블 fallback
+    try {
+      const { error } = await supabase
+        .from('settings')
+        .upsert({ id: 'main', data: settings }, { onConflict: 'id' });
+
+      if (error) throw error;
+    } catch (err2) {
+      console.error('클라우드 설정 저장 실패:', err2);
+    }
   }
 };
+
