@@ -27,7 +27,7 @@ const App: React.FC = () => {
   
   // 모달 상태 관리
   const [showAdminLogin, setShowAdminLogin] = useState(false);
-  const [showMemberLogin, setShowMemberLogin] = useState(false);
+  const [showMemberLogin, setShowMemberLogin] = useState(false); // 현재 숨김 상태
   const [showPasswordCreation, setShowPasswordCreation] = useState(false);
   const [showApprovalPending, setShowApprovalPending] = useState(false); // 승인 대기 팝업 상태
   
@@ -98,8 +98,8 @@ const App: React.FC = () => {
   const handleTabChange = (tab: string) => {
     const restrictedTabs = ['notice', 'notice_all', 'family_events', 'resources'];
     if (userRole === 'guest' && restrictedTabs.includes(tab)) {
-      alert('조합원 전용 메뉴입니다. 로그인이 필요합니다.');
-      setShowMemberLogin(true);
+      // 비회원이 제한된 탭 접근 시 승인 대기 팝업 노출
+      setShowApprovalPending(true);
       return;
     }
     setActiveTab(tab);
@@ -141,7 +141,10 @@ const App: React.FC = () => {
   };
 
   const handleSaveComment = async (postId: string, content: string, parentId?: string) => {
-    if (userRole === 'guest') return alert('댓글 작성을 위해 로그인이 필요합니다.');
+    if (userRole === 'guest') {
+      setShowApprovalPending(true);
+      return;
+    }
     
     const newComment: Comment = {
       id: Date.now().toString(),
@@ -264,14 +267,12 @@ const App: React.FC = () => {
     
     const found = members.find((m: Member) => m.email === loginEmail);
     
-    // 1. 회원 정보가 아예 없거나(미가입자), 회원 정보는 있지만 승인되지 않은 경우 모두 팝업 노출
     if (!found || !found.isApproved) {
       setShowMemberLogin(false);
       setShowApprovalPending(true);
       return;
     }
     
-    // 2. 승인되었으나 비밀번호가 아직 없는 경우 (최초 로그인)
     if (!found.password) {
       setPendingMember(found);
       setShowMemberLogin(false);
@@ -279,7 +280,6 @@ const App: React.FC = () => {
       return;
     }
     
-    // 3. 승인 및 비밀번호 설정이 완료된 경우 정상 비밀번호 체크
     if (found.password === loginPassword) {
       setUserRole('member');
       const { password, ...sessionData } = found;
@@ -338,8 +338,7 @@ const App: React.FC = () => {
       return;
     }
     if (userRole === 'guest') { 
-      alert('글 작성을 위해 로그인이 필요합니다.'); 
-      handleTabChange('signup'); 
+      setShowApprovalPending(true);
       return; 
     }
     setWritingType(targetType as BoardType);
@@ -393,7 +392,7 @@ const App: React.FC = () => {
         onTabChange={handleTabChange} 
         userRole={userRole} 
         memberName={userRole === 'admin' ? '관리자' : (loggedInMember?.name || '')} 
-        onToggleLogin={userRole === 'guest' ? () => setShowMemberLogin(true) : handleLogout}
+        onToggleLogin={userRole === 'guest' ? () => setShowApprovalPending(true) : handleLogout}
       />
       
       <main className="flex-grow">
@@ -474,7 +473,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* 조합원 로그인 모달 */}
+      {/* 조합원 로그인 모달 (현재 비활성화됨) */}
       {showMemberLogin && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn">
           <div className="bg-white rounded-[3rem] p-10 max-w-[360px] w-[90%] shadow-2xl relative">
