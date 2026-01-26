@@ -40,6 +40,7 @@ export interface Member {
   email: string;
   garage: string;
   signupDate: string;
+  isApproved?: boolean; // 가입 승인 여부
 }
 
 export interface HistoryItem {

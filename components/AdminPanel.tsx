@@ -1,7 +1,6 @@
 
 import React, { useRef, useState } from 'react';
 import { SiteSettings, Member, Post, BoardType } from '../types';
-import { uploadSiteImage } from '../services/supabaseService';
 
 interface AdminPanelProps {
   settings: SiteSettings;
@@ -15,11 +14,12 @@ interface AdminPanelProps {
   onViewPost: (id: string, type: BoardType) => void;
   onClose: () => void;
   onRemoveMember?: (id: string) => void;
+  onApproveMember?: (id: string) => void;
 }
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ 
   settings, setSettings, members, posts, deletedPosts, 
-  onRestorePost, onPermanentDelete, onEditPost, onViewPost, onClose, onRemoveMember
+  onRestorePost, onPermanentDelete, onEditPost, onViewPost, onClose, onRemoveMember, onApproveMember
 }) => {
   // 히어로 이미지 5장 관리를 위한 Refs
   const heroImageRefs = [
@@ -70,30 +70,26 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     }
   };
 
-  const handleHeroImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+  const handleHeroImageUpload = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      // 1) Storage 업로드 → 2) URL을 settings에 저장
-      const url = await uploadSiteImage(file, `hero/slide_${index + 1}`);
-
-      const currentUrls = settings.heroImageUrls || [settings.heroImageUrl];
-      const newUrls = [...currentUrls];
-      // 배열 크기가 작으면 빈 문자열로 채워줌 (최대 5개)
-      while (newUrls.length < 5) newUrls.push('');
-
-      newUrls[index] = url;
-
-      // 첫 번째 사진은 heroImageUrl과도 동기화 (하위호환)
-      if (index === 0) {
-        setSettings({ ...settings, heroImageUrls: newUrls, heroImageUrl: newUrls[0] });
-      } else {
-        setSettings({ ...settings, heroImageUrls: newUrls });
-      }
-    } catch (err) {
-      console.error('히어로 이미지 업로드 실패:', err);
-      alert('이미지 업로드 실패: Storage 권한/정책 또는 네트워크를 확인해주세요.');
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const currentUrls = settings.heroImageUrls || [settings.heroImageUrl];
+        const newUrls = [...currentUrls];
+        // 배열 크기가 작으면 빈 문자열로 채워줌 (최대 5개)
+        while (newUrls.length < 5) newUrls.push('');
+        
+        newUrls[index] = reader.result as string;
+        
+        // 첫 번째 사진은 heroImageUrl과도 동기화 (하위호환)
+        if (index === 0) {
+          setSettings({ ...settings, heroImageUrls: newUrls, heroImageUrl: newUrls[0] });
+        } else {
+          setSettings({ ...settings, heroImageUrls: newUrls });
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -105,20 +101,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     }
   };
 
-  const handleOfficeMapUpload = async (e: React.ChangeEvent<HTMLInputElement>, officeId: string) => {
+  const handleOfficeMapUpload = (e: React.ChangeEvent<HTMLInputElement>, officeId: string) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const url = await uploadSiteImage(file, `offices/${officeId}`);
-
-      const updatedOffices = settings.offices.map(off =>
-        off.id === officeId ? { ...off, mapImageUrl: url } : off
-      );
-      setSettings({ ...settings, offices: updatedOffices });
-    } catch (err) {
-      console.error('사업소 지도 이미지 업로드 실패:', err);
-      alert('지도 이미지 업로드 실패: Storage 권한/정책 또는 네트워크를 확인해주세요.');
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const updatedOffices = settings.offices.map(off => off.id === officeId ? { ...off, mapImageUrl: reader.result as string } : off);
+        setSettings({ ...settings, offices: updatedOffices });
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -139,8 +130,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const handleDownloadExcel = () => {
     if (members.length === 0) return alert('다운로드할 명단이 없습니다.');
-    const headers = ['성함', '연락처', '이메일', '차고지', '가입일'];
-    const rows = members.map(m => [m.name, m.phone, m.email, m.garage, formatDate(m.signupDate)]);
+    const headers = ['성함', '연락처', '이메일', '차고지', '가입일', '승인상태'];
+    const rows = members.map(m => [m.name, m.phone, m.email, m.garage, formatDate(m.signupDate), m.isApproved ? '승인' : '미승인']);
     const csvContent = "\uFEFF" + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -237,22 +228,43 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                     <tr><td colSpan={6} className="px-8 py-20 text-center text-gray-400 font-bold italic">아직 가입 신청자가 없습니다.</td></tr>
                   ) : members.map(m => (
                     <tr key={m.id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-8 py-5 font-black text-gray-900">{m.name}</td>
+                      <td className="px-8 py-5 font-black text-gray-900">
+                        <div className="flex items-center">
+                          {m.name}
+                          {m.isApproved && (
+                            <span className="ml-2 bg-sky-100 text-sky-600 text-[8px] px-1.5 py-0.5 rounded-full font-black">승인됨</span>
+                          )}
+                        </div>
+                      </td>
                       <td className="px-8 py-5 text-gray-600">{m.phone}</td>
                       <td className="px-8 py-5 text-gray-600 font-medium">{m.email}</td>
                       <td className="px-8 py-5 text-gray-600 font-bold">{m.garage}</td>
                       <td className="px-8 py-5 text-gray-400 text-xs font-medium">{formatDate(m.signupDate)}</td>
                       <td className="px-8 py-5">
-                        <button 
-                          onClick={() => {
-                            if (confirm(`${m.name} 조합원을 강제 탈퇴시키겠습니까?`)) {
-                              onRemoveMember?.(m.id);
-                            }
-                          }}
-                          className="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-[10px] font-black hover:bg-red-500 hover:text-white transition-all border border-red-100 shadow-sm active:scale-95"
-                        >
-                          강제탈퇴
-                        </button>
+                        <div className="flex space-x-2">
+                          {!m.isApproved && (
+                            <button 
+                              onClick={() => {
+                                if (confirm(`${m.name} 조합원의 가입을 승인하시겠습니까?`)) {
+                                  onApproveMember?.(m.id);
+                                }
+                              }}
+                              className="px-4 py-2 bg-sky-50 text-sky-600 rounded-xl text-[10px] font-black hover:bg-sky-primary hover:text-white transition-all border border-sky-100 shadow-sm active:scale-95 flex items-center"
+                            >
+                              <i className="fas fa-check mr-1.5"></i> 가입승인
+                            </button>
+                          )}
+                          <button 
+                            onClick={() => {
+                              if (confirm(`${m.name} 조합원을 강제 탈퇴시키겠습니까?`)) {
+                                onRemoveMember?.(m.id);
+                              }
+                            }}
+                            className="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-[10px] font-black hover:bg-red-500 hover:text-white transition-all border border-red-100 shadow-sm active:scale-95 flex items-center"
+                          >
+                            <i className="fas fa-user-minus mr-1.5"></i> 강제탈퇴
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -384,7 +396,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                       <tr><td className="px-8 py-10 text-center text-gray-300 font-bold italic">휴지통이 비어 있습니다.</td></tr>
                     ) : deletedPosts.map(p => (
                       <tr key={p.id} className="hover:bg-red-50/20">
-                        <td className="px-8 py-4 font-bold text-gray-500 truncate max-w-sm">{p.title}</td>
+                        <td className="px-8 py-4 font-bold text-gray-500 truncate max-sm">{p.title}</td>
                         <td className="px-8 py-4 text-right space-x-4">
                           <button onClick={() => onRestorePost(p.id)} className="text-sky-500 font-black text-xs hover:underline">복구</button>
                           <button onClick={() => onPermanentDelete(p.id)} className="text-red-400 font-black text-xs hover:underline">영구삭제</button>

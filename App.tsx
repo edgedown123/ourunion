@@ -61,19 +61,7 @@ const App: React.FC = () => {
           setMembers(mData);
           localStorage.setItem('union_members', JSON.stringify(mData));
         }
-        if (sData) {
-          // 클라우드에서 불러온 설정이 일부 필드만 가진 경우가 있어(예: data에 history만 있음)
-          // 초기값과 병합해서 undefined로 인한 화면 크래시(특히 관리자 패널)를 방지한다.
-          const merged = { ...INITIAL_SETTINGS, ...sData };
-          setSettings(merged);
-          localStorage.setItem('union_settings', JSON.stringify(merged));
-        } else {
-          // 클라우드 설정을 못 불러왔을 때(테이블/RLS/네트워크 문제 등) 로컬에 저장된 설정으로 fallback
-          const sSettings = localStorage.getItem('union_settings');
-          if (sSettings) {
-            try { setSettings(JSON.parse(sSettings)); } catch {}
-          }
-        }
+        if (sData) setSettings(sData);
       } else {
         const sPosts = localStorage.getItem('union_posts');
         const sMembers = localStorage.getItem('union_members');
@@ -202,7 +190,8 @@ const App: React.FC = () => {
     const newMember: Member = { 
       ...memberData, 
       id: Date.now().toString(), 
-      signupDate: new Date().toISOString() 
+      signupDate: new Date().toISOString(),
+      isApproved: false // 기본적으로 미승인 상태
     };
     
     try {
@@ -217,6 +206,18 @@ const App: React.FC = () => {
     } catch (error) {
       console.error("회원 가입 처리 중 오류:", error);
       alert("서버 통신 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+    }
+  };
+
+  const handleApproveMember = async (memberId: string) => {
+    const updatedMembers = members.map(m => m.id === memberId ? { ...m, isApproved: true } : m);
+    setMembers(updatedMembers);
+    saveToLocal('members', updatedMembers);
+    
+    const approvedMember = updatedMembers.find(m => m.id === memberId);
+    if (approvedMember) {
+      await cloud.saveMemberToCloud(approvedMember);
+      alert(`${approvedMember.name}님의 가입이 승인되었습니다.`);
     }
   };
 
@@ -254,15 +255,17 @@ const App: React.FC = () => {
   };
 
   const handleMemberLogin = () => {
-    if (!loginId || !loginPassword) return alert('아이디와 비밀번호를 입력해주세요.');
+    if (!loginId) return alert('아이디를 입력해주세요.');
     
-    // 현재 메모리에 있는 members 리스트와 로컬 스토리지에 있는 리스트를 모두 확인
     const localSavedMembersStr = localStorage.getItem('union_members');
     const allMembers = localSavedMembersStr ? JSON.parse(localSavedMembersStr) : members;
     
-    const found = allMembers.find((m: Member) => m.loginId === loginId && m.password === loginPassword);
+    const found = allMembers.find((m: Member) => m.loginId === loginId);
     
     if (found) {
+      if (!found.isApproved) {
+        return alert('가입 승인 대기 중입니다. 관리자 승인 후 로그인이 가능합니다.');
+      }
       setUserRole('member');
       const { password, ...sessionData } = found;
       setLoggedInMember(found);
@@ -273,7 +276,7 @@ const App: React.FC = () => {
       setLoginPassword('');
       alert(`${found.name}님, 환영합니다!`);
     } else {
-      alert('회원 정보를 찾을 수 없습니다. 아이디나 비밀번호를 확인해주세요.\n(방금 가입하셨다면 잠시 후 다시 시도해주세요)');
+      alert('회원 정보를 찾을 수 없습니다. 아이디를 확인해주세요.');
     }
   };
 
@@ -375,6 +378,7 @@ const App: React.FC = () => {
               onViewPost={handleViewPostFromAdmin} 
               onClose={() => handleTabChange('home')} 
               onRemoveMember={handleRemoveMemberByAdmin} 
+              onApproveMember={handleApproveMember}
             />
           ) : (
             <div className="flex flex-col items-center justify-center py-40">
@@ -440,8 +444,7 @@ const App: React.FC = () => {
               <p className="text-[11px] text-gray-400 font-bold mt-2 tracking-tight">우리노동조합 커뮤니티에 오신 것을 환영합니다</p>
             </div>
             <div className="space-y-3">
-              <input type="text" placeholder="아이디" className="w-full border-2 border-gray-50 rounded-2xl p-4 text-sm outline-none focus:border-sky-primary transition-colors bg-gray-50/50 font-bold" value={loginId} onChange={(e) => setLoginId(e.target.value)} />
-              <input type="password" placeholder="비밀번호" className="w-full border-2 border-gray-50 rounded-2xl p-4 text-sm outline-none focus:border-sky-primary transition-colors bg-gray-50/50 font-bold" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleMemberLogin()} />
+              <input type="text" placeholder="아이디(연락처)" className="w-full border-2 border-gray-50 rounded-2xl p-4 text-sm outline-none focus:border-sky-primary transition-colors bg-gray-50/50 font-bold" value={loginId} onChange={(e) => setLoginId(e.target.value)} />
               <button onClick={handleMemberLogin} className="w-full py-4.5 bg-sky-primary text-white rounded-2xl font-black text-base shadow-xl shadow-sky-100 hover:opacity-95 active:scale-95 transition-all mt-4">로그인</button>
               <button onClick={() => { handleTabChange('signup'); setShowMemberLogin(false); }} className="w-full text-center text-xs text-gray-400 font-bold hover:text-sky-primary mt-6 transition-colors">아직 회원이 아니신가요? <span className="underline decoration-2 underline-offset-4 ml-1">신규 가입하기</span></button>
             </div>
