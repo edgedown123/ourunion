@@ -187,37 +187,27 @@ const App: React.FC = () => {
   };
 
   const handleAddMember = async (memberData: Omit<Member, 'id' | 'signupDate'>) => {
-    const newMember: Member = {
-      ...memberData,
-      id: Date.now().toString(),
-      signupDate: new Date().toISOString()
+    const newMember: Member = { 
+      ...memberData, 
+      id: Date.now().toString(), 
+      signupDate: new Date().toISOString() 
     };
-
+    
     try {
-      // 1) 클라우드 저장 먼저 시도 (Supabase)
-      await cloud.saveMemberToCloud(newMember);
-
-      // 2) 클라우드 저장 성공 후에만 로컬 상태/저장 반영
+      // 1. 상태 업데이트 및 로컬 저장
       const updatedMembers = [newMember, ...members];
       setMembers(updatedMembers);
       saveToLocal('members', updatedMembers);
-
-      console.log('신규 회원 가입 및 동기화 완료');
-    } catch (error: any) {
-      console.error('회원 가입 처리 중 오류:', error);
-
-      const msg =
-        error?.message ||
-        error?.error_description ||
-        (typeof error === 'string' ? error : null) ||
-        '회원가입 정보가 서버에 저장되지 않았습니다.';
-
-      alert(
-        msg +
-          '
+      
+      // 2. 클라우드 저장 (Supabase)
+      await cloud.saveMemberToCloud(newMember);
+      console.log("신규 회원 가입 및 동기화 완료");
+    } catch (error) {
+      console.error("회원 가입 처리 중 오류:", error);
+      const msg = (error as any)?.message || (error as any)?.error_description || JSON.stringify(error);
+      alert(`회원가입 정보가 서버에 저장되지 않았습니다.
 (권한/RLS 정책 또는 네트워크 문제일 수 있어요)
-잠시 후 다시 시도해주세요.'
-      );
+에러: ${msg}`);
     }
   };
 

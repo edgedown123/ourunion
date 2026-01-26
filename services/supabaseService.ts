@@ -103,54 +103,71 @@ export const fetchMembersFromCloud = async (): Promise<Member[] | null> => {
 };
 
 export const saveMemberToCloud = async (member: Member) => {
-  if (!supabase) throw new Error('Supabase not enabled');
+  if (!supabase) throw new Error('Supabase is not enabled');
 
-  // Supabase 테이블 컬럼명이 camelCase / snake_case 혼재할 수 있어서
-  // 1) snake_case로 저장 시도 → 2) 실패하면 camelCase로 재시도
-  const tryUpsert = async (payload: any, onConflict?: string) => {
-    const { error } = await supabase
-      .from('members')
-      .upsert(payload, onConflict ? { onConflict } : undefined as any);
+  // members 테이블 스키마가 프로젝트마다 다를 수 있어서,
+  // (camelCase / snake_case / created_at 존재 여부) 여러 형태로 저장을 시도합니다.
+  const tryUpsert = async (payload: any) => {
+    const { error } = await supabase.from('members').upsert(payload);
     if (error) throw error;
   };
 
-  // Member 타입의 signupDate는 DB의 created_at으로 저장
-  // (프로젝트에서 created_at 컬럼을 쓰고 있는 것으로 보임)
-  const createdAt = member.signupDate ?? new Date().toISOString();
+  // 후보 payload들을 순서대로 시도
+  const payloads: any[] = [];
 
-  try {
-    // ✅ 1차: snake_case 컬럼(권장)
-    const payload1 = {
-      login_id: (member as any).loginId ?? (member as any).login_id ?? null,
-      password: (member as any).password ?? null,
-      name: (member as any).name ?? null,
-      birth_date: (member as any).birthDate ?? (member as any).birth_date ?? null,
-      phone: (member as any).phone ?? null,
-      email: (member as any).email ?? null,
-      garage: (member as any).garage ?? null,
-      role: (member as any).role ?? 'member',
-      status: (member as any).status ?? 'pending',
-      created_at: createdAt,
-    };
+  // 1) 기존(앱 내부) 필드 그대로 + created_at
+  payloads.push({
+    ...member,
+    created_at: member.signupDate,
+  });
 
-    // login_id가 없으면 onConflict를 걸 수 없어서 그냥 upsert
-    await tryUpsert(payload1, payload1.login_id ? 'login_id' : undefined);
-    console.log(`회원 정보 클라우드 저장 완료(snake_case): ${(member as any).name ?? ''}`);
-    return;
-  } catch (err1) {
-    console.warn('snake_case 저장 실패, camelCase로 재시도:', err1);
+  // 2) created_at 없이 (컬럼이 없는 경우 대비)
+  payloads.push({
+    ...member,
+  });
+
+  // 3) snake_case 변환 + created_at
+  payloads.push({
+    id: member.id,
+    login_id: member.loginId,
+    password: member.password,
+    name: member.name,
+    birth_date: member.birthDate,
+    phone: member.phone,
+    email: member.email,
+    garage: member.garage,
+    created_at: member.signupDate,
+  });
+
+  // 4) snake_case 변환 without created_at
+  payloads.push({
+    id: member.id,
+    login_id: member.loginId,
+    password: member.password,
+    name: member.name,
+    birth_date: member.birthDate,
+    phone: member.phone,
+    email: member.email,
+    garage: member.garage,
+  });
+
+  let lastErr: any = null;
+
+  for (const p of payloads) {
+    try {
+      await tryUpsert(p);
+      console.log(`회원 정보 클라우드 저장 완료: ${member.name}`);
+      return;
+    } catch (err: any) {
+      lastErr = err;
+      // 계속 시도
+    }
   }
 
-  // ✅ 2차: camelCase 컬럼(기존 코드 호환)
-  const payload2 = {
-    ...(member as any),
-    created_at: createdAt,
-  };
-
-  await tryUpsert(payload2);
-  console.log(`회원 정보 클라우드 저장 완료(camelCase): ${(member as any).name ?? ''}`);
+  // 최종 실패 시: 에러를 상위로 던져서 UI에서 메시지를 표시하게 함
+  console.error('클라우드 회원 저장 실패:', lastErr);
+  throw lastErr;
 };
-
 
 export const deleteMemberFromCloud = async (id: string) => {
   if (!supabase) return;
