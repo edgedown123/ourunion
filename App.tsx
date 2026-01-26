@@ -26,9 +26,14 @@ const App: React.FC = () => {
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [showMemberLogin, setShowMemberLogin] = useState(false);
+  const [showPasswordCreation, setShowPasswordCreation] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
-  const [loginId, setLoginId] = useState('');
+  const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [pendingMember, setPendingMember] = useState<Member | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   
@@ -169,7 +174,6 @@ const App: React.FC = () => {
     const postToDelete = posts.find(p => p.id === postId);
     if (!postToDelete) return;
     
-    // 관리자가 아니면 비밀번호 확인
     if (userRole !== 'admin' && postToDelete.password && inputPassword !== postToDelete.password) {
       return alert('비밀번호가 일치하지 않습니다.');
     }
@@ -191,21 +195,18 @@ const App: React.FC = () => {
       ...memberData, 
       id: Date.now().toString(), 
       signupDate: new Date().toISOString(),
-      isApproved: false // 기본적으로 미승인 상태
+      isApproved: false 
     };
     
     try {
-      // 1. 상태 업데이트 및 로컬 저장
       const updatedMembers = [newMember, ...members];
       setMembers(updatedMembers);
       saveToLocal('members', updatedMembers);
-      
-      // 2. 클라우드 저장 (Supabase)
       await cloud.saveMemberToCloud(newMember);
-      console.log("신규 회원 가입 및 동기화 완료");
+      console.log("신규 회원 가입 신청 완료");
     } catch (error) {
       console.error("회원 가입 처리 중 오류:", error);
-      alert("서버 통신 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+      alert("서버 통신 중 오류가 발생했습니다.");
     }
   };
 
@@ -255,29 +256,66 @@ const App: React.FC = () => {
   };
 
   const handleMemberLogin = () => {
-    if (!loginId) return alert('아이디를 입력해주세요.');
+    if (!loginEmail) return alert('이메일 주소를 입력해주세요.');
     
-    const localSavedMembersStr = localStorage.getItem('union_members');
-    const allMembers = localSavedMembersStr ? JSON.parse(localSavedMembersStr) : members;
-    
-    const found = allMembers.find((m: Member) => m.loginId === loginId);
+    const found = members.find((m: Member) => m.email === loginEmail);
     
     if (found) {
       if (!found.isApproved) {
-        return alert('가입 승인 대기 중입니다. 관리자 승인 후 로그인이 가능합니다.');
+        return alert('관리자 승인이 필요합니다.');
       }
-      setUserRole('member');
-      const { password, ...sessionData } = found;
-      setLoggedInMember(found);
-      localStorage.setItem('union_role', 'member');
-      localStorage.setItem('union_member', JSON.stringify(sessionData));
-      setShowMemberLogin(false);
-      setLoginId('');
-      setLoginPassword('');
-      alert(`${found.name}님, 환영합니다!`);
+      
+      // 승인은 되었으나 비밀번호가 아직 없는 경우 (최초 로그인)
+      if (!found.password) {
+        setPendingMember(found);
+        setShowMemberLogin(false);
+        setShowPasswordCreation(true);
+        return;
+      }
+      
+      // 비밀번호가 있는 경우 검증
+      if (found.password === loginPassword) {
+        setUserRole('member');
+        const { password, ...sessionData } = found;
+        setLoggedInMember(found);
+        localStorage.setItem('union_role', 'member');
+        localStorage.setItem('union_member', JSON.stringify(sessionData));
+        setShowMemberLogin(false);
+        setLoginEmail('');
+        setLoginPassword('');
+        alert(`${found.name}님, 환영합니다!`);
+      } else {
+        alert('비밀번호가 일치하지 않습니다.');
+      }
     } else {
-      alert('회원 정보를 찾을 수 없습니다. 아이디를 확인해주세요.');
+      alert('회원 정보를 찾을 수 없습니다. 이메일 주소를 확인해주세요.');
     }
+  };
+
+  const handleCreatePassword = async () => {
+    if (!newPassword || newPassword.length < 4) return alert('비밀번호를 4자리 이상 입력해주세요.');
+    if (newPassword !== confirmPassword) return alert('비밀번호가 일치하지 않습니다.');
+    if (!pendingMember) return;
+
+    const updatedMember = { ...pendingMember, password: newPassword };
+    const updatedMembers = members.map(m => m.id === pendingMember.id ? updatedMember : m);
+    
+    setMembers(updatedMembers);
+    saveToLocal('members', updatedMembers);
+    await cloud.saveMemberToCloud(updatedMember);
+
+    // 자동 로그인 처리
+    setUserRole('member');
+    const { password, ...sessionData } = updatedMember;
+    setLoggedInMember(updatedMember);
+    localStorage.setItem('union_role', 'member');
+    localStorage.setItem('union_member', JSON.stringify(sessionData));
+    
+    setShowPasswordCreation(false);
+    setNewPassword('');
+    setConfirmPassword('');
+    setPendingMember(null);
+    alert('비밀번호 설정이 완료되었습니다. 환영합니다!');
   };
 
   const handleLogout = () => {
@@ -418,7 +456,7 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {/* 로그인 모달 레이어 (Z-INDEX 100) */}
+      {/* 관리자 인증 모달 */}
       {showAdminLogin && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn">
           <div className="bg-white rounded-[2.5rem] p-12 max-w-[340px] w-[90%] shadow-2xl relative text-center">
@@ -434,6 +472,7 @@ const App: React.FC = () => {
         </div>
       )}
 
+      {/* 조합원 로그인 모달 */}
       {showMemberLogin && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn">
           <div className="bg-white rounded-[3rem] p-10 max-w-[360px] w-[90%] shadow-2xl relative">
@@ -441,12 +480,81 @@ const App: React.FC = () => {
             <div className="text-center mb-10">
               <div className="w-16 h-16 bg-sky-50 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-sm shadow-sky-100"><i className="fas fa-user-check text-sky-primary text-2xl"></i></div>
               <h3 className="text-2xl font-black text-gray-900">조합원 로그인</h3>
-              <p className="text-[11px] text-gray-400 font-bold mt-2 tracking-tight">우리노동조합 커뮤니티에 오신 것을 환영합니다</p>
+              <p className="text-[11px] text-gray-400 font-bold mt-2 tracking-tight">이메일 주소와 비밀번호를 입력하세요</p>
             </div>
-            <div className="space-y-3">
-              <input type="text" placeholder="아이디(연락처)" className="w-full border-2 border-gray-50 rounded-2xl p-4 text-sm outline-none focus:border-sky-primary transition-colors bg-gray-50/50 font-bold" value={loginId} onChange={(e) => setLoginId(e.target.value)} />
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 ml-2 uppercase tracking-widest">Email Address</label>
+                <input type="email" placeholder="example@email.com" className="w-full border-2 border-gray-50 rounded-2xl p-4 text-sm outline-none focus:border-sky-primary transition-colors bg-gray-50/50 font-bold" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 ml-2 uppercase tracking-widest">Password</label>
+                <input type="password" placeholder="••••••••" className="w-full border-2 border-gray-50 rounded-2xl p-4 text-sm outline-none focus:border-sky-primary transition-colors bg-gray-50/50 font-bold" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleMemberLogin()} />
+              </div>
               <button onClick={handleMemberLogin} className="w-full py-4.5 bg-sky-primary text-white rounded-2xl font-black text-base shadow-xl shadow-sky-100 hover:opacity-95 active:scale-95 transition-all mt-4">로그인</button>
               <button onClick={() => { handleTabChange('signup'); setShowMemberLogin(false); }} className="w-full text-center text-xs text-gray-400 font-bold hover:text-sky-primary mt-6 transition-colors">아직 회원이 아니신가요? <span className="underline decoration-2 underline-offset-4 ml-1">신규 가입하기</span></button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 비밀번호 생성 모달 (최초 로그인용) */}
+      {showPasswordCreation && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-md animate-fadeIn">
+          <div className="bg-white rounded-[3rem] p-10 max-w-[400px] w-[95%] shadow-2xl relative border-4 border-sky-100">
+            <div className="text-center mb-8">
+              <div className="w-20 h-20 bg-sky-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner"><i className="fas fa-shield-alt text-sky-primary text-3xl"></i></div>
+              <h3 className="text-2xl font-black text-gray-900 mb-2">비밀번호 만들기</h3>
+              <p className="text-xs text-gray-500 font-medium leading-relaxed">승인이 완료되었습니다! 앞으로 사용할<br/>나만의 비밀번호를 설정해주세요.</p>
+            </div>
+            
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-gray-400 ml-2 uppercase tracking-widest">New Password</label>
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  placeholder="새 비밀번호 (4자리 이상)" 
+                  className="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm outline-none focus:border-sky-primary transition-all bg-gray-50/30 font-bold" 
+                  value={newPassword} 
+                  onChange={(e) => setNewPassword(e.target.value)} 
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-gray-400 ml-2 uppercase tracking-widest">Confirm Password</label>
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  placeholder="비밀번호 확인" 
+                  className="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm outline-none focus:border-sky-primary transition-all bg-gray-50/30 font-bold" 
+                  value={confirmPassword} 
+                  onChange={(e) => setConfirmPassword(e.target.value)} 
+                />
+              </div>
+
+              <label className="flex items-center space-x-3 cursor-pointer group px-2">
+                <input 
+                  type="checkbox" 
+                  checked={showPassword} 
+                  onChange={(e) => setShowPassword(e.target.checked)} 
+                  className="w-5 h-5 rounded-lg border-2 border-gray-200 text-sky-primary focus:ring-sky-primary transition-all"
+                />
+                <span className="text-sm font-bold text-gray-500 group-hover:text-gray-900 transition-colors">비밀번호 보기</span>
+              </label>
+
+              <div className="pt-4 flex space-x-3">
+                <button 
+                  onClick={() => { setShowPasswordCreation(false); setPendingMember(null); }} 
+                  className="flex-1 py-4 bg-gray-100 text-gray-500 rounded-2xl font-black text-sm hover:bg-gray-200 transition-all"
+                >
+                  나중에 하기
+                </button>
+                <button 
+                  onClick={handleCreatePassword} 
+                  className="flex-[2] py-4 bg-sky-primary text-white rounded-2xl font-black text-base shadow-xl shadow-sky-100 hover:opacity-95 active:scale-95 transition-all"
+                >
+                  저장 및 로그인
+                </button>
+              </div>
             </div>
           </div>
         </div>
