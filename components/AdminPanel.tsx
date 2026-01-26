@@ -40,6 +40,21 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const [newDay, setNewDay] = useState('');
   const [newText, setNewText] = useState('');
 
+  // 날짜 포맷팅 유틸리티 함수
+  const formatDate = (dateStr: string | undefined) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    const hh = String(date.getHours()).padStart(2, '0');
+    const min = String(date.getMinutes()).padStart(2, '0');
+
+    return `${yyyy}.${mm}.${dd} ${hh}:${min}`;
+  };
+
   const handleSettingsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setSettings({ ...settings, [name]: value });
@@ -115,7 +130,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const handleDownloadExcel = () => {
     if (members.length === 0) return alert('다운로드할 명단이 없습니다.');
     const headers = ['성함', '연락처', '이메일', '차고지', '가입일'];
-    const rows = members.map(m => [m.name, m.phone, m.email, m.garage, m.signupDate]);
+    const rows = members.map(m => [m.name, m.phone, m.email, m.garage, formatDate(m.signupDate)]);
     const csvContent = "\uFEFF" + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -216,7 +231,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                       <td className="px-8 py-5 text-gray-600">{m.phone}</td>
                       <td className="px-8 py-5 text-gray-600 font-medium">{m.email}</td>
                       <td className="px-8 py-5 text-gray-600 font-bold">{m.garage}</td>
-                      <td className="px-8 py-5 text-gray-400 text-xs font-medium">{m.signupDate}</td>
+                      <td className="px-8 py-5 text-gray-400 text-xs font-medium">{formatDate(m.signupDate)}</td>
                       <td className="px-8 py-5">
                         <button 
                           onClick={() => {

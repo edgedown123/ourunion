@@ -27,6 +27,21 @@ const Board: React.FC<BoardProps> = ({
   const [replyContent, setReplyContent] = useState('');
   
   const selectedPost = selectedPostId ? posts.find(p => p.id === selectedPostId) : null;
+
+  // 날짜 포맷팅 유틸리티 함수
+  const formatDate = (dateStr: string | undefined) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    const hh = String(date.getHours()).padStart(2, '0');
+    const min = String(date.getMinutes()).padStart(2, '0');
+
+    return `${yyyy}.${mm}.${dd} ${hh}:${min}`;
+  };
   
   // 현재 보드 정보 찾기
   let boardInfo = NAV_ITEMS.find(item => item.id === type);
@@ -162,7 +177,7 @@ const Board: React.FC<BoardProps> = ({
             <h1 className="text-3xl md:text-4xl font-black mb-8 text-gray-900 leading-tight">{selectedPost.title}</h1>
             <div className="flex flex-wrap items-center text-xs md:text-sm font-bold text-gray-400 border-b border-gray-50 pb-8 gap-y-2">
               <span className="flex items-center mr-8"><i className="fas fa-user-circle mr-2.5 text-sky-primary/50"></i>{selectedPost.author}</span>
-              <span className="flex items-center mr-8"><i className="fas fa-calendar-alt mr-2.5"></i>{selectedPost.createdAt?.split('T')[0]}</span>
+              <span className="flex items-center mr-8"><i className="fas fa-calendar-alt mr-2.5"></i>{formatDate(selectedPost.createdAt)}</span>
               <span className="flex items-center mr-8"><i className="fas fa-eye mr-2.5"></i>조회 {selectedPost.views}</span>
               {userRole === 'admin' && selectedPost.password && (
                 <span className="flex items-center text-red-500 bg-red-50 px-3 py-1 rounded-full text-[10px] font-black border border-red-100 ml-auto md:ml-0">
@@ -225,7 +240,7 @@ const Board: React.FC<BoardProps> = ({
                     </div>
                     {comment.author}
                   </span>
-                  <span className="text-[11px] font-bold text-gray-300 uppercase">{comment.createdAt?.split('T')[0]}</span>
+                  <span className="text-[11px] font-bold text-gray-300 uppercase">{formatDate(comment.createdAt)}</span>
                 </div>
                 <p className="text-base text-gray-600 leading-relaxed pl-11 mb-3">{comment.content}</p>
                 
@@ -273,7 +288,7 @@ const Board: React.FC<BoardProps> = ({
                             <i className="fas fa-reply fa-rotate-180 mr-3 text-gray-300 text-xs"></i>
                             {reply.author}
                           </span>
-                          <span className="text-[10px] font-bold text-gray-300 uppercase">{reply.createdAt?.split('T')[0]}</span>
+                          <span className="text-[10px] font-bold text-gray-300 uppercase">{formatDate(reply.createdAt)}</span>
                         </div>
                         <p className="text-sm text-gray-500 leading-relaxed pl-7">{reply.content}</p>
                       </div>
@@ -329,7 +344,7 @@ const Board: React.FC<BoardProps> = ({
                   <button onClick={() => onSelectPost(post.id)} className="w-full text-left p-6 hover:bg-gray-50 transition-colors group">
                     <div className="flex justify-between items-center">
                       <p className="font-bold text-gray-700 truncate group-hover:text-sky-primary transition-colors flex-1 mr-4">{post.title}</p>
-                      <span className="text-[11px] text-gray-300 font-black whitespace-nowrap">{post.createdAt?.split('T')[0]}</span>
+                      <span className="text-[11px] text-gray-300 font-black whitespace-nowrap">{formatDate(post.createdAt)}</span>
                     </div>
                   </button>
                 </li>
@@ -393,7 +408,7 @@ const Board: React.FC<BoardProps> = ({
                           )}
                         </div>
                       </div>
-                      <span className="text-xs md:text-sm text-gray-300 font-black whitespace-nowrap pt-1">{post.createdAt?.split('T')[0]}</span>
+                      <span className="text-xs md:text-sm text-gray-300 font-black whitespace-nowrap pt-1">{formatDate(post.createdAt)}</span>
                     </div>
                   </button>
                 </li>
