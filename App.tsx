@@ -27,9 +27,9 @@ const App: React.FC = () => {
   
   // 모달 상태 관리
   const [showAdminLogin, setShowAdminLogin] = useState(false);
-  const [showMemberLogin, setShowMemberLogin] = useState(false); // 현재 숨김 상태
+  const [showMemberLogin, setShowMemberLogin] = useState(false);
   const [showPasswordCreation, setShowPasswordCreation] = useState(false);
-  const [showApprovalPending, setShowApprovalPending] = useState(false); // 승인 대기 팝업 상태
+  const [showApprovalPending, setShowApprovalPending] = useState(false);
   
   const [showPassword, setShowPassword] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
@@ -97,11 +97,9 @@ const App: React.FC = () => {
 
   const handleTabChange = (tab: string) => {
     // 제한된 메뉴: 자유게시판(free), 자료실(resources)
-    // 허용된 메뉴: 공지사항 관련(notice, notice_all, family_events), 조합소개 관련(intro, greeting, history, map)
     const restrictedTabs = ['free', 'resources'];
     
     if (userRole === 'guest' && restrictedTabs.includes(tab)) {
-      // 비회원이 '자유게시판'이나 '자료실' 접근 시 승인 대기 팝업 노출
       setShowApprovalPending(true);
       return;
     }
@@ -271,12 +269,14 @@ const App: React.FC = () => {
     
     const found = members.find((m: Member) => m.email === loginEmail);
     
+    // 1. 미가입자 또는 미승인자
     if (!found || !found.isApproved) {
       setShowMemberLogin(false);
       setShowApprovalPending(true);
       return;
     }
     
+    // 2. 승인되었으나 비밀번호가 없는 경우 (최초 설정)
     if (!found.password) {
       setPendingMember(found);
       setShowMemberLogin(false);
@@ -284,6 +284,7 @@ const App: React.FC = () => {
       return;
     }
     
+    // 3. 정상 로그인
     if (found.password === loginPassword) {
       setUserRole('member');
       const { password, ...sessionData } = found;
@@ -311,17 +312,13 @@ const App: React.FC = () => {
     saveToLocal('members', updatedMembers);
     await cloud.saveMemberToCloud(updatedMember);
 
-    setUserRole('member');
-    const { password, ...sessionData } = updatedMember;
-    setLoggedInMember(updatedMember);
-    localStorage.setItem('union_role', 'member');
-    localStorage.setItem('union_member', JSON.stringify(sessionData));
-    
+    // 저장 완료 후 요구사항대로 다시 로그인 팝업 보여주기
     setShowPasswordCreation(false);
     setNewPassword('');
     setConfirmPassword('');
     setPendingMember(null);
-    alert('비밀번호 설정이 완료되었습니다. 환영합니다!');
+    alert('비밀번호 설정이 완료되었습니다. 방금 설정한 비밀번호로 로그인해주세요.');
+    setShowMemberLogin(true);
   };
 
   const handleLogout = () => {
@@ -396,7 +393,7 @@ const App: React.FC = () => {
         onTabChange={handleTabChange} 
         userRole={userRole} 
         memberName={userRole === 'admin' ? '관리자' : (loggedInMember?.name || '')} 
-        onToggleLogin={userRole === 'guest' ? () => setShowApprovalPending(true) : handleLogout}
+        onToggleLogin={userRole === 'guest' ? () => setShowMemberLogin(true) : handleLogout}
       />
       
       <main className="flex-grow">
@@ -477,7 +474,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* 조합원 로그인 모달 (현재 비활성화됨) */}
+      {/* 조합원 로그인 모달 */}
       {showMemberLogin && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn">
           <div className="bg-white rounded-[3rem] p-10 max-w-[360px] w-[90%] shadow-2xl relative">
