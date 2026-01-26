@@ -302,7 +302,6 @@ const Board: React.FC<BoardProps> = ({
               <textarea 
                 value={newComment} 
                 onChange={(e) => setNewComment(e.target.value)} 
-                placeholder={"댓글은 조합원의\n큰 힘이 됩니다."} 
                 className="w-full border-2 border-gray-100 rounded-[2rem] p-6 md:p-8 text-sm md:text-base focus:border-sky-primary outline-none min-h-[160px] resize-none pr-32 transition-all bg-gray-50/30"
               />
               <button 
