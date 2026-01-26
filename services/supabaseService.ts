@@ -17,7 +17,11 @@ export const isSupabaseEnabled = () =>
   supabaseAnonKey !== 'undefined';
 
 const supabase = isSupabaseEnabled()
-  ? createClient(supabaseUrl, supabaseAnonKey)
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+  global: {
+    fetch: (url, options) => fetch(url as any, { ...(options as any), cache: 'no-store' as any }),
+  },
+})
   : null;
 
 // --------------------------------------
@@ -140,6 +144,29 @@ export const deleteMemberFromCloud = async (id: string) => {
 export const fetchSettingsFromCloud = async (): Promise<SiteSettings | null> => {
   if (!supabase) return null;
 
+  // 1) Prefer site_settings(id='main') if exists (matches your current DB)
+  try {
+    const { data, error } = await supabase
+      .from('site_settings')
+      .select('data, main_slogan, sub_slogan')
+      .eq('id', 'main')
+      .single();
+
+    if (!error && data) {
+      const base = (data.data ?? {}) as any;
+      // If dedicated slogan columns exist, map them into settings (backward compatible)
+      const merged = {
+        ...base,
+        ...(data.main_slogan ? { heroTitle: data.main_slogan } : {}),
+        ...(data.sub_slogan ? { heroSubtitle: data.sub_slogan } : {}),
+      };
+      return merged as SiteSettings;
+    }
+  } catch {
+    // ignore and fallback
+  }
+
+  // 2) Fallback to legacy settings table
   try {
     const { data, error } = await supabase
       .from('settings')
@@ -155,19 +182,53 @@ export const fetchSettingsFromCloud = async (): Promise<SiteSettings | null> => 
   }
 };
 
+
 export const saveSettingsToCloud = async (settings: SiteSettings) => {
   if (!supabase) return;
 
+  // Always keep an object in data (site_settings.data is NOT NULL in your DB)
+  const safeSettings: any = settings ?? {};
+
+  // 1) Try saving to site_settings first
+  try {
+    // Read existing data so we don't accidentally erase fields written by other clients
+    const { data: existing } = await supabase
+      .from('site_settings')
+      .select('data')
+      .eq('id', 'main')
+      .single();
+
+    const existingData = (existing?.data ?? {}) as any;
+    const merged = { ...existingData, ...safeSettings };
+
+    const payload: any = { id: 'main', data: merged, updated_at: new Date().toISOString() };
+
+    // Keep dedicated slogan columns in sync if present in your schema
+    if (typeof (safeSettings as any).heroTitle === 'string') payload.main_slogan = (safeSettings as any).heroTitle;
+    if (typeof (safeSettings as any).heroSubtitle === 'string') payload.sub_slogan = (safeSettings as any).heroSubtitle;
+
+    const { error } = await supabase
+      .from('site_settings')
+      .upsert(payload);
+
+    if (!error) return;
+    // if error, fall through to legacy table
+  } catch {
+    // fall through
+  }
+
+  // 2) Legacy table fallback
   try {
     const { error } = await supabase
       .from('settings')
-      .upsert({ id: 'main', data: settings });
+      .upsert({ id: 'main', data: safeSettings });
 
     if (error) throw error;
   } catch (err) {
     console.error('클라우드 설정 저장 실패:', err);
   }
 };
+
 
 
 // --------------------------------------
