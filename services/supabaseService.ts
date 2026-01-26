@@ -103,70 +103,24 @@ export const fetchMembersFromCloud = async (): Promise<Member[] | null> => {
 };
 
 export const saveMemberToCloud = async (member: Member) => {
-  if (!supabase) throw new Error('Supabase is not enabled');
+  if (!supabase) return;
 
-  // members 테이블 스키마가 프로젝트마다 다를 수 있어서,
-  // (camelCase / snake_case / created_at 존재 여부) 여러 형태로 저장을 시도합니다.
-  const tryUpsert = async (payload: any) => {
-    const { error } = await supabase.from('members').upsert(payload);
+  try {
+    // 1. signupDate를 제외한 나머지 데이터 추출
+    // 2. DB 스키마(created_at)에 맞춰 데이터 구성하여 upsert
+    const { signupDate, ...dbMember } = member;
+    
+    const { error } = await supabase.from('members').upsert({
+      ...dbMember,
+      created_at: member.signupDate // signupDate를 created_at 컬럼에 저장
+    });
+    
     if (error) throw error;
-  };
-
-  // 후보 payload들을 순서대로 시도
-  const payloads: any[] = [];
-
-  // 1) 기존(앱 내부) 필드 그대로 + created_at
-  payloads.push({
-    ...member,
-    created_at: member.signupDate,
-  });
-
-  // 2) created_at 없이 (컬럼이 없는 경우 대비)
-  payloads.push({
-    ...member,
-  });
-
-  // 3) snake_case 변환 + created_at
-  payloads.push({
-    id: member.id,
-    login_id: member.loginId,
-    password: member.password,
-    name: member.name,
-    birth_date: member.birthDate,
-    phone: member.phone,
-    email: member.email,
-    garage: member.garage,
-    created_at: member.signupDate,
-  });
-
-  // 4) snake_case 변환 without created_at
-  payloads.push({
-    id: member.id,
-    login_id: member.loginId,
-    password: member.password,
-    name: member.name,
-    birth_date: member.birthDate,
-    phone: member.phone,
-    email: member.email,
-    garage: member.garage,
-  });
-
-  let lastErr: any = null;
-
-  for (const p of payloads) {
-    try {
-      await tryUpsert(p);
-      console.log(`회원 정보 클라우드 저장 완료: ${member.name}`);
-      return;
-    } catch (err: any) {
-      lastErr = err;
-      // 계속 시도
-    }
+    console.log(`회원 정보 클라우드 저장 완료: ${member.name}`);
+  } catch (err) {
+    console.error('클라우드 회원 저장 실패:', err);
+    throw err; // 상위에서 에러를 인지할 수 있게 던짐
   }
-
-  // 최종 실패 시: 에러를 상위로 던져서 UI에서 메시지를 표시하게 함
-  console.error('클라우드 회원 저장 실패:', lastErr);
-  throw lastErr;
 };
 
 export const deleteMemberFromCloud = async (id: string) => {
@@ -213,4 +167,25 @@ export const saveSettingsToCloud = async (settings: SiteSettings) => {
   } catch (err) {
     console.error('클라우드 설정 저장 실패:', err);
   }
+};
+
+// --------------------------------------
+// 이미지 업로드 (Supabase Storage: site-assets)
+// settings에는 base64 대신 URL만 저장하세요.
+// --------------------------------------
+export const uploadSiteImage = async (file: File, pathPrefix: string): Promise<string> => {
+  if (!supabase) throw new Error('Supabase client is not initialized');
+
+  const ext = (file.name.split('.').pop() || 'png').toLowerCase();
+  const safeName = `${Date.now()}_${Math.random().toString(16).slice(2)}.${ext}`;
+  const path = `${pathPrefix}/${safeName}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('site-assets')
+    .upload(path, file, { upsert: true, contentType: file.type || undefined });
+
+  if (uploadError) throw uploadError;
+
+  const { data } = supabase.storage.from('site-assets').getPublicUrl(path);
+  return data.publicUrl;
 };
