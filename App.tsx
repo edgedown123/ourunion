@@ -264,36 +264,34 @@ const App: React.FC = () => {
     
     const found = members.find((m: Member) => m.email === loginEmail);
     
-    if (found) {
-      if (!found.isApproved) {
-        // 브라우저 alert 대신 커스텀 팝업 노출
-        setShowMemberLogin(false);
-        setShowApprovalPending(true);
-        return;
-      }
-      
-      if (!found.password) {
-        setPendingMember(found);
-        setShowMemberLogin(false);
-        setShowPasswordCreation(true);
-        return;
-      }
-      
-      if (found.password === loginPassword) {
-        setUserRole('member');
-        const { password, ...sessionData } = found;
-        setLoggedInMember(found);
-        localStorage.setItem('union_role', 'member');
-        localStorage.setItem('union_member', JSON.stringify(sessionData));
-        setShowMemberLogin(false);
-        setLoginEmail('');
-        setLoginPassword('');
-        alert(`${found.name}님, 환영합니다!`);
-      } else {
-        alert('비밀번호가 일치하지 않습니다.');
-      }
+    // 1. 회원 정보가 아예 없거나(미가입자), 회원 정보는 있지만 승인되지 않은 경우 모두 팝업 노출
+    if (!found || !found.isApproved) {
+      setShowMemberLogin(false);
+      setShowApprovalPending(true);
+      return;
+    }
+    
+    // 2. 승인되었으나 비밀번호가 아직 없는 경우 (최초 로그인)
+    if (!found.password) {
+      setPendingMember(found);
+      setShowMemberLogin(false);
+      setShowPasswordCreation(true);
+      return;
+    }
+    
+    // 3. 승인 및 비밀번호 설정이 완료된 경우 정상 비밀번호 체크
+    if (found.password === loginPassword) {
+      setUserRole('member');
+      const { password, ...sessionData } = found;
+      setLoggedInMember(found);
+      localStorage.setItem('union_role', 'member');
+      localStorage.setItem('union_member', JSON.stringify(sessionData));
+      setShowMemberLogin(false);
+      setLoginEmail('');
+      setLoginPassword('');
+      alert(`${found.name}님, 환영합니다!`);
     } else {
-      alert('회원 정보를 찾을 수 없습니다. 이메일 주소를 확인해주세요.');
+      alert('비밀번호가 일치하지 않습니다.');
     }
   };
 
