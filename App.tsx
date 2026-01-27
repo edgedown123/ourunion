@@ -29,10 +29,13 @@ const App: React.FC = () => {
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [showMemberLogin, setShowMemberLogin] = useState(false);
   const [showApprovalPending, setShowApprovalPending] = useState(false);
+  const [showWithdraw, setShowWithdraw] = useState(false);
   
   const [adminPassword, setAdminPassword] = useState('');
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [withdrawPassword, setWithdrawPassword] = useState('');
+  const [withdrawLoading, setWithdrawLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   
@@ -352,6 +355,55 @@ const App: React.FC = () => {
     handleTabChange('home');
   };
 
+  const handleRequestWithdraw = () => {
+    if (userRole !== 'member' || !loggedInMember) {
+      setShowApprovalPending(true);
+      return;
+    }
+    setWithdrawPassword('');
+    setShowWithdraw(true);
+  };
+
+  const handleConfirmWithdraw = async () => {
+    if (withdrawLoading) return;
+    if (!withdrawPassword) return alert('비밀번호를 입력해주세요.');
+    if (!cloud.isSupabaseEnabled()) return alert('Supabase 설정이 필요합니다.');
+
+    try {
+      setWithdrawLoading(true);
+
+      const session = await cloud.getAuthSession();
+      const user = session?.user;
+      const email = user?.email;
+      if (!user || !email) throw new Error('로그인 정보를 확인할 수 없습니다.');
+
+      // 1) 비밀번호로 재확인(재로그인)
+      const { error: reauthErr } = await cloud.signInWithEmailPassword(email, withdrawPassword);
+      if (reauthErr) throw reauthErr;
+
+      // 2) members 행 삭제(탈퇴 처리)
+      await cloud.deleteMemberFromCloud(user.id);
+
+      // 3) 로그아웃 + 로컬 상태 정리
+      await cloud.signOut();
+      setUserRole('guest');
+      setLoggedInMember(null);
+      setIsAdminAuth(false);
+      localStorage.removeItem('union_role');
+      localStorage.removeItem('union_is_admin');
+      localStorage.removeItem('union_member');
+      setShowWithdraw(false);
+      handleTabChange('home');
+
+      alert('회원 탈퇴가 완료되었습니다. 이용해 주셔서 감사합니다.');
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.message || '회원 탈퇴 처리 중 오류가 발생했습니다.');
+    } finally {
+      setWithdrawLoading(false);
+    }
+  };
+
   const handleWriteClick = (specificType?: BoardType) => {
     const targetType = specificType || activeTab;
     if (['notice', 'notice_all', 'family_events', 'resources'].includes(targetType as string) && userRole !== 'admin') {
@@ -540,7 +592,63 @@ const App: React.FC = () => {
           </div>
         </div>
       )}
-      <Footer siteName={settings.siteName} onTabChange={handleTabChange} />
+
+      {/* 회원 탈퇴 모달 */}
+      {showWithdraw && (
+        <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-[3rem] p-10 max-w-[380px] w-[92%] shadow-2xl relative">
+            <button onClick={() => setShowWithdraw(false)} className="absolute top-8 right-8 text-gray-300 hover:text-gray-500 transition-colors"><i className="fas fa-times text-xl"></i></button>
+
+            <div className="text-center mb-8">
+              <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+                <i className="fas fa-user-slash text-red-500 text-3xl"></i>
+              </div>
+              <h3 className="text-2xl font-black text-gray-900 mb-3">회원 탈퇴</h3>
+              <p className="text-sm text-gray-500 font-medium leading-relaxed">
+                정말 탈퇴하시겠습니까?<br />
+                탈퇴하면 <span className="font-bold">자유게시판·자료실 이용 권한</span>이 종료됩니다.<br />
+                계속 진행하시려면 비밀번호를 입력해 주세요.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 ml-2 uppercase tracking-widest">Password</label>
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  className="w-full border-2 border-gray-50 rounded-2xl p-4 text-sm outline-none focus:border-red-400 transition-colors bg-gray-50/50 font-bold"
+                  value={withdrawPassword}
+                  onChange={(e) => setWithdrawPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleConfirmWithdraw()}
+                />
+              </div>
+
+              <button
+                onClick={handleConfirmWithdraw}
+                className="w-full py-4 bg-[#FF0000] text-white rounded-2xl font-black text-base shadow-xl hover:opacity-95 active:scale-95 transition-all"
+                disabled={withdrawLoading}
+              >
+                {withdrawLoading ? '처리 중...' : '탈퇴하기'}
+              </button>
+              <button
+                onClick={() => setShowWithdraw(false)}
+                className="w-full py-3 text-sm font-black text-gray-400 hover:text-gray-900 transition-colors"
+                disabled={withdrawLoading}
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <Footer
+        siteName={settings.siteName}
+        onTabChange={handleTabChange}
+        showWithdrawButton={userRole === 'member'}
+        onRequestWithdraw={handleRequestWithdraw}
+      />
     </Layout>
   );
 };
