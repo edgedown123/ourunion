@@ -16,13 +16,65 @@ export const isSupabaseEnabled = () =>
   supabaseUrl !== 'undefined' &&
   supabaseAnonKey !== 'undefined';
 
-const supabase = isSupabaseEnabled()
+export const supabase = isSupabaseEnabled()
   ? createClient(supabaseUrl, supabaseAnonKey, {
   global: {
     fetch: (url, options) => fetch(url as any, { ...(options as any), cache: 'no-store' as any }),
   },
 })
   : null;
+
+// --------------------------------------
+// Auth helpers (A안: Supabase Auth + members.isApproved로 접근 제어)
+// --------------------------------------
+export const getAuthSession = async () => {
+  if (!supabase) return null;
+  const { data, error } = await supabase.auth.getSession();
+  if (error) {
+    console.error('세션 조회 실패:', error);
+    return null;
+  }
+  return data.session;
+};
+
+export const signUpWithEmail = async (email: string, password: string) => {
+  if (!supabase) throw new Error('Supabase is not enabled');
+  return await supabase.auth.signUp({ email, password });
+};
+
+export const signInWithEmailPassword = async (email: string, password: string) => {
+  if (!supabase) throw new Error('Supabase is not enabled');
+  return await supabase.auth.signInWithPassword({ email, password });
+};
+
+export const signOut = async () => {
+  if (!supabase) return;
+  const { error } = await supabase.auth.signOut();
+  if (error) console.error('로그아웃 실패:', error);
+};
+
+export const fetchMemberByIdFromCloud = async (id: string): Promise<Member | null> => {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase
+      .from('members')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+    if (!data) return null;
+
+    const { created_at, ...rest } = data as any;
+    return {
+      ...rest,
+      signupDate: created_at || (data as any).signupDate,
+    } as Member;
+  } catch (err) {
+    console.error('클라우드 회원 단건 조회 실패:', err);
+    return null;
+  }
+};
 
 // --------------------------------------
 // 게시글 동기화
