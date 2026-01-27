@@ -646,7 +646,7 @@ const App: React.FC = () => {
       <Footer
         siteName={settings.siteName}
         onTabChange={handleTabChange}
-        showWithdrawButton={userRole === 'member'}
+        showWithdrawButton={userRole === 'member' || userRole === 'admin'}
         onRequestWithdraw={handleRequestWithdraw}
       />
     </Layout>
