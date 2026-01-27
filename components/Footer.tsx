@@ -3,13 +3,9 @@ import React from 'react';
 interface FooterProps {
   siteName: string;
   onTabChange: (tab: string) => void;
-  /** 로그인/승인된 조합원에게만 노출 */
-  showWithdrawButton?: boolean;
-  /** 회원 탈퇴 모달 열기 */
-  onRequestWithdraw?: () => void;
 }
 
-const Footer: React.FC<FooterProps> = ({ siteName, onTabChange, showWithdrawButton = false, onRequestWithdraw }) => {
+const Footer: React.FC<FooterProps> = ({ siteName, onTabChange }) => {
   return (
     <footer className="bg-gray-100 border-t mt-auto py-12 text-gray-600">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -29,11 +25,8 @@ const Footer: React.FC<FooterProps> = ({ siteName, onTabChange, showWithdrawButt
               </p>
             </div>
             
-            {/* 유튜브 채널 + 회원 탈퇴 버튼
-                - 모바일: 2열 그리드(김동걸TV 아래 오른쪽 칸)
-                - PC(md+): 3열 그리드(겸손은 힘들다 아래)
-            */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 justify-start md:justify-end items-center">
+            {/* 소셜 및 유튜브 채널 링크 영역 (이메일/업무시간/퀵메뉴 삭제됨) */}
+            <div className="flex flex-wrap gap-3 justify-start md:justify-end items-center">
               <a 
                 href="https://www.youtube.com/@brt4866" 
                 target="_blank" 
@@ -61,19 +54,6 @@ const Footer: React.FC<FooterProps> = ({ siteName, onTabChange, showWithdrawButt
                 <i className="fab fa-youtube mr-2 text-base"></i> 
                 겸손은 힘들다
               </a>
-
-              {/* 회원 탈퇴 (조합원 로그인/승인된 경우만 표시) */}
-              {showWithdrawButton && (
-                <button
-                  type="button"
-                  onClick={() => onRequestWithdraw?.()}
-                  className="flex items-center bg-[#FF0000] text-white px-4 py-2.5 rounded-xl hover:opacity-90 transition-all shadow-md active:scale-95 text-xs font-black md:col-start-3 md:row-start-2"
-                  aria-label="회원 탈퇴"
-                >
-                  <i className="fas fa-user-slash mr-2 text-base"></i>
-                  회원 탈퇴
-                </button>
-              )}
             </div>
           </div>
         </div>

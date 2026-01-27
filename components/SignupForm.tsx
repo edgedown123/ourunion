@@ -4,21 +4,19 @@ import { Member } from '../types';
 
 interface SignupFormProps {
   onGoHome: () => void;
-  onSignup: (member: Omit<Member, 'id' | 'signupDate' | 'isApproved' | 'password' | 'loginId'>, password: string) => Promise<void>;
+  onAddMember: (member: Omit<Member, 'id' | 'signupDate'>) => void;
+  existingMembers: Member[];
 }
 
-const SignupForm: React.FC<SignupFormProps> = ({ onGoHome, onSignup }) => {
+const SignupForm: React.FC<SignupFormProps> = ({ onGoHome, onAddMember }) => {
   const [submitted, setSubmitted] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
     birthDate: '',
     phone: '',
     email: '',
-    garage: '',
-    password: '',
-    passwordConfirm: ''
+    garage: ''
   });
 
   const formatPhoneNumber = (value: string) => {
@@ -38,40 +36,23 @@ const SignupForm: React.FC<SignupFormProps> = ({ onGoHome, onSignup }) => {
     setFormData({ ...formData, [name]: processedValue });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     // 필수 인적 사항 확인
-    if (!formData.name || !formData.phone || !formData.garage || !formData.email) {
+    if (!formData.name || !formData.phone || !formData.garage) {
       return alert('필수 항목을 모두 입력해주세요.');
     }
 
-    if (!formData.password || formData.password.length < 6) {
-      return alert('비밀번호는 6자리 이상으로 입력해주세요.');
-    }
-    if (formData.password !== formData.passwordConfirm) {
-      return alert('비밀번호가 일치하지 않습니다.');
-    }
+    // 아이디가 없는 시스템이므로, 내부 관리를 위해 연락처를 loginId 대용으로 사용하거나 비워둡니다.
+    // 여기서는 연락처(하이픈 제거)를 임시 loginId로 할당하여 기존 로직과의 호환성을 유지합니다.
+    const submitData = {
+      ...formData,
+      loginId: formData.phone.replace(/-/g, '')
+    };
 
-    try {
-      setIsSubmitting(true);
-      await onSignup(
-        {
-          name: formData.name,
-          birthDate: formData.birthDate,
-          phone: formData.phone,
-          email: formData.email,
-          garage: formData.garage,
-        },
-        formData.password
-      );
-      setSubmitted(true);
-    } catch (err: any) {
-      console.error(err);
-      alert(err?.message || '가입 처리 중 오류가 발생했습니다.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    onAddMember(submitData);
+    setSubmitted(true);
   };
 
   if (submitted) {
@@ -121,17 +102,6 @@ const SignupForm: React.FC<SignupFormProps> = ({ onGoHome, onSignup }) => {
             <input required type="email" name="email" value={formData.email} onChange={handleChange} className="w-full border-gray-300 rounded-lg p-3 border focus:ring-2 focus:ring-sky-primary outline-none transition-all" placeholder="example@email.com" />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">비밀번호</label>
-              <input required type="password" name="password" value={formData.password} onChange={handleChange} className="w-full border-gray-300 rounded-lg p-3 border focus:ring-2 focus:ring-sky-primary outline-none transition-all" placeholder="6자리 이상" />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">비밀번호 확인</label>
-              <input required type="password" name="passwordConfirm" value={formData.passwordConfirm} onChange={handleChange} className="w-full border-gray-300 rounded-lg p-3 border focus:ring-2 focus:ring-sky-primary outline-none transition-all" placeholder="비밀번호 재입력" />
-            </div>
-          </div>
-
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-2">소속 차고지</label>
             <input required type="text" name="garage" value={formData.garage} onChange={handleChange} className="w-full border-gray-300 rounded-lg p-3 border focus:ring-2 focus:ring-sky-primary outline-none transition-all" placeholder="예: 진관, 도봉, 송파 등" />
@@ -139,7 +109,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onGoHome, onSignup }) => {
         </div>
 
         <div className="pt-4">
-          <button type="submit" disabled={isSubmitting} className="w-full bg-sky-primary text-white py-4 rounded-xl font-bold text-lg hover:opacity-90 shadow-xl shadow-sky-100 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed">{isSubmitting ? '처리 중...' : '가입 신청서 제출하기'}</button>
+          <button type="submit" className="w-full bg-sky-primary text-white py-4 rounded-xl font-bold text-lg hover:opacity-90 shadow-xl shadow-sky-100 transition-all active:scale-[0.98]">가입 신청서 제출하기</button>
         </div>
 
         <div className="bg-gray-50 p-4 rounded-xl text-center">

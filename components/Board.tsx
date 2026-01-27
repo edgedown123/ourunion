@@ -362,6 +362,8 @@ const Board: React.FC<BoardProps> = ({
 
   const filteredPosts = posts.filter(p => p.type === type).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
+  const isCompactList = type === 'free' || type === 'resources';
+
   return (
     <div className="max-w-7xl mx-auto py-10 px-5 animate-fadeIn">
       <div className="flex justify-between items-center mb-12">
@@ -392,11 +394,11 @@ const Board: React.FC<BoardProps> = ({
             ) : (
               filteredPosts.map((post) => (
                 <li key={post.id}>
-                  <button onClick={() => onSelectPost(post.id)} className="block w-full text-left p-8 md:p-10 hover:bg-gray-50/40 transition-all group">
-                    <div className="flex justify-between items-start mb-4">
+                  <button onClick={() => onSelectPost(post.id)} className={`block w-full text-left ${isCompactList ? 'p-5 md:p-6' : 'p-8 md:p-10'} hover:bg-gray-50/40 transition-all group`}>
+                    <div className={`flex justify-between items-start ${isCompactList ? 'mb-2' : 'mb-4'}`}>
                       <div className="flex-1 pr-4">
                         <p className="text-lg md:text-xl font-black text-gray-800 truncate group-hover:text-sky-primary transition-colors">{post.title}</p>
-                        <div className="mt-3 flex items-center space-x-4 text-xs md:text-sm text-gray-400 font-bold uppercase tracking-wider">
+                        <div className={` ${isCompactList ? 'mt-2' : 'mt-3'} flex items-center space-x-4 text-xs md:text-sm text-gray-400 font-bold uppercase tracking-wider">
                           <span className="flex items-center"><i className="fas fa-user-circle mr-2 text-sky-primary/30"></i>{post.author}</span>
                           <span className="flex items-center"><i className="fas fa-eye mr-2"></i>조회 {post.views}</span>
                           {(post.comments?.length || 0) > 0 && (
