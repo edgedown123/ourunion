@@ -30,10 +30,17 @@ const App: React.FC = () => {
   const [showMemberLogin, setShowMemberLogin] = useState(false);
   const [showApprovalPending, setShowApprovalPending] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
   
   const [adminPassword, setAdminPassword] = useState('');
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
   const [withdrawPassword, setWithdrawPassword] = useState('');
   const [withdrawLoading, setWithdrawLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -116,6 +123,33 @@ const App: React.FC = () => {
       localStorage.setItem('union_member', JSON.stringify(sessionData));
     };
     initAuth();
+  }, []);
+
+  // 비밀번호 재설정(Recovery) 이벤트 처리
+  useEffect(() => {
+    if (!cloud.isSupabaseEnabled()) return;
+
+    // redirectTo에 ?reset=1 을 붙여두면, 링크 클릭 후 앱이 어떤 화면을 보여줘야 하는지 알 수 있습니다.
+    try {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get('reset') === '1') {
+        setShowResetPassword(true);
+      }
+    } catch {
+      // ignore
+    }
+
+    const { data } = cloud.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setShowMemberLogin(false);
+        setShowForgotPassword(false);
+        setShowResetPassword(true);
+      }
+    });
+
+    return () => {
+      data?.subscription?.unsubscribe();
+    };
   }, []);
 
   const saveToLocal = (key: string, data: any) => {
@@ -343,6 +377,73 @@ const App: React.FC = () => {
     }
   };
 
+  const handleOpenForgotPassword = () => {
+    setForgotEmail(loginEmail || '');
+    setShowForgotPassword(true);
+  };
+
+  const handleSendResetEmail = async () => {
+    if (forgotLoading) return;
+    if (!forgotEmail) return alert('이메일 주소를 입력해주세요.');
+    if (!cloud.isSupabaseEnabled()) return alert('Supabase 설정이 필요합니다.');
+
+    try {
+      setForgotLoading(true);
+      const redirectTo = `${window.location.origin}/?reset=1`;
+      const { error } = await cloud.requestPasswordResetEmail(forgotEmail, redirectTo);
+      if (error) throw error;
+
+      alert('입력하신 이메일로 비밀번호 재설정 링크를 발송했습니다.\n메일함(스팸함 포함)을 확인해주세요.');
+      setShowForgotPassword(false);
+      setForgotEmail('');
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.message || '비밀번호 재설정 메일 발송 중 오류가 발생했습니다.');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const clearResetFlagFromUrl = () => {
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('reset');
+      window.history.replaceState({}, '', url.toString());
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleUpdatePassword = async () => {
+    if (resetLoading) return;
+    if (!newPassword || newPassword.length < 6) return alert('새 비밀번호를 6자 이상 입력해주세요.');
+    if (newPassword !== newPasswordConfirm) return alert('비밀번호 확인이 일치하지 않습니다.');
+    if (!cloud.isSupabaseEnabled()) return alert('Supabase 설정이 필요합니다.');
+
+    try {
+      setResetLoading(true);
+      const { error } = await cloud.updateMyPassword(newPassword);
+      if (error) throw error;
+
+      alert('비밀번호가 변경되었습니다.\n보안을 위해 로그아웃 후 다시 로그인해 주세요.');
+      await cloud.signOut();
+      setUserRole('guest');
+      setLoggedInMember(null);
+      localStorage.removeItem('union_role');
+      localStorage.removeItem('union_member');
+      setShowResetPassword(false);
+      setNewPassword('');
+      setNewPasswordConfirm('');
+      clearResetFlagFromUrl();
+      setShowMemberLogin(true);
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.message || '비밀번호 변경 중 오류가 발생했습니다.');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   const handleLogout = async () => {
     if (!window.confirm('로그아웃 하시겠습니까?')) return;
     await cloud.signOut();
@@ -566,7 +667,124 @@ const App: React.FC = () => {
                 <input type="password" placeholder="••••••••" className="w-full border-2 border-gray-50 rounded-2xl p-4 text-sm outline-none focus:border-sky-primary transition-colors bg-gray-50/50 font-bold" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleMemberLogin()} />
               </div>
               <button onClick={handleMemberLogin} className="w-full py-4.5 bg-sky-primary text-white rounded-2xl font-black text-base shadow-xl shadow-sky-100 hover:opacity-95 active:scale-95 transition-all mt-4">로그인</button>
+              <button
+                onClick={handleOpenForgotPassword}
+                className="w-full text-center text-xs text-gray-400 font-bold hover:text-sky-primary mt-3 transition-colors"
+              >
+                비밀번호를 잊으셨나요? <span className="underline decoration-2 underline-offset-4 ml-1">재설정하기</span>
+              </button>
               <button onClick={() => { handleTabChange('signup'); setShowMemberLogin(false); }} className="w-full text-center text-xs text-gray-400 font-bold hover:text-sky-primary mt-6 transition-colors">아직 회원이 아니신가요? <span className="underline decoration-2 underline-offset-4 ml-1">신규 가입하기</span></button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 비밀번호 재설정 메일 요청 모달 */}
+      {showForgotPassword && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-[3rem] p-10 max-w-[380px] w-[92%] shadow-2xl relative">
+            <button onClick={() => setShowForgotPassword(false)} className="absolute top-8 right-8 text-gray-300 hover:text-gray-500 transition-colors"><i className="fas fa-times text-xl"></i></button>
+            <div className="text-center mb-8">
+              <div className="w-20 h-20 bg-sky-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+                <i className="fas fa-envelope-open-text text-sky-primary text-3xl"></i>
+              </div>
+              <h3 className="text-2xl font-black text-gray-900 mb-3">비밀번호 재설정</h3>
+              <p className="text-sm text-gray-500 font-medium leading-relaxed">
+                가입하신 이메일로 <span className="font-bold">재설정 링크</span>를 보내드릴게요.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 ml-2 uppercase tracking-widest">Email Address</label>
+                <input
+                  type="email"
+                  placeholder="example@email.com"
+                  className="w-full border-2 border-gray-50 rounded-2xl p-4 text-sm outline-none focus:border-sky-primary transition-colors bg-gray-50/50 font-bold"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSendResetEmail()}
+                  autoFocus
+                />
+              </div>
+
+              <button
+                onClick={handleSendResetEmail}
+                className="w-full py-4 bg-sky-primary text-white rounded-2xl font-black text-base shadow-xl shadow-sky-100 hover:opacity-95 active:scale-95 transition-all"
+                disabled={forgotLoading}
+              >
+                {forgotLoading ? '발송 중...' : '재설정 링크 보내기'}
+              </button>
+              <button
+                onClick={() => setShowForgotPassword(false)}
+                className="w-full py-3 text-sm font-black text-gray-400 hover:text-gray-900 transition-colors"
+                disabled={forgotLoading}
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* reset-password 페이지(모달) */}
+      {showResetPassword && (
+        <div className="fixed inset-0 z-[115] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-[3rem] p-10 max-w-[420px] w-[92%] shadow-2xl relative">
+            <button
+              onClick={() => { setShowResetPassword(false); clearResetFlagFromUrl(); }}
+              className="absolute top-8 right-8 text-gray-300 hover:text-gray-500 transition-colors"
+            >
+              <i className="fas fa-times text-xl"></i>
+            </button>
+
+            <div className="text-center mb-8">
+              <div className="w-20 h-20 bg-sky-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+                <i className="fas fa-key text-sky-primary text-3xl"></i>
+              </div>
+              <h3 className="text-2xl font-black text-gray-900 mb-3">새 비밀번호 설정</h3>
+              <p className="text-sm text-gray-500 font-medium leading-relaxed">
+                새 비밀번호를 입력하신 후 저장을 눌러주세요.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 ml-2 uppercase tracking-widest">New Password</label>
+                <input
+                  type="password"
+                  placeholder="6자 이상"
+                  className="w-full border-2 border-gray-50 rounded-2xl p-4 text-sm outline-none focus:border-sky-primary transition-colors bg-gray-50/50 font-bold"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 ml-2 uppercase tracking-widest">Confirm Password</label>
+                <input
+                  type="password"
+                  placeholder="비밀번호 확인"
+                  className="w-full border-2 border-gray-50 rounded-2xl p-4 text-sm outline-none focus:border-sky-primary transition-colors bg-gray-50/50 font-bold"
+                  value={newPasswordConfirm}
+                  onChange={(e) => setNewPasswordConfirm(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleUpdatePassword()}
+                />
+              </div>
+
+              <button
+                onClick={handleUpdatePassword}
+                className="w-full py-4 bg-sky-primary text-white rounded-2xl font-black text-base shadow-xl shadow-sky-100 hover:opacity-95 active:scale-95 transition-all"
+                disabled={resetLoading}
+              >
+                {resetLoading ? '저장 중...' : '비밀번호 저장'}
+              </button>
+              <button
+                onClick={() => { setShowResetPassword(false); clearResetFlagFromUrl(); }}
+                className="w-full py-3 text-sm font-black text-gray-400 hover:text-gray-900 transition-colors"
+                disabled={resetLoading}
+              >
+                닫기
+              </button>
             </div>
           </div>
         </div>

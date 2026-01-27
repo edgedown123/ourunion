@@ -53,6 +53,26 @@ export const signOut = async () => {
   if (error) console.error('로그아웃 실패:', error);
 };
 
+// --------------------------------------
+// Password recovery helpers
+// --------------------------------------
+export const requestPasswordResetEmail = async (email: string, redirectTo?: string) => {
+  if (!supabase) throw new Error('Supabase is not enabled');
+  return await supabase.auth.resetPasswordForEmail(email, redirectTo ? { redirectTo } : undefined);
+};
+
+export const updateMyPassword = async (newPassword: string) => {
+  if (!supabase) throw new Error('Supabase is not enabled');
+  return await supabase.auth.updateUser({ password: newPassword });
+};
+
+export const onAuthStateChange = (
+  callback: Parameters<NonNullable<typeof supabase>['auth']['onAuthStateChange']>[0]
+) => {
+  if (!supabase) return { data: { subscription: { unsubscribe: () => {} } } } as any;
+  return supabase.auth.onAuthStateChange(callback);
+};
+
 export const fetchMemberByIdFromCloud = async (id: string): Promise<Member | null> => {
   if (!supabase) return null;
   try {
