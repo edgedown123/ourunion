@@ -526,11 +526,10 @@ const App: React.FC = () => {
           <div className="bg-white rounded-[3rem] p-10 max-w-[360px] w-[90%] shadow-2xl relative text-center">
             <button onClick={() => setShowApprovalPending(false)} className="absolute top-8 right-8 text-gray-300 hover:text-gray-500 transition-colors"><i className="fas fa-times text-xl"></i></button>
             <div className="w-20 h-20 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner"><i className="fas fa-user-clock text-orange-400 text-3xl"></i></div>
-            <h3 className="text-2xl font-black text-gray-900 mb-4">승인 대기 중</h3>
+            <h3 className="text-2xl font-black text-gray-900 mb-4">회원 전용 메뉴입니다</h3>
             <p className="text-sm text-gray-500 font-medium leading-relaxed mb-8">
-              가입 신청이 접수되어<br/>
-              <span className="text-orange-500 font-bold">관리자의 승인</span>을 기다리고 있습니다.<br/>
-              조금만 더 기다려주세요!
+              회원 가입 후 <span className="text-orange-500 font-bold">승인</span>되면<br/>
+              이용하실 수 있습니다.
             </p>
             <button 
               onClick={() => setShowApprovalPending(false)} 
