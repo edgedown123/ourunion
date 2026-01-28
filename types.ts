@@ -1,5 +1,5 @@
 
-export type BoardType = 'intro' | 'notice' | 'notice_all' | 'family_events' | 'free' | 'resources' | 'signup' | 'trash';
+export type BoardType = 'intro' | 'notice_all' | 'family_events' | 'free' | 'resources' | 'signup' | 'trash';
 export type UserRole = 'guest' | 'member' | 'admin';
 
 export interface PostAttachment {

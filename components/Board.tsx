@@ -465,48 +465,6 @@ const Board: React.FC<BoardProps> = ({
     );
   }
 
-  // 듀얼 보드 렌더링 함수
-  const renderDualBoard = () => {
-    const noticeAllPosts = posts.filter(p => p.type === 'notice_all').sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
-    const familyEventPosts = posts.filter(p => p.type === 'family_events').sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
-
-    const PostList = ({ title, icon, colorClass, data }: { title: string, icon: string, colorClass: string, data: Post[] }) => (
-      <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden flex flex-col h-full">
-        <div className={`p-8 border-b border-gray-50 flex justify-between items-center ${colorClass}`}>
-          <h3 className="text-xl font-black flex items-center">
-            <i className={`fas ${icon} mr-3`}></i>
-            {title}
-          </h3>
-        </div>
-        <div className="flex-grow">
-          {data.length === 0 ? (
-            <div className="py-20 text-center text-gray-300 font-bold italic">최근 게시글이 없습니다.</div>
-          ) : (
-            <ul className="divide-y divide-gray-50">
-              {data.map(post => (
-                <li key={post.id}>
-                  <button onClick={() => onSelectPost(post.id)} className="w-full text-left p-6 hover:bg-gray-50 transition-colors group">
-                    <div className="flex justify-between items-center">
-                      <p className="font-bold text-gray-700 truncate group-hover:text-sky-primary transition-colors flex-1 mr-4">{post.title}</p>
-                      <span className="text-[11px] text-gray-300 font-black whitespace-nowrap">{formatDate(post.createdAt)}</span>
-                    </div>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </div>
-    );
-
-    return (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fadeIn">
-        <PostList title="공고/공지" icon="fa-bullhorn" colorClass="bg-sky-primary text-white" data={noticeAllPosts} />
-        <PostList title="경조사" icon="fa-bullhorn" colorClass="bg-sky-primary text-white" data={familyEventPosts} />
-      </div>
-    );
-  };
-
   const filteredPosts = posts.filter(p => p.type === type).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   // 모바일에서 일부 게시판 목록을 더 촘촘하게(행 높이/여백 축소)
@@ -528,7 +486,7 @@ const Board: React.FC<BoardProps> = ({
           </h2>
           <p className="text-gray-400 font-bold text-xs mt-2 ml-1">우리노동조합 소통 공간</p>
         </div>
-        {userRole !== 'guest' && (userRole === 'admin' || type === 'free') && type !== 'notice' && (
+        {userRole !== 'guest' && (userRole === 'admin' || type === 'free') && (
           <button 
             onClick={() => onWriteClick()} 
             className="bg-sky-primary text-white px-8 py-4 rounded-[1.5rem] font-black text-sm md:text-base shadow-xl shadow-sky-100 hover:opacity-90 active:scale-95 transition-all"
@@ -538,10 +496,7 @@ const Board: React.FC<BoardProps> = ({
         )}
       </div>
 
-      {type === 'notice' ? (
-        renderDualBoard()
-      ) : (
-        <div className="bg-white shadow-xl rounded-[3rem] border border-gray-50 overflow-hidden">
+      <div className="bg-white shadow-xl rounded-[3rem] border border-gray-50 overflow-hidden">
           <ul className="divide-y divide-gray-100">
             {filteredPosts.length === 0 ? (
               <li className="px-6 py-40 text-center text-gray-300 font-bold italic text-lg">작성된 게시글이 없습니다.</li>
@@ -571,7 +526,6 @@ const Board: React.FC<BoardProps> = ({
             )}
           </ul>
         </div>
-      )}
     </div>
   );
 };

@@ -654,7 +654,7 @@ const App: React.FC = () => {
 
   const handleWriteClick = (specificType?: BoardType) => {
     const targetType = specificType || activeTab;
-    if (['notice', 'notice_all', 'family_events', 'resources'].includes(targetType as string) && userRole !== 'admin') {
+    if (['notice_all', 'family_events', 'resources'].includes(targetType as string) && userRole !== 'admin') {
       setShowAdminLogin(true);
       return;
     }
@@ -695,8 +695,7 @@ const App: React.FC = () => {
   };
 
   const handleViewPostFromAdmin = (postId: string, type: BoardType) => {
-    if (type === 'notice_all' || type === 'family_events') setActiveTab('notice');
-    else setActiveTab(type);
+    setActiveTab(type);
     handleSelectPost(postId);
     window.scrollTo(0, 0);
   };
