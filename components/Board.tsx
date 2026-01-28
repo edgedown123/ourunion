@@ -362,8 +362,14 @@ const Board: React.FC<BoardProps> = ({
   };
 
   const filteredPosts = posts.filter(p => p.type === type).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  // 모바일에서 자유게시판/자료실 목록을 더 촘촘하게(행 높이 축소)
-  const isCompactList = type === 'free' || type === 'resources';
+  // 모바일에서 일부 게시판 목록을 더 촘촘하게(행 높이 축소)
+  // - 자유게시판/자료실
+  // - 공지사항 하위 탭(공고/공지, 경조사)
+  const isCompactList =
+    type === 'free' ||
+    type === 'resources' ||
+    type === 'notice_all' ||
+    type === 'family_events';
 
   return (
     <div className="max-w-7xl mx-auto py-10 px-5 animate-fadeIn">
