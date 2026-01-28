@@ -87,7 +87,7 @@ const Footer: React.FC<FooterProps> = ({ siteName, onTabChange, showWithdrawButt
               <span>사업자등록번호: 123-45-67890</span>
             </p>
             <p>서울특별시 은평구 통일로 1190 (진관사업소 내) | FAX: 02-371-0000</p>
-            <p className="mt-4 opacity-70 italic">Copyright © 2024 {siteName}. All rights reserved. <span className="ml-4">Powered by Gemini AI</span></p>
+            <p className="mt-4 opacity-70 italic">Copyright © 2024 {siteName}. All rights reserved.</p>
           </div>
           
           <div className="flex space-x-6 mt-8 text-[11px] font-black uppercase tracking-wider">

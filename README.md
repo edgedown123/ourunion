@@ -7,7 +7,9 @@
 
 1. 이 저장소를 **GitHub**에 업로드합니다.
 2. [Vercel](https://vercel.com/)에서 이 저장소를 가져옵니다(Import).
-3. **Environment Variables** 설정에서 `API_KEY`를 추가하고 발급받은 Gemini API 키를 넣습니다.
+3. **Environment Variables**에 아래 2개를 추가합니다.
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
 4. **Deploy** 버튼을 누르면 끝!
 
 ## 🌐 도메인 연결 정보 (아이티이지)
