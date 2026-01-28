@@ -384,7 +384,7 @@ const Board: React.FC<BoardProps> = ({
         {userRole !== 'guest' && (userRole === 'admin' || type === 'free') && type !== 'notice' && (
           <button 
             onClick={() => onWriteClick()} 
-            className="bg-sky-primary text-white px-8 py-4 rounded-[1.5rem] font-black text-sm md:text-base shadow-xl shadow-sky-100 hover:opacity-90 active:scale-95 transition-all"
+            className="bg-sky-primary text-white px-4 py-2 md:px-8 md:py-4 rounded-[1rem] md:rounded-[1.5rem] font-black text-xs md:text-base shadow-xl shadow-sky-100 hover:opacity-90 active:scale-95 transition-all"
           >
             <i className="fas fa-pen-nib mr-2"></i> 글쓰기
           </button>
