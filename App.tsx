@@ -621,7 +621,7 @@ const App: React.FC = () => {
             {!selectedPostId && (
               <button 
                 onClick={() => syncData(false)}
-                className={`fixed bottom-10 right-10 w-14 h-14 bg-white border border-gray-100 shadow-2xl rounded-full flex items-center justify-center text-sky-primary transition-all active:scale-90 z-40 ${isRefreshing ? 'animate-spin' : ''}`}
+                className={`fixed bottom-10 right-10 w-14 h-14 bg-white border border-gray-100 shadow-2xl rounded-full hidden md:flex items-center justify-center text-sky-primary transition-all active:scale-90 z-40 ${isRefreshing ? 'animate-spin' : ''}`}
                 title="새로고침"
               >
                 <i className="fas fa-sync-alt"></i>
