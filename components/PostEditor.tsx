@@ -1,8 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { BoardType, PostAttachment, Post } from '../types';
-import { generatePostContent, suggestSEOKeywords } from '../services/geminiService';
-
 interface PostEditorProps {
   type: BoardType;
   initialPost?: Post | null;
@@ -14,9 +12,6 @@ const PostEditor: React.FC<PostEditorProps> = ({ type, initialPost, onSave, onCa
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [postPassword, setPostPassword] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [seoKeywords, setSeoKeywords] = useState<string[]>([]);
-  const [aiTopic, setAiTopic] = useState('');
   const [attachments, setAttachments] = useState<PostAttachment[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -50,19 +45,6 @@ const PostEditor: React.FC<PostEditorProps> = ({ type, initialPost, onSave, onCa
         resolve(canvas.toDataURL('image/jpeg', 0.7));
       };
     });
-  };
-
-  const handleAIWrite = async () => {
-    if (!aiTopic) return alert('AI 작성을 위해 주제를 입력해주세요.');
-    setIsGenerating(true);
-    const result = await generatePostContent(aiTopic, type);
-    if (result) {
-      setTitle(result.title);
-      setContent(result.content);
-      const keywords = await suggestSEOKeywords(result.content);
-      setSeoKeywords(keywords);
-    }
-    setIsGenerating(false);
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -103,28 +85,7 @@ const PostEditor: React.FC<PostEditorProps> = ({ type, initialPost, onSave, onCa
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
-      <div className="mb-8 bg-sky-50 p-6 rounded-xl border border-sky-100">
-        <h3 className="text-lg font-bold text-sky-800 mb-3 flex items-center">
-          <i className="fas fa-magic mr-2"></i> AI 글쓰기 도우미
-        </h3>
-        <div className="flex space-x-2">
-          <input
-            type="text"
-            placeholder="예: 신규 복지 혜택 안내, 경조사 알림 등"
-            className="flex-1 border rounded-lg p-2 text-sm focus:ring-sky-500 outline-none"
-            value={aiTopic}
-            onChange={(e) => setAiTopic(e.target.value)}
-          />
-          <button
-            onClick={handleAIWrite}
-            disabled={isGenerating}
-            className="bg-sky-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 transition-all whitespace-nowrap"
-          >
-            {isGenerating ? '작성 중...' : 'AI가 작성하기'}
-          </button>
-        </div>
-      </div>
+    <div className="max-w-4xl mx-auto py-8 px-4"> 
 
       <div className="space-y-6 bg-white p-8 rounded-lg border">
         <div>
