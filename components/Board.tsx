@@ -338,8 +338,7 @@ const Board: React.FC<BoardProps> = ({
             <ul className="divide-y divide-gray-50">
               {data.map(post => (
                 <li key={post.id}>
-                  {/* 모바일에서 공지사항(공고/공지, 경조사) 목록을 더 촘촘하게 */}
-                  <button onClick={() => onSelectPost(post.id)} className="w-full text-left p-4 md:p-6 hover:bg-gray-50 transition-colors group">
+                  <button onClick={() => onSelectPost(post.id)} className="w-full text-left p-6 hover:bg-gray-50 transition-colors group">
                     <div className="flex justify-between items-center">
                       <p className="font-bold text-gray-700 truncate group-hover:text-sky-primary transition-colors flex-1 mr-4">{post.title}</p>
                       <span className="text-[11px] text-gray-300 font-black whitespace-nowrap">{formatDate(post.createdAt)}</span>
@@ -362,7 +361,8 @@ const Board: React.FC<BoardProps> = ({
   };
 
   const filteredPosts = posts.filter(p => p.type === type).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  // 모바일에서 일부 게시판 목록을 더 촘촘하게(행 높이 축소)
+
+  // 모바일에서 일부 게시판 목록을 더 촘촘하게(행 높이/여백 축소)
   // - 자유게시판/자료실
   // - 공지사항 하위 탭(공고/공지, 경조사)
   const isCompactList =
