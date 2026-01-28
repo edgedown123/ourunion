@@ -206,12 +206,12 @@ const Board: React.FC<BoardProps> = ({
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {selectedPost.attachments.map((file, idx) => (
-                  <div key={idx} className="bg-white p-4 rounded-2xl border flex items-center justify-between shadow-sm hover:border-sky-primary transition-all group">
-                    <div className="flex items-center overflow-hidden">
+                  <div key={idx} className="bg-white p-5 rounded-2xl border flex flex-col gap-3 md:flex-row md:items-center md:justify-between shadow-sm hover:border-sky-primary transition-all group">
+                    <div className="flex items-start md:items-center min-w-0">
                       <i className={`fas ${file.type.startsWith('image/') ? 'fa-file-image' : 'fa-file-alt'} text-gray-300 mr-4 text-xl`}></i>
-                      <span className="text-sm font-bold text-gray-700 truncate">{file.name}</span>
+                      <span className="text-sm font-bold text-gray-700 whitespace-normal break-all md:truncate md:whitespace-nowrap">{file.name}</span>
                     </div>
-                    <a href={file.data} download={file.name} className="ml-4 px-5 py-2 bg-sky-primary text-white text-[11px] font-black rounded-xl shadow-md hover:opacity-90 active:scale-95 transition-all">다운</a>
+                    <a href={file.data} download={file.name} className="ml-4 px-5 py-2 bg-sky-primary text-white text-[11px] font-black rounded-xl shadow-md hover:opacity-90 active:scale-95 transition-all">다운로드</a>
                   </div>
                 ))}
               </div>
@@ -220,15 +220,15 @@ const Board: React.FC<BoardProps> = ({
         </article>
 
         {/* 댓글 섹션 */}
-        <section className="bg-white rounded-[2.5rem] border p-4 md:p-7 shadow-sm">
-          <h3 className="text-xl font-black text-gray-900 mb-5 flex items-center">
+        <section className="bg-white rounded-[2.5rem] border p-10 md:p-14 shadow-sm">
+          <h3 className="text-xl font-black text-gray-900 mb-10 flex items-center">
             <i className="fas fa-comments mr-3 text-sky-primary"></i> 댓글 
             <span className="ml-3 bg-sky-50 text-sky-primary px-3 py-1 rounded-xl text-sm">
               {selectedPost.comments?.reduce((acc, curr) => acc + 1 + (curr.replies?.length || 0), 0) || 0}
             </span>
           </h3>
           
-          <div className="space-y-4 mb-7">
+          <div className="space-y-8 mb-14">
             {selectedPost.comments?.map((comment) => (
               <div key={comment.id} className="border-b border-gray-50 last:border-0 pb-8 animate-fadeIn">
                 <div className="flex justify-between items-center mb-3">
@@ -257,13 +257,13 @@ const Board: React.FC<BoardProps> = ({
                 </div>
 
                 {replyingToId === comment.id && (
-                  <form onSubmit={(e) => handleReplySubmit(e, comment.id)} className="mt-3 ml-11 animate-fadeIn">
+                  <form onSubmit={(e) => handleReplySubmit(e, comment.id)} className="mt-6 ml-11 animate-fadeIn">
                     <div className="relative">
                       <textarea 
                         value={replyContent}
                         onChange={(e) => setReplyContent(e.target.value)}
                         placeholder="따뜻한 답글을 남겨주세요."
-                        className="w-full border-2 border-sky-50 rounded-2xl p-3 text-sm focus:border-sky-primary outline-none min-h-[50px] resize-none pr-24 bg-gray-50/50 md:min-h-[60px]"
+                        className="w-full border-2 border-sky-50 rounded-2xl p-5 text-sm focus:border-sky-primary outline-none min-h-[100px] resize-none pr-24 bg-gray-50/50"
                         autoFocus
                       />
                       <button 
@@ -298,11 +298,11 @@ const Board: React.FC<BoardProps> = ({
           </div>
           
           {userRole !== 'guest' && (
-            <form onSubmit={handleCommentSubmit} className="relative pt-5 border-t">
+            <form onSubmit={handleCommentSubmit} className="relative pt-10 border-t">
               <textarea 
                 value={newComment} 
                 onChange={(e) => setNewComment(e.target.value)} 
-                className="w-full border-2 border-gray-100 rounded-[2rem] p-4 md:p-4 text-sm md:text-base focus:border-sky-primary outline-none min-h-[70px] resize-none pr-32 transition-all bg-gray-50/30 md:min-h-[90px]"
+                className="w-full border-2 border-gray-100 rounded-[2rem] p-6 md:p-8 text-sm md:text-base focus:border-sky-primary outline-none min-h-[160px] resize-none pr-32 transition-all bg-gray-50/30"
               />
               <button 
                 type="submit" 
@@ -384,7 +384,7 @@ const Board: React.FC<BoardProps> = ({
         {userRole !== 'guest' && (userRole === 'admin' || type === 'free') && type !== 'notice' && (
           <button 
             onClick={() => onWriteClick()} 
-            className="bg-sky-primary text-white px-8 py-4 rounded-[1.5rem] font-black text-sm md:text-base shadow-xl shadow-sky-100 hover:opacity-90 active:scale-95 transition-all"
+            className="bg-sky-primary text-white px-4 py-2 rounded-[1.5rem] font-black text-xs md:px-8 md:py-4 md:text-base shadow-xl shadow-sky-100 hover:opacity-90 active:scale-95 transition-all"
           >
             <i className="fas fa-pen-nib mr-2"></i> 글쓰기
           </button>
