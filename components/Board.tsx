@@ -206,12 +206,23 @@ const Board: React.FC<BoardProps> = ({
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {selectedPost.attachments.map((file, idx) => (
-                  <div key={idx} className="bg-white p-5 rounded-2xl border flex items-center justify-between shadow-sm hover:border-sky-primary transition-all group">
-                    <div className="flex items-center overflow-hidden">
-                      <i className={`fas ${file.type.startsWith('image/') ? 'fa-file-image' : 'fa-file-alt'} text-gray-300 mr-4 text-xl`}></i>
-                      <span className="text-sm font-bold text-gray-700 truncate">{file.name}</span>
+                  <div
+                    key={idx}
+                    className="bg-white p-5 rounded-2xl border flex flex-col gap-3 md:flex-row md:items-center md:justify-between shadow-sm hover:border-sky-primary transition-all group"
+                  >
+                    <div className="flex items-start min-w-0 gap-4">
+                      <i className={`fas ${file.type.startsWith('image/') ? 'fa-file-image' : 'fa-file-alt'} text-gray-300 mt-0.5 text-xl`}></i>
+                      <span className="text-sm font-bold text-gray-700 whitespace-normal break-all leading-snug">
+                        {file.name}
+                      </span>
                     </div>
-                    <a href={file.data} download={file.name} className="ml-4 px-5 py-2 bg-sky-primary text-white text-[11px] font-black rounded-xl shadow-md hover:opacity-90 active:scale-95 transition-all">다운</a>
+                    <a
+                      href={file.data}
+                      download={file.name}
+                      className="self-end md:self-auto px-5 py-2 bg-sky-primary text-white text-[11px] font-black rounded-xl shadow-md hover:opacity-90 active:scale-95 transition-all"
+                    >
+                      다운로드
+                    </a>
                   </div>
                 ))}
               </div>
@@ -384,7 +395,7 @@ const Board: React.FC<BoardProps> = ({
         {userRole !== 'guest' && (userRole === 'admin' || type === 'free') && type !== 'notice' && (
           <button 
             onClick={() => onWriteClick()} 
-            className="bg-sky-primary text-white px-4 py-2 md:px-8 md:py-4 rounded-[1rem] md:rounded-[1.5rem] font-black text-xs md:text-base shadow-xl shadow-sky-100 hover:opacity-90 active:scale-95 transition-all"
+            className="bg-sky-primary text-white px-8 py-4 rounded-[1.5rem] font-black text-sm md:text-base shadow-xl shadow-sky-100 hover:opacity-90 active:scale-95 transition-all"
           >
             <i className="fas fa-pen-nib mr-2"></i> 글쓰기
           </button>
