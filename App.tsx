@@ -19,6 +19,51 @@ const App: React.FC = () => {
     console.log('🔥 Supabase 연동 상태:', isSupabaseEnabled());
   }, []);
 
+  // 최초 진입 시 hash(#tab=...&post=...)를 읽어서 화면 상태 복원
+  useEffect(() => {
+    const s = readHash();
+    if (s.tab) setActiveTab(s.tab);
+    if (s.postId) setSelectedPostId(s.postId);
+    if (s.writing) {
+      // 글쓰기 화면은 게시글 상세보다 우선
+      setIsWriting(true);
+    }
+    // 초기 상태도 히스토리에 고정
+    replaceNav({ tab: s.tab || 'home', postId: s.postId || null, writing: !!s.writing });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 뒤로가기/앞으로가기(popstate) 처리
+  useEffect(() => {
+    const onPop = (e: PopStateEvent) => {
+      const state = (e.state || readHash()) as NavState;
+
+      // 탭 이동
+      setActiveTab(state.tab || 'home');
+
+      // 글쓰기 / 상세 / 목록 상태 정리
+      if (state.writing) {
+        setIsWriting(true);
+        setEditingPost(null);
+        setSelectedPostId(null);
+      } else if (state.postId) {
+        setIsWriting(false);
+        setEditingPost(null);
+        setSelectedPostId(state.postId);
+      } else {
+        setIsWriting(false);
+        setEditingPost(null);
+        setSelectedPostId(null);
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+
   const [activeTab, setActiveTab] = useState<string>('home');
   const [isWriting, setIsWriting] = useState(false);
   const [writingType, setWritingType] = useState<BoardType | null>(null);
@@ -58,6 +103,47 @@ const App: React.FC = () => {
   const [deletedPosts, setDeletedPosts] = useState<Post[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
 
+
+  // -----------------------------
+  // 브라우저 뒤로가기(History) 대응
+  // - URL 경로는 그대로 두고(hash만 사용) 히스토리에 상태를 기록합니다.
+  // - 뒤로가기/앞으로가기로 게시글 상세 <-> 목록, 탭 이동이 자연스럽게 동작합니다.
+  // -----------------------------
+  type NavState = { tab?: string; postId?: string | null; writing?: boolean };
+
+  const buildHash = (s: NavState) => {
+    const params = new URLSearchParams();
+    if (s.tab) params.set('tab', s.tab);
+    if (s.postId) params.set('post', s.postId);
+    if (s.writing) params.set('write', '1');
+    const q = params.toString();
+    return q ? `#${q}` : '';
+  };
+
+  const readHash = (): NavState => {
+    const raw = (window.location.hash || '').replace(/^#/, '');
+    const params = new URLSearchParams(raw);
+    const tab = params.get('tab') || undefined;
+    const postId = params.get('post');
+    const writing = params.get('write') === '1';
+    return { tab, postId: postId || null, writing };
+  };
+
+  const pushNav = (s: NavState) => {
+    try {
+      window.history.pushState(s, '', window.location.pathname + buildHash(s));
+    } catch {
+      // ignore
+    }
+  };
+
+  const replaceNav = (s: NavState) => {
+    try {
+      window.history.replaceState(s, '', window.location.pathname + buildHash(s));
+    } catch {
+      // ignore
+    }
+  };
   const syncData = useCallback(async (showLoading = true) => {
     if (showLoading) setIsLoading(true);
     else setIsRefreshing(true);
@@ -170,6 +256,7 @@ const App: React.FC = () => {
     setWritingType(null);
     setEditingPost(null);
     setSelectedPostId(null);
+    pushNav({ tab, postId: null, writing: false });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -200,6 +287,7 @@ const App: React.FC = () => {
     
     alert('성공적으로 저장되었습니다.');
     setIsWriting(false);
+    pushNav({ tab: activeTab, postId: null, writing: false });
     setEditingPost(null);
   };
 
@@ -241,45 +329,59 @@ const App: React.FC = () => {
   };
 
 
+  const handleEditComment = async (postId: string, commentId: string, content: string, parentId?: string) => {
+    if (userRole === 'guest') return;
 
-  const handleUpdateComment = async (postId: string, commentId: string, content: string, parentId?: string) => {
     const updatedPosts = posts.map(post => {
       if (post.id !== postId) return post;
-      const comments = post.comments || [];
-      let updatedComments;
-      if (!parentId) {
-        updatedComments = comments.map(c => c.id === commentId ? { ...c, content } : c);
-      } else {
-        updatedComments = comments.map(c => {
-          if (c.id !== parentId) return c;
-          return { ...c, replies: (c.replies || []).map(r => r.id === commentId ? { ...r, content } : r) };
-        });
-      }
+
+      const updatedComments = (post.comments || []).map(c => {
+        if (!parentId) {
+          if (c.id !== commentId) return c;
+          const updated = { ...c, content };
+          return updated;
+        }
+
+        // editing a reply
+        if (c.id !== parentId) return c;
+        const updatedReplies = (c.replies || []).map(r => (r.id === commentId ? { ...r, content } : r));
+        return { ...c, replies: updatedReplies };
+      });
+
       const updatedPost = { ...post, comments: updatedComments };
       cloud.savePostToCloud(updatedPost);
       return updatedPost;
     });
+
     setPosts(updatedPosts);
     saveToLocal('posts', updatedPosts);
   };
 
   const handleDeleteComment = async (postId: string, commentId: string, parentId?: string) => {
+    if (userRole === 'guest') return;
+
+    if (!window.confirm('정말 삭제하시겠습니까?')) return;
+
     const updatedPosts = posts.map(post => {
       if (post.id !== postId) return post;
-      const comments = post.comments || [];
-      let updatedComments;
+
+      let updatedComments: Comment[] = (post.comments || []);
+
       if (!parentId) {
-        updatedComments = comments.filter(c => c.id !== commentId);
+        updatedComments = updatedComments.filter(c => c.id !== commentId);
       } else {
-        updatedComments = comments.map(c => {
+        updatedComments = updatedComments.map(c => {
           if (c.id !== parentId) return c;
-          return { ...c, replies: (c.replies || []).filter(r => r.id !== commentId) };
+          const updatedReplies = (c.replies || []).filter(r => r.id !== commentId);
+          return { ...c, replies: updatedReplies };
         });
       }
+
       const updatedPost = { ...post, comments: updatedComments };
       cloud.savePostToCloud(updatedPost);
       return updatedPost;
     });
+
     setPosts(updatedPosts);
     saveToLocal('posts', updatedPosts);
   };
@@ -301,6 +403,7 @@ const App: React.FC = () => {
     await cloud.deletePostFromCloud(postId);
     
     setSelectedPostId(null);
+    pushNav({ tab: activeTab, postId: null, writing: false });
     alert('삭제가 완료되었습니다.');
   };
 
@@ -561,6 +664,9 @@ const App: React.FC = () => {
     }
     setWritingType(targetType as BoardType);
     setIsWriting(true);
+    setSelectedPostId(null);
+    pushNav({ tab: activeTab, postId: null, writing: true });
+    pushNav({ tab: activeTab, postId: null, writing: true });
   };
 
   const handleEditClick = (post: Post) => {
@@ -568,10 +674,12 @@ const App: React.FC = () => {
     setWritingType(post.type);
     setIsWriting(true);
     setSelectedPostId(null);
+    pushNav({ tab: activeTab, postId: null, writing: true });
   };
 
   const handleSelectPost = (id: string | null) => {
     setSelectedPostId(id);
+    pushNav({ tab: activeTab, postId: id, writing: false });
     if (id) {
       const updatedPosts = posts.map(p => {
         if (p.id === id) {
@@ -619,7 +727,7 @@ const App: React.FC = () => {
             type={writingType || (activeTab as BoardType)} 
             initialPost={editingPost} 
             onSave={handleSavePost} 
-            onCancel={() => { setIsWriting(false); setEditingPost(null); }} 
+            onCancel={() => { setIsWriting(false); setEditingPost(null); pushNav({ tab: activeTab, postId: null, writing: false }); }} 
           />
         ) : activeTab === 'admin' ? (
           isAdminAuth ? (
@@ -660,10 +768,10 @@ const App: React.FC = () => {
               onSelectPost={handleSelectPost} 
               userRole={userRole} 
               onDeletePost={handleDeletePost} 
-              onSaveComment={handleSaveComment} 
-              onUpdateComment={handleUpdateComment}
+              onSaveComment={handleSaveComment}
+              onEditComment={handleEditComment}
               onDeleteComment={handleDeleteComment}
-              currentUserName={userRole === 'admin' ? '관리자' : (loggedInMember?.name || '')}
+              currentUserName={userRole === 'admin' ? '관리자' : (loggedInMember?.name || '조합원')} 
             />
             {!selectedPostId && (
               <button 
