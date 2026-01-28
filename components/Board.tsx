@@ -344,7 +344,7 @@ const Board: React.FC<BoardProps> = ({
                   </div>
                 ) : (
                   <p className="text-base text-gray-600 leading-relaxed pl-11 mb-3">{comment.content}</p>
-                )
+                )}
                 
                 <div className="pl-11 flex space-x-6">
                   {userRole !== 'guest' && (
