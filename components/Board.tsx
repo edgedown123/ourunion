@@ -338,7 +338,8 @@ const Board: React.FC<BoardProps> = ({
             <ul className="divide-y divide-gray-50">
               {data.map(post => (
                 <li key={post.id}>
-                  <button onClick={() => onSelectPost(post.id)} className="w-full text-left p-6 hover:bg-gray-50 transition-colors group">
+                  {/* 모바일에서 공지사항(공고/공지, 경조사) 목록을 더 촘촘하게 */}
+                  <button onClick={() => onSelectPost(post.id)} className="w-full text-left p-4 md:p-6 hover:bg-gray-50 transition-colors group">
                     <div className="flex justify-between items-center">
                       <p className="font-bold text-gray-700 truncate group-hover:text-sky-primary transition-colors flex-1 mr-4">{post.title}</p>
                       <span className="text-[11px] text-gray-300 font-black whitespace-nowrap">{formatDate(post.createdAt)}</span>
