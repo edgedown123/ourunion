@@ -362,15 +362,6 @@ const Board: React.FC<BoardProps> = ({
 
   const filteredPosts = posts.filter(p => p.type === type).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  // 모바일에서 일부 게시판 목록을 더 촘촘하게(행 높이/여백 축소)
-  // - 자유게시판/자료실
-  // - 공지사항 하위 탭(공고/공지, 경조사)
-  const isCompactList =
-    type === 'free' ||
-    type === 'resources' ||
-    type === 'notice_all' ||
-    type === 'family_events';
-
   return (
     <div className="max-w-7xl mx-auto py-10 px-5 animate-fadeIn">
       <div className="flex justify-between items-center mb-12">
@@ -384,9 +375,9 @@ const Board: React.FC<BoardProps> = ({
         {userRole !== 'guest' && (userRole === 'admin' || type === 'free') && type !== 'notice' && (
           <button 
             onClick={() => onWriteClick()} 
-            className="bg-sky-primary text-white px-8 py-4 rounded-[1.5rem] font-black text-sm md:text-base shadow-xl shadow-sky-100 hover:opacity-90 active:scale-95 transition-all"
+            className="bg-sky-primary text-white px-4 py-2 md:px-8 md:py-4 rounded-xl md:rounded-[1.5rem] font-black text-xs md:text-base shadow-lg md:shadow-xl shadow-sky-100 hover:opacity-90 active:scale-95 transition-all"
           >
-            <i className="fas fa-pen-nib mr-2"></i> 글쓰기
+            <i className="fas fa-pen-nib mr-1.5 md:mr-2"></i> 글쓰기
           </button>
         )}
       </div>
@@ -401,14 +392,11 @@ const Board: React.FC<BoardProps> = ({
             ) : (
               filteredPosts.map((post) => (
                 <li key={post.id}>
-                  <button
-                    onClick={() => onSelectPost(post.id)}
-                    className={`block w-full text-left hover:bg-gray-50/40 transition-all group ${isCompactList ? 'p-4 md:p-8' : 'p-8 md:p-10'}`}
-                  >
-                    <div className={`flex justify-between items-start ${isCompactList ? 'mb-2' : 'mb-4'}`}>
+                  <button onClick={() => onSelectPost(post.id)} className="block w-full text-left p-8 md:p-10 hover:bg-gray-50/40 transition-all group">
+                    <div className="flex justify-between items-start mb-4">
                       <div className="flex-1 pr-4">
-                        <p className={`${isCompactList ? 'text-base md:text-xl' : 'text-lg md:text-xl'} font-black text-gray-800 truncate group-hover:text-sky-primary transition-colors`}>{post.title}</p>
-                        <div className={`${isCompactList ? 'mt-1' : 'mt-3'} flex items-center space-x-4 text-xs md:text-sm text-gray-400 font-bold uppercase tracking-wider`}>
+                        <p className="text-lg md:text-xl font-black text-gray-800 truncate group-hover:text-sky-primary transition-colors">{post.title}</p>
+                        <div className="mt-3 flex items-center space-x-4 text-xs md:text-sm text-gray-400 font-bold uppercase tracking-wider">
                           <span className="flex items-center"><i className="fas fa-user-circle mr-2 text-sky-primary/30"></i>{post.author}</span>
                           <span className="flex items-center"><i className="fas fa-eye mr-2"></i>조회 {post.views}</span>
                           {(post.comments?.length || 0) > 0 && (
@@ -416,7 +404,7 @@ const Board: React.FC<BoardProps> = ({
                           )}
                         </div>
                       </div>
-                      <span className={`${isCompactList ? 'text-[10px] md:text-sm' : 'text-xs md:text-sm'} text-gray-300 font-black whitespace-nowrap pt-1`}>{formatDate(post.createdAt)}</span>
+                      <span className="text-xs md:text-sm text-gray-300 font-black whitespace-nowrap pt-1">{formatDate(post.createdAt)}</span>
                     </div>
                   </button>
                 </li>
