@@ -206,12 +206,12 @@ const Board: React.FC<BoardProps> = ({
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {selectedPost.attachments.map((file, idx) => (
-                  <div key={idx} className="bg-white p-4 md:p-5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm hover:border-sky-primary transition-all group">
-                    <div className="flex items-center overflow-hidden min-w-0">
+                  <div key={idx} className="bg-white p-5 rounded-2xl border flex items-center justify-between shadow-sm hover:border-sky-primary transition-all group">
+                    <div className="flex items-center overflow-hidden">
                       <i className={`fas ${file.type.startsWith('image/') ? 'fa-file-image' : 'fa-file-alt'} text-gray-300 mr-4 text-xl`}></i>
-                      <span className="block text-sm font-bold text-gray-700 break-all whitespace-normal sm:truncate sm:whitespace-nowrap">{file.name}</span>
+                      <span className="text-sm font-bold text-gray-700 truncate">{file.name}</span>
                     </div>
-                    <a href={file.data} download={file.name} className="self-start sm:self-auto sm:ml-4 px-3 py-1.5 md:px-5 md:py-2 bg-sky-primary text-white text-[10px] md:text-[11px] font-black rounded-xl shadow-md hover:opacity-90 active:scale-95 transition-all">다운</a>
+                    <a href={file.data} download={file.name} className="ml-4 px-5 py-2 bg-sky-primary text-white text-[11px] font-black rounded-xl shadow-md hover:opacity-90 active:scale-95 transition-all">다운</a>
                   </div>
                 ))}
               </div>
@@ -362,6 +362,15 @@ const Board: React.FC<BoardProps> = ({
 
   const filteredPosts = posts.filter(p => p.type === type).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
+  // 모바일에서 일부 게시판 목록을 더 촘촘하게(행 높이/여백 축소)
+  // - 자유게시판/자료실
+  // - 공지사항 하위 탭(공고/공지, 경조사)
+  const isCompactList =
+    type === 'free' ||
+    type === 'resources' ||
+    type === 'notice_all' ||
+    type === 'family_events';
+
   return (
     <div className="max-w-7xl mx-auto py-10 px-5 animate-fadeIn">
       <div className="flex justify-between items-center mb-12">
@@ -392,11 +401,14 @@ const Board: React.FC<BoardProps> = ({
             ) : (
               filteredPosts.map((post) => (
                 <li key={post.id}>
-                  <button onClick={() => onSelectPost(post.id)} className="block w-full text-left p-8 md:p-10 hover:bg-gray-50/40 transition-all group">
-                    <div className="flex justify-between items-start mb-4">
+                  <button
+                    onClick={() => onSelectPost(post.id)}
+                    className={`block w-full text-left hover:bg-gray-50/40 transition-all group ${isCompactList ? 'p-4 md:p-8' : 'p-8 md:p-10'}`}
+                  >
+                    <div className={`flex justify-between items-start ${isCompactList ? 'mb-2' : 'mb-4'}`}>
                       <div className="flex-1 pr-4">
-                        <p className="text-lg md:text-xl font-black text-gray-800 truncate group-hover:text-sky-primary transition-colors">{post.title}</p>
-                        <div className="mt-3 flex items-center space-x-4 text-xs md:text-sm text-gray-400 font-bold uppercase tracking-wider">
+                        <p className={`${isCompactList ? 'text-base md:text-xl' : 'text-lg md:text-xl'} font-black text-gray-800 truncate group-hover:text-sky-primary transition-colors`}>{post.title}</p>
+                        <div className={`${isCompactList ? 'mt-1' : 'mt-3'} flex items-center space-x-4 text-xs md:text-sm text-gray-400 font-bold uppercase tracking-wider`}>
                           <span className="flex items-center"><i className="fas fa-user-circle mr-2 text-sky-primary/30"></i>{post.author}</span>
                           <span className="flex items-center"><i className="fas fa-eye mr-2"></i>조회 {post.views}</span>
                           {(post.comments?.length || 0) > 0 && (
@@ -404,7 +416,7 @@ const Board: React.FC<BoardProps> = ({
                           )}
                         </div>
                       </div>
-                      <span className="text-xs md:text-sm text-gray-300 font-black whitespace-nowrap pt-1">{formatDate(post.createdAt)}</span>
+                      <span className={`${isCompactList ? 'text-[10px] md:text-sm' : 'text-xs md:text-sm'} text-gray-300 font-black whitespace-nowrap pt-1`}>{formatDate(post.createdAt)}</span>
                     </div>
                   </button>
                 </li>
