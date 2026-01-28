@@ -11,13 +11,16 @@ interface BoardProps {
   selectedPostId: string | null;
   onSelectPost: (id: string | null) => void;
   userRole: UserRole;
+  currentUserName?: string;
   onDeletePost?: (id: string, password?: string) => void;
   onSaveComment?: (postId: string, content: string, parentId?: string) => void;
+  onUpdateComment?: (postId: string, commentId: string, content: string, parentId?: string) => void;
+  onDeleteComment?: (postId: string, commentId: string, parentId?: string) => void;
 }
 
 const Board: React.FC<BoardProps> = ({ 
   type, posts, onWriteClick, onEditClick, selectedPostId, 
-  onSelectPost, userRole, onDeletePost, onSaveComment 
+  onSelectPost, userRole, currentUserName, onDeletePost, onSaveComment, onUpdateComment, onDeleteComment 
 }) => {
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [isEditVerifyMode, setIsEditVerifyMode] = useState(false);
@@ -25,6 +28,48 @@ const Board: React.FC<BoardProps> = ({
   const [newComment, setNewComment] = useState('');
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState('');
+  const [commentMenuOpenId, setCommentMenuOpenId] = useState<string | null>(null);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingParentId, setEditingParentId] = useState<string | null>(null);
+  const [editingContent, setEditingContent] = useState('');
+
+  const canManageComment = (author: string) => {
+    if (userRole === 'admin') return true;
+    if (userRole !== 'member') return false;
+    return !!currentUserName && author === currentUserName;
+  };
+
+  const startEditComment = (commentId: string, content: string, parentId?: string) => {
+    setEditingCommentId(commentId);
+    setEditingParentId(parentId || null);
+    setEditingContent(content);
+    setCommentMenuOpenId(null);
+  };
+
+  const cancelEditComment = () => {
+    setEditingCommentId(null);
+    setEditingParentId(null);
+    setEditingContent('');
+  };
+
+  const submitEditComment = () => {
+    if (!selectedPost || !onUpdateComment) return;
+    if (!editingCommentId) return;
+    if (!editingContent.trim()) {
+      alert('내용을 입력해주세요.');
+      return;
+    }
+    onUpdateComment(selectedPost.id, editingCommentId, editingContent, editingParentId || undefined);
+    cancelEditComment();
+  };
+
+  const submitDeleteComment = (commentId: string, parentId?: string) => {
+    if (!selectedPost || !onDeleteComment) return;
+    if (!confirm('정말 삭제할까요?')) return;
+    onDeleteComment(selectedPost.id, commentId, parentId);
+    setCommentMenuOpenId(null);
+    if (editingCommentId === commentId) cancelEditComment();
+  };
   
   const selectedPost = selectedPostId ? posts.find(p => p.id === selectedPostId) : null;
 
@@ -206,12 +251,12 @@ const Board: React.FC<BoardProps> = ({
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {selectedPost.attachments.map((file, idx) => (
-                  <div key={idx} className="bg-white p-5 rounded-2xl border flex flex-col gap-3 md:flex-row md:items-center md:justify-between shadow-sm hover:border-sky-primary transition-all group">
-                    <div className="flex items-start md:items-center min-w-0">
+                  <div key={idx} className="bg-white p-4 rounded-2xl border flex items-center justify-between shadow-sm hover:border-sky-primary transition-all group">
+                    <div className="flex items-center overflow-hidden">
                       <i className={`fas ${file.type.startsWith('image/') ? 'fa-file-image' : 'fa-file-alt'} text-gray-300 mr-4 text-xl`}></i>
-                      <span className="text-sm font-bold text-gray-700 whitespace-normal break-all md:truncate md:whitespace-nowrap">{file.name}</span>
+                      <span className="text-sm font-bold text-gray-700 truncate">{file.name}</span>
                     </div>
-                    <a href={file.data} download={file.name} className="ml-4 px-5 py-2 bg-sky-primary text-white text-[11px] font-black rounded-xl shadow-md hover:opacity-90 active:scale-95 transition-all">다운로드</a>
+                    <a href={file.data} download={file.name} className="ml-4 px-5 py-2 bg-sky-primary text-white text-[11px] font-black rounded-xl shadow-md hover:opacity-90 active:scale-95 transition-all">다운</a>
                   </div>
                 ))}
               </div>
@@ -220,15 +265,15 @@ const Board: React.FC<BoardProps> = ({
         </article>
 
         {/* 댓글 섹션 */}
-        <section className="bg-white rounded-[2.5rem] border p-10 md:p-14 shadow-sm">
-          <h3 className="text-xl font-black text-gray-900 mb-10 flex items-center">
+        <section className="bg-white rounded-[2.5rem] border p-4 md:p-7 shadow-sm">
+          <h3 className="text-xl font-black text-gray-900 mb-5 flex items-center">
             <i className="fas fa-comments mr-3 text-sky-primary"></i> 댓글 
             <span className="ml-3 bg-sky-50 text-sky-primary px-3 py-1 rounded-xl text-sm">
               {selectedPost.comments?.reduce((acc, curr) => acc + 1 + (curr.replies?.length || 0), 0) || 0}
             </span>
           </h3>
           
-          <div className="space-y-8 mb-14">
+          <div className="space-y-4 mb-7">
             {selectedPost.comments?.map((comment) => (
               <div key={comment.id} className="border-b border-gray-50 last:border-0 pb-8 animate-fadeIn">
                 <div className="flex justify-between items-center mb-3">
@@ -238,9 +283,68 @@ const Board: React.FC<BoardProps> = ({
                     </div>
                     {comment.author}
                   </span>
-                  <span className="text-[11px] font-bold text-gray-300 uppercase">{formatDate(comment.createdAt)}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold text-gray-300 uppercase">{formatDate(comment.createdAt)}</span>
+                    {canManageComment(comment.author) && (
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setCommentMenuOpenId(commentMenuOpenId === `c:${comment.id}` ? null : `c:${comment.id}`)}
+                          className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-gray-50 active:scale-95 transition-all"
+                          aria-label="댓글 메뉴"
+                        >
+                          <i className="fas fa-ellipsis-v text-gray-300"></i>
+                        </button>
+                        {commentMenuOpenId === `c:${comment.id}` && (
+                          <div className="absolute right-0 mt-2 w-28 bg-white border border-gray-100 shadow-xl rounded-2xl overflow-hidden z-50">
+                            <button
+                              type="button"
+                              onClick={() => startEditComment(comment.id, comment.content)}
+                              className="w-full text-left px-4 py-3 text-sm font-bold hover:bg-gray-50"
+                            >
+                              수정
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => submitDeleteComment(comment.id)}
+                              className="w-full text-left px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50"
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <p className="text-base text-gray-600 leading-relaxed pl-11 mb-3">{comment.content}</p>
+                {editingCommentId === comment.id && !editingParentId ? (
+                  <div className="pl-11 mb-3">
+                    <textarea
+                      value={editingContent}
+                      onChange={(e) => setEditingContent(e.target.value)}
+                      className="w-full border-2 border-sky-50 rounded-2xl p-3 text-sm focus:border-sky-primary outline-none min-h-[50px] resize-none bg-gray-50/50"
+                      autoFocus
+                    />
+                    <div className="flex justify-end gap-2 mt-2">
+                      <button
+                        type="button"
+                        onClick={cancelEditComment}
+                        className="px-4 py-2 rounded-xl text-xs font-black bg-gray-100 text-gray-600"
+                      >
+                        취소
+                      </button>
+                      <button
+                        type="button"
+                        onClick={submitEditComment}
+                        className="px-4 py-2 rounded-xl text-xs font-black bg-gray-900 text-white"
+                      >
+                        저장
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-base text-gray-600 leading-relaxed pl-11 mb-3">{comment.content}</p>
+                )
                 
                 <div className="pl-11 flex space-x-6">
                   {userRole !== 'guest' && (
@@ -257,13 +361,13 @@ const Board: React.FC<BoardProps> = ({
                 </div>
 
                 {replyingToId === comment.id && (
-                  <form onSubmit={(e) => handleReplySubmit(e, comment.id)} className="mt-6 ml-11 animate-fadeIn">
+                  <form onSubmit={(e) => handleReplySubmit(e, comment.id)} className="mt-3 ml-11 animate-fadeIn">
                     <div className="relative">
                       <textarea 
                         value={replyContent}
                         onChange={(e) => setReplyContent(e.target.value)}
                         placeholder="따뜻한 답글을 남겨주세요."
-                        className="w-full border-2 border-sky-50 rounded-2xl p-5 text-sm focus:border-sky-primary outline-none min-h-[100px] resize-none pr-24 bg-gray-50/50"
+                        className="w-full border-2 border-sky-50 rounded-2xl p-3 text-sm focus:border-sky-primary outline-none min-h-[50px] resize-none pr-24 bg-gray-50/50 md:min-h-[60px]"
                         autoFocus
                       />
                       <button 
@@ -286,9 +390,68 @@ const Board: React.FC<BoardProps> = ({
                             <i className="fas fa-reply fa-rotate-180 mr-3 text-gray-300 text-xs"></i>
                             {reply.author}
                           </span>
-                          <span className="text-[10px] font-bold text-gray-300 uppercase">{formatDate(reply.createdAt)}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold text-gray-300 uppercase">{formatDate(reply.createdAt)}</span>
+                            {canManageComment(reply.author) && (
+                              <div className="relative">
+                                <button
+                                  type="button"
+                                  onClick={() => setCommentMenuOpenId(commentMenuOpenId === `r:${reply.id}` ? null : `r:${reply.id}`)}
+                                  className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-50 active:scale-95 transition-all"
+                                  aria-label="답글 메뉴"
+                                >
+                                  <i className="fas fa-ellipsis-v text-gray-300 text-xs"></i>
+                                </button>
+                                {commentMenuOpenId === `r:${reply.id}` && (
+                                  <div className="absolute right-0 mt-2 w-28 bg-white border border-gray-100 shadow-xl rounded-2xl overflow-hidden z-50">
+                                    <button
+                                      type="button"
+                                      onClick={() => startEditComment(reply.id, reply.content, comment.id)}
+                                      className="w-full text-left px-4 py-3 text-sm font-bold hover:bg-gray-50"
+                                    >
+                                      수정
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => submitDeleteComment(reply.id, comment.id)}
+                                      className="w-full text-left px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50"
+                                    >
+                                      삭제
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <p className="text-sm text-gray-500 leading-relaxed pl-7">{reply.content}</p>
+                        {editingCommentId === reply.id && editingParentId === comment.id ? (
+                          <div className="pl-7">
+                            <textarea
+                              value={editingContent}
+                              onChange={(e) => setEditingContent(e.target.value)}
+                              className="w-full border-2 border-sky-50 rounded-2xl p-3 text-sm focus:border-sky-primary outline-none min-h-[50px] resize-none bg-gray-50/50"
+                              autoFocus
+                            />
+                            <div className="flex justify-end gap-2 mt-2">
+                              <button
+                                type="button"
+                                onClick={cancelEditComment}
+                                className="px-4 py-2 rounded-xl text-xs font-black bg-gray-100 text-gray-600"
+                              >
+                                취소
+                              </button>
+                              <button
+                                type="button"
+                                onClick={submitEditComment}
+                                className="px-4 py-2 rounded-xl text-xs font-black bg-gray-900 text-white"
+                              >
+                                저장
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500 leading-relaxed pl-7">{reply.content}</p>
+                        )
                       </div>
                     ))}
                   </div>
@@ -298,11 +461,11 @@ const Board: React.FC<BoardProps> = ({
           </div>
           
           {userRole !== 'guest' && (
-            <form onSubmit={handleCommentSubmit} className="relative pt-10 border-t">
+            <form onSubmit={handleCommentSubmit} className="relative pt-5 border-t">
               <textarea 
                 value={newComment} 
                 onChange={(e) => setNewComment(e.target.value)} 
-                className="w-full border-2 border-gray-100 rounded-[2rem] p-6 md:p-8 text-sm md:text-base focus:border-sky-primary outline-none min-h-[160px] resize-none pr-32 transition-all bg-gray-50/30"
+                className="w-full border-2 border-gray-100 rounded-[2rem] p-4 md:p-4 text-sm md:text-base focus:border-sky-primary outline-none min-h-[70px] resize-none pr-32 transition-all bg-gray-50/30 md:min-h-[90px]"
               />
               <button 
                 type="submit" 
@@ -384,7 +547,7 @@ const Board: React.FC<BoardProps> = ({
         {userRole !== 'guest' && (userRole === 'admin' || type === 'free') && type !== 'notice' && (
           <button 
             onClick={() => onWriteClick()} 
-            className="bg-sky-primary text-white px-4 py-2 rounded-[1.5rem] font-black text-xs md:px-8 md:py-4 md:text-base shadow-xl shadow-sky-100 hover:opacity-90 active:scale-95 transition-all"
+            className="bg-sky-primary text-white px-8 py-4 rounded-[1.5rem] font-black text-sm md:text-base shadow-xl shadow-sky-100 hover:opacity-90 active:scale-95 transition-all"
           >
             <i className="fas fa-pen-nib mr-2"></i> 글쓰기
           </button>
