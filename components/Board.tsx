@@ -206,7 +206,7 @@ const Board: React.FC<BoardProps> = ({
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {selectedPost.attachments.map((file, idx) => (
-                  <div key={idx} className="bg-white p-5 rounded-2xl border flex items-center justify-between shadow-sm hover:border-sky-primary transition-all group">
+                  <div key={idx} className="bg-white p-4 rounded-2xl border flex items-center justify-between shadow-sm hover:border-sky-primary transition-all group">
                     <div className="flex items-center overflow-hidden">
                       <i className={`fas ${file.type.startsWith('image/') ? 'fa-file-image' : 'fa-file-alt'} text-gray-300 mr-4 text-xl`}></i>
                       <span className="text-sm font-bold text-gray-700 truncate">{file.name}</span>
@@ -220,7 +220,7 @@ const Board: React.FC<BoardProps> = ({
         </article>
 
         {/* 댓글 섹션 */}
-        <section className="bg-white rounded-[2.5rem] border p-5 md:p-7 shadow-sm">
+        <section className="bg-white rounded-[2.5rem] border p-4 md:p-7 shadow-sm">
           <h3 className="text-xl font-black text-gray-900 mb-5 flex items-center">
             <i className="fas fa-comments mr-3 text-sky-primary"></i> 댓글 
             <span className="ml-3 bg-sky-50 text-sky-primary px-3 py-1 rounded-xl text-sm">
@@ -263,7 +263,7 @@ const Board: React.FC<BoardProps> = ({
                         value={replyContent}
                         onChange={(e) => setReplyContent(e.target.value)}
                         placeholder="따뜻한 답글을 남겨주세요."
-                        className="w-full border-2 border-sky-50 rounded-2xl p-3 text-sm focus:border-sky-primary outline-none min-h-[60px] resize-none pr-24 bg-gray-50/50"
+                        className="w-full border-2 border-sky-50 rounded-2xl p-3 text-sm focus:border-sky-primary outline-none min-h-[50px] resize-none pr-24 bg-gray-50/50 md:min-h-[60px]"
                         autoFocus
                       />
                       <button 
@@ -302,7 +302,7 @@ const Board: React.FC<BoardProps> = ({
               <textarea 
                 value={newComment} 
                 onChange={(e) => setNewComment(e.target.value)} 
-                className="w-full border-2 border-gray-100 rounded-[2rem] p-4 md:p-5 text-sm md:text-base focus:border-sky-primary outline-none min-h-[90px] resize-none pr-32 transition-all bg-gray-50/30"
+                className="w-full border-2 border-gray-100 rounded-[2rem] p-4 md:p-4 text-sm md:text-base focus:border-sky-primary outline-none min-h-[70px] resize-none pr-32 transition-all bg-gray-50/30 md:min-h-[90px]"
               />
               <button 
                 type="submit" 
