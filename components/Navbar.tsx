@@ -49,7 +49,19 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
       { id: 'resources', label: '자료실' },
       { id: 'admin', label: '설정' },
     ];
+  }, [])
+
+  // 데스크톱: 공지사항(=공고/공지) / 경조사를 상단 메뉴로 분리
+  const desktopNavItems = useMemo(() => {
+    return NAV_ITEMS.flatMap((item) => {
+      if (item.id !== 'notice') return [item];
+      return [
+        { ...item, id: 'notice_all', label: '공지사항' },
+        { ...item, id: 'family_events', label: '경조사' },
+      ];
+    });
   }, []);
+;
 
   const go = (tab: string) => {
     onTabChange(tab);
@@ -137,8 +149,8 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
       <div className="bg-white px-2 md:px-4 border-b border-gray-50 hidden md:block">
         <div className="max-w-7xl mx-auto md:overflow-visible overflow-x-auto scrollbar-hide flex items-center h-14">
           <div className="flex space-x-1 md:space-x-2 h-full items-center min-w-max md:min-w-0 md:w-full md:justify-start">
-            {NAV_ITEMS.map((item) => {
-              const isActive = activeParent?.id === item.id;
+            {desktopNavItems.map((item) => {
+              const isActive = item.id === activeTab || (activeParent?.id === 'notice' && (item.id === 'notice_all' || item.id === 'family_events') && (activeTab === 'notice_all' || activeTab === 'family_events'));
               const isSignup = item.id === 'signup';
               return (
                 <button

@@ -6,7 +6,6 @@ import Layout from './components/Layout';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Board from './components/Board';
-import NoticeCombined from './components/NoticeCombined';
 import NoticeLanding from './components/NoticeLanding';
 import NoticeSingle from './components/NoticeSingle';
 import AdminPanel from './components/AdminPanel';
@@ -248,8 +247,11 @@ const App: React.FC = () => {
   const handleTabChange = (tab: string) => {
     // 탭 그대로 이동
     // - 모바일: notice는 공지사항 랜딩(하위메뉴만 노출)
-    // - 데스크톱: notice는 통합(공고/공지 + 경조사)
-    const nextTab = tab;
+    // - 데스크톱: notice는 공고/공지( notice_all )로 이동 (상단 메뉴에서 경조사 분리)
+    let nextTab = tab;
+    const isDesktop = window.matchMedia('(min-width: 768px)').matches;
+    // 데스크톱: 공지사항 탭은 공고/공지( notice_all )로 바로 이동
+    if (isDesktop && nextTab === 'notice') nextTab = 'notice_all';
     // 제한된 메뉴: 자유게시판(free), 자료실(resources)
     const restrictedTabs = ['free', 'resources'];
     
@@ -776,14 +778,16 @@ const handleRequestWithdraw = () => {
         ) : activeTab === 'notice' ? (
           <>
             {/* 모바일: 공고/공지 / 경조사 메뉴만 노출 */}
-            <NoticeLanding onSelect={handleTabChange} />
+            <div className="md:hidden">
+              <NoticeLanding onSelect={handleTabChange} />
+            </div>
 
-            {/* 데스크톱: 기존 공지사항(통합) 화면 유지 */}
+            {/* 데스크톱: 공지사항은 공고/공지 게시판 단독 노출 */}
             <div className="hidden md:block">
-              <NoticeCombined
+              <NoticeSingle
                 posts={posts}
                 userRole={userRole}
-                activeTab={activeTab}
+                type={'notice_all'}
                 selectedPostId={selectedPostId}
                 onWriteClick={handleWriteClick}
                 onEditClick={handleEditClick}
@@ -795,7 +799,7 @@ const handleRequestWithdraw = () => {
               />
             </div>
           </>
-        ) : ['notice_all', 'family_events'].includes(activeTab) ? (
+) : ['notice_all', 'family_events'].includes(activeTab) ? (
           <>
             {/* 모바일: 선택한 하위 게시판만 단독으로 */}
             <div className="md:hidden">
