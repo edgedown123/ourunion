@@ -260,7 +260,8 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
   </div>
 
   {/* 모바일 메뉴 하단: 유튜브 링크 + 회원탈퇴 */}
-  <div className="border-t px-4 py-4">
+  <div className="border-t px-4 pt-4 pb-4 bg-white sticky bottom-0"
+                      style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)" }}>
     {youtubeLinks.length > 0 && (
       <div className="grid grid-cols-2 gap-3">
         {youtubeLinks.slice(0, 4).map((it) => (
@@ -269,9 +270,10 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
             href={it.url}
             target="_blank"
             rel="noreferrer"
-            className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-red-600 text-white font-black text-sm shadow-md active:scale-[0.99] transition-all"
+            className="flex items-center justify-center gap-2 py-3 rounded-2xl text-white font-black text-sm shadow-md active:scale-[0.99] transition-all hover:brightness-95"
+                              style={{ backgroundColor: "var(--point-color)" }}
           >
-            <i className="fab fa-youtube text-base" />
+            <i className="fab fa-youtube text-base text-red-500" />
             <span>{it.label}</span>
           </a>
         ))}
@@ -279,7 +281,8 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
           <button
             type="button"
             onClick={() => { onRequestWithdraw?.(); setMobileOpen(false); }}
-            className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-red-600 text-white font-black text-sm shadow-md active:scale-[0.99] transition-all"
+            className="flex items-center justify-center gap-2 py-3 rounded-2xl text-white font-black text-sm shadow-md active:scale-[0.99] transition-all hover:brightness-95"
+                              style={{ backgroundColor: "var(--point-color)" }}
           >
             <i className="fas fa-user-slash text-base" />
             <span>회원 탈퇴</span>
@@ -292,7 +295,8 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
       <button
         type="button"
         onClick={() => { onRequestWithdraw?.(); setMobileOpen(false); }}
-        className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-red-600 text-white font-black text-sm shadow-md active:scale-[0.99] transition-all"
+        className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-white font-black text-sm shadow-md active:scale-[0.99] transition-all hover:brightness-95"
+                          style={{ backgroundColor: "var(--point-color)" }}
       >
         <i className="fas fa-user-slash text-base" />
         <span>회원 탈퇴</span>

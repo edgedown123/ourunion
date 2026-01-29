@@ -108,9 +108,10 @@ export default function Footer({
             href={it.url}
             target="_blank"
             rel="noreferrer"
-            className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-red-600 text-white font-black text-sm shadow-md hover:brightness-95 transition-all"
+            className="flex items-center justify-center gap-2 py-3 rounded-2xl text-white font-black text-sm shadow-md hover:brightness-95 transition-all"
+                  style={{ backgroundColor: "var(--point-color)" }}
           >
-            <i className="fab fa-youtube text-base" />
+            <i className="fab fa-youtube text-base text-red-500" />
             <span>{it.label}</span>
           </a>
         ))}
@@ -118,7 +119,8 @@ export default function Footer({
           <button
             type="button"
             onClick={() => onRequestWithdraw?.()}
-            className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-red-600 text-white font-black text-sm shadow-md hover:brightness-95 transition-all"
+            className="flex items-center justify-center gap-2 py-3 rounded-2xl text-white font-black text-sm shadow-md hover:brightness-95 transition-all"
+                  style={{ backgroundColor: "var(--point-color)" }}
           >
             <i className="fas fa-user-slash text-base" />
             <span>회원 탈퇴</span>
@@ -131,7 +133,8 @@ export default function Footer({
       <button
         type="button"
         onClick={() => onRequestWithdraw?.()}
-        className="w-full max-w-[360px] flex items-center justify-center gap-2 py-3 rounded-2xl bg-red-600 text-white font-black text-sm shadow-md hover:brightness-95 transition-all"
+        className="w-full max-w-[360px] flex items-center justify-center gap-2 py-3 rounded-2xl text-white font-black text-sm shadow-md hover:brightness-95 transition-all"
+              style={{ backgroundColor: "var(--point-color)" }}
       >
         <i className="fas fa-user-slash text-base" />
         <span>회원 탈퇴</span>
