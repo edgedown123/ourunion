@@ -243,10 +243,6 @@ const App: React.FC = () => {
   };
 
   const handleTabChange = (tab: string) => {
-    // 공지사항 메인 메뉴 클릭 시 첫 번째 서브메뉴(공고/공지)로 자동 이동
-    if (tab === 'notice_main') {
-      tab = 'notice_all';
-    }
     // 제한된 메뉴: 자유게시판(free), 자료실(resources)
     const restrictedTabs = ['free', 'resources'];
     
