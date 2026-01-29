@@ -10,7 +10,7 @@ interface NavbarProps {
   userRole: 'guest' | 'member' | 'admin';
   memberName: string;
   onToggleLogin: () => void;
-  youtubeLinks?: { label: string; url: string }[];
+  youtubeLinks?: { label: string; url: string; imageSrc?: string }[];
   showWithdrawButton?: boolean;
   onRequestWithdraw?: () => void;
 }
@@ -282,19 +282,25 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
             href={it.url}
             target="_blank"
             rel="noreferrer"
-            className="flex items-center justify-center gap-2 py-3 rounded-2xl text-white font-black text-sm shadow-md active:scale-[0.99] transition-all hover:brightness-95"
-                              style={{ backgroundColor: "var(--point-color)" }}
+            className={it.imageSrc ? "flex items-center justify-center rounded-2xl shadow-md overflow-hidden active:scale-[0.99] transition-all hover:brightness-95" : "flex items-center justify-center gap-2 py-3 rounded-2xl text-white font-black text-sm shadow-md active:scale-[0.99] transition-all hover:brightness-95"}
+                              style={it.imageSrc ? undefined : { backgroundColor: "var(--point-color)" }}
           >
-            <i className="fab fa-youtube text-base text-white" />
-            <span>{it.label}</span>
+            {it.imageSrc ? (
+            <img src={it.imageSrc} alt={it.label} className="w-full h-auto" />
+          ) : (
+            <>
+              <i className="fab fa-youtube text-base text-white" />
+              <span>{it.label}</span>
+            </>
+          )}
           </a>
         ))}
         {showWithdrawButton && (
           <button
             type="button"
             onClick={() => { onRequestWithdraw?.(); setMobileOpen(false); }}
-            className="flex items-center justify-center gap-2 py-3 rounded-2xl text-white font-black text-sm shadow-md active:scale-[0.99] transition-all hover:brightness-95"
-                              style={{ backgroundColor: "var(--point-color)" }}
+            className={it.imageSrc ? "flex items-center justify-center rounded-2xl shadow-md overflow-hidden active:scale-[0.99] transition-all hover:brightness-95" : "flex items-center justify-center gap-2 py-3 rounded-2xl text-white font-black text-sm shadow-md active:scale-[0.99] transition-all hover:brightness-95"}
+                              style={it.imageSrc ? undefined : { backgroundColor: "var(--point-color)" }}
           >
             <i className="fas fa-user-slash text-base" />
             <span>회원 탈퇴</span>

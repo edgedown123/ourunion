@@ -613,9 +613,9 @@ const App: React.FC = () => {
   };
 
   const YOUTUBE_LINKS = [
-  { label: "한국brt축구단", url: "https://www.youtube.com/@brt4866" },
-  { label: "김동걸TV", url: "https://www.youtube.com/@SeoulCityBusDriver" },
-  { label: "겸손은 힘들다", url: "https://www.youtube.com/@gyeomsonisnothing" },
+  { label: "한국brt축구단", url: "https://www.youtube.com/@brt4866", imageSrc: "/images/youtube/youtube-한국brt축구단_v2.png?v=2" },
+  { label: "김동걸TV", url: "https://www.youtube.com/@SeoulCityBusDriver", imageSrc: "/images/youtube/youtube-김동걸TV_v2.png?v=2" },
+  { label: "겸손은 힘들다", url: "https://www.youtube.com/@gyeomsonisnothing", imageSrc: "/images/youtube/youtube-겸손은힘들다_v2.png?v=2" },
 ];
 
 const handleRequestWithdraw = () => {
