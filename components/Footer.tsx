@@ -4,7 +4,7 @@ import PolicyModal from "./PolicyModal";
 interface FooterProps {
   siteName?: string;
   onTabChange?: (tab: string) => void;
-  youtubeLinks?: { label: string; url: string; imageSrc?: string }[];
+  youtubeLinks?: { label: string; url: string }[];
   showWithdrawButton?: boolean;
   onRequestWithdraw?: () => void;
 }
@@ -108,25 +108,19 @@ export default function Footer({
             href={it.url}
             target="_blank"
             rel="noreferrer"
-            className={it.imageSrc ? "flex items-center justify-center rounded-2xl shadow-md overflow-hidden hover:brightness-95 transition-all" : "flex items-center justify-center gap-2 py-3 rounded-2xl text-white font-black text-sm shadow-md hover:brightness-95 transition-all"}
-                  style={it.imageSrc ? undefined : { backgroundColor: "var(--point-color)" }}
+            className="flex items-center justify-center gap-2 py-3 rounded-2xl text-white font-black text-sm shadow-md hover:brightness-95 transition-all"
+                  style={{ backgroundColor: "var(--point-color)" }}
           >
-            {it.imageSrc ? (
-            <img src={it.imageSrc} alt={it.label} className="w-full h-auto" />
-          ) : (
-            <>
-              <i className="fab fa-youtube text-base text-white" />
-              <span>{it.label}</span>
-            </>
-          )}
+            <i className="fab fa-youtube text-base text-white" />
+            <span>{it.label}</span>
           </a>
         ))}
         {showWithdrawButton && (
           <button
             type="button"
             onClick={() => onRequestWithdraw?.()}
-            className={it.imageSrc ? "flex items-center justify-center rounded-2xl shadow-md overflow-hidden hover:brightness-95 transition-all" : "flex items-center justify-center gap-2 py-3 rounded-2xl text-white font-black text-sm shadow-md hover:brightness-95 transition-all"}
-                  style={it.imageSrc ? undefined : { backgroundColor: "var(--point-color)" }}
+            className="flex items-center justify-center gap-2 py-3 rounded-2xl text-white font-black text-sm shadow-md hover:brightness-95 transition-all"
+                  style={{ backgroundColor: "var(--point-color)" }}
           >
             <i className="fas fa-user-slash text-base" />
             <span>회원 탈퇴</span>
