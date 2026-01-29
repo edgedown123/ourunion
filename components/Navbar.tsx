@@ -286,10 +286,12 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
   </div>
 
   {/* 모바일 메뉴 하단: 유튜브 링크 + 회원탈퇴 */}
-  <div className="border-t px-4 pt-4 pb-4 bg-white sticky bottom-0"
-                      style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)" }}>
+  <div
+    className="border-t px-4 pt-4 pb-4 bg-white sticky bottom-0"
+    style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)" }}
+  >
     {youtubeLinks.length > 0 && (
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 max-w-[360px] mx-auto">
         {youtubeLinks.slice(0, 4).map((it) => {
           const src = getLinkImageSrc(it.label);
           return (
@@ -298,16 +300,14 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
               href={it.url}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center justify-center"
+              className="w-full"
             >
               {src ? (
-                <img
-                  src={src}
-                  alt={it.label}
-                  className="w-full rounded-2xl shadow-md active:scale-[0.99] transition-all hover:brightness-95"
-                />
+                <div className="w-full h-[60px] sm:h-[64px] rounded-2xl shadow-md overflow-hidden bg-white hover:brightness-95 active:scale-[0.99] transition-all">
+                  <img src={src} alt={it.label} className="w-full h-full object-contain" />
+                </div>
               ) : (
-                <span className="w-full py-3 rounded-2xl text-white font-black text-sm shadow-md text-center"
+                <span className="w-full h-[60px] sm:h-[64px] rounded-2xl text-white font-black text-sm shadow-md text-center flex items-center justify-center"
                       style={{ backgroundColor: "var(--point-color)" }}>
                   {it.label}
                 </span>
@@ -319,13 +319,15 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
           <button
             type="button"
             onClick={() => { onRequestWithdraw?.(); setMobileOpen(false); }}
-            className="flex items-center justify-center"
+            className="w-full"
           >
-            <img
-              src="/images/youtube-회원탈퇴.png"
-              alt="회원 탈퇴"
-              className="w-full rounded-2xl shadow-md active:scale-[0.99] transition-all hover:brightness-95"
-            />
+            <div className="w-full h-[60px] sm:h-[64px] rounded-2xl shadow-md overflow-hidden bg-white hover:brightness-95 active:scale-[0.99] transition-all">
+              <img
+                src="/images/youtube-회원탈퇴.png"
+                alt="회원 탈퇴"
+                className="w-full h-full object-contain"
+              />
+            </div>
           </button>
         )}
       </div>
@@ -335,13 +337,15 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
       <button
         type="button"
         onClick={() => { onRequestWithdraw?.(); setMobileOpen(false); }}
-        className="w-full flex items-center justify-center"
+        className="w-full max-w-[360px] mx-auto"
       >
-        <img
-          src="/images/youtube-회원탈퇴.png"
-          alt="회원 탈퇴"
-          className="w-full rounded-2xl shadow-md active:scale-[0.99] transition-all hover:brightness-95"
-        />
+        <div className="w-full h-[60px] sm:h-[64px] rounded-2xl shadow-md overflow-hidden bg-white hover:brightness-95 active:scale-[0.99] transition-all">
+          <img
+            src="/images/youtube-회원탈퇴.png"
+            alt="회원 탈퇴"
+            className="w-full h-full object-contain"
+          />
+        </div>
       </button>
     )}
 </div>

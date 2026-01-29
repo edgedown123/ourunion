@@ -114,7 +114,7 @@ export default function Footer({
   {/* 데스크톱 우측 하단 영역: 유튜브 링크 + 회원탈퇴 */}
   <div className="hidden md:flex md:flex-col md:items-end md:gap-3 md:min-w-[320px]">
     {youtubeLinks.length > 0 && (
-      <div className="grid grid-cols-2 gap-3 w-full max-w-[360px]">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 w-full max-w-[360px]">
         {youtubeLinks.slice(0, 4).map((it) => {
           const src = getLinkImageSrc(it.label);
           return (
@@ -123,17 +123,15 @@ export default function Footer({
               href={it.url}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center justify-center"
+              className="w-full"
             >
               {src ? (
-                <img
-                  src={src}
-                  alt={it.label}
-                  className="w-full rounded-2xl shadow-md hover:brightness-95 transition-all"
-                />
+                <div className="w-full h-[60px] sm:h-[64px] md:h-[72px] rounded-2xl shadow-md overflow-hidden bg-white hover:brightness-95 transition-all">
+                  <img src={src} alt={it.label} className="w-full h-full object-contain" />
+                </div>
               ) : (
                 <span
-                  className="w-full py-3 rounded-2xl text-white font-black text-sm shadow-md text-center"
+                  className="w-full h-[60px] sm:h-[64px] md:h-[72px] rounded-2xl text-white font-black text-sm shadow-md text-center flex items-center justify-center"
                   style={{ backgroundColor: "var(--point-color)" }}
                 >
                   {it.label}
@@ -146,13 +144,15 @@ export default function Footer({
           <button
             type="button"
             onClick={() => onRequestWithdraw?.()}
-            className="flex items-center justify-center"
+            className="w-full"
           >
-            <img
-              src="/images/youtube-회원탈퇴.png"
-              alt="회원 탈퇴"
-              className="w-full rounded-2xl shadow-md hover:brightness-95 transition-all"
-            />
+            <div className="w-full h-[60px] sm:h-[64px] md:h-[72px] rounded-2xl shadow-md overflow-hidden bg-white hover:brightness-95 transition-all">
+              <img
+                src="/images/youtube-회원탈퇴.png"
+                alt="회원 탈퇴"
+                className="w-full h-full object-contain"
+              />
+            </div>
           </button>
         )}
       </div>
@@ -162,13 +162,15 @@ export default function Footer({
       <button
         type="button"
         onClick={() => onRequestWithdraw?.()}
-        className="w-full max-w-[360px] flex items-center justify-center"
+        className="w-full max-w-[360px]"
       >
-        <img
-          src="/images/youtube-회원탈퇴.png"
-          alt="회원 탈퇴"
-          className="w-full rounded-2xl shadow-md hover:brightness-95 transition-all"
-        />
+        <div className="w-full h-[60px] sm:h-[64px] md:h-[72px] rounded-2xl shadow-md overflow-hidden bg-white hover:brightness-95 transition-all">
+          <img
+            src="/images/youtube-회원탈퇴.png"
+            alt="회원 탈퇴"
+            className="w-full h-full object-contain"
+          />
+        </div>
       </button>
     )}
   </div>
