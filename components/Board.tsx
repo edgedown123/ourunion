@@ -35,7 +35,7 @@ const Board: React.FC<BoardProps> = ({
   
   const canManageComment = (author: string) => userRole === 'admin' || (userRole !== 'guest' && author === (currentUserName || ''));
 
-  const selectedPost = selectedPostId ? posts.find(p => p.id === selectedPostId) : null;
+  const selectedPost = selectedPostId ? posts.find(p => p.id === selectedPostId && p.type === type) : null;
 
   // 날짜 포맷팅 유틸리티 함수 (YYYY.MM.DD HH:mm)
   const formatDate = (dateStr: string | undefined) => {
