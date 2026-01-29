@@ -246,8 +246,10 @@ const App: React.FC = () => {
   };
 
   const handleTabChange = (tab: string) => {
-    // 공지사항(부모) 클릭 시 실제 탭은 공고/공지로 정규화
-    const nextTab = tab === 'notice' ? 'notice_all' : tab;
+    // 탭 그대로 이동
+    // - 모바일: notice는 공지사항 랜딩(하위메뉴만 노출)
+    // - 데스크톱: notice는 통합(공고/공지 + 경조사)
+    const nextTab = tab;
     // 제한된 메뉴: 자유게시판(free), 자료실(resources)
     const restrictedTabs = ['free', 'resources'];
     
@@ -785,20 +787,42 @@ const App: React.FC = () => {
             </div>
           </>
         ) : ['notice_all', 'family_events'].includes(activeTab) ? (
-          <NoticeSingle
-            posts={posts}
-            userRole={userRole}
-            type={activeTab as BoardType}
-            selectedPostId={selectedPostId}
-            onWriteClick={handleWriteClick}
-            onEditClick={handleEditClick}
-            onSelectPost={handleSelectPost}
-            onDeletePost={handleDeletePost}
-            onSaveComment={handleSaveComment}
-            onEditComment={handleEditComment}
-            onDeleteComment={handleDeleteComment}
-          />
-        )) : (
+          <>
+            {/* 모바일: 선택한 하위 게시판만 단독으로 */}
+            <div className="md:hidden">
+              <NoticeSingle
+                posts={posts}
+                userRole={userRole}
+                type={activeTab as BoardType}
+                selectedPostId={selectedPostId}
+                onWriteClick={handleWriteClick}
+                onEditClick={handleEditClick}
+                onSelectPost={handleSelectPost}
+                onDeletePost={handleDeletePost}
+                onSaveComment={handleSaveComment}
+                onEditComment={handleEditComment}
+                onDeleteComment={handleDeleteComment}
+              />
+            </div>
+
+            {/* 데스크톱: 기존처럼 공고/공지 + 경조사를 함께 보여주고, 선택 섹션으로 스크롤 */}
+            <div className="hidden md:block">
+              <NoticeCombined
+                posts={posts}
+                userRole={userRole}
+                activeTab={activeTab}
+                selectedPostId={selectedPostId}
+                onWriteClick={handleWriteClick}
+                onEditClick={handleEditClick}
+                onSelectPost={handleSelectPost}
+                onDeletePost={handleDeletePost}
+                onSaveComment={handleSaveComment}
+                onEditComment={handleEditComment}
+                onDeleteComment={handleDeleteComment}
+              />
+            </div>
+          </>
+        ) : (
           <div className="relative">
             <Board 
               type={activeTab as BoardType} 
