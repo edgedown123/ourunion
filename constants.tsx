@@ -1,4 +1,3 @@
-
 import { Post, SiteSettings } from './types';
 
 export const INITIAL_SETTINGS: SiteSettings = {
@@ -55,7 +54,6 @@ export const INITIAL_SETTINGS: SiteSettings = {
 export const INITIAL_POSTS: Post[] = [
   {
     id: '1',
-    // 공지사항(공고/공지) 기본 글
     type: 'notice_all',
     title: '우리노동조합 홈페이지 오픈 안내',
     content: '조합원 여러분의 편리한 소통을 위해 홈페이지를 만들었습니다\n우리노동조합에서는 존댓말 사용이 의무입니다\n서로 존중하는 사회를 만들어 봅시다!',
@@ -84,10 +82,15 @@ export const NAV_ITEMS: NavItem[] = [
       { id: 'map', label: '찾아오시는 길' },
     ]
   },
-  // 공지사항(공고/공지)
-  { id: 'notice_all', label: '공지사항', icon: 'fa-bullhorn' },
-  // 경조사(독립 메뉴)
-  { id: 'family_events', label: '경조사', icon: 'fa-bullhorn' },
+  { 
+    id: 'notice_main', 
+    label: '공지사항', 
+    icon: 'fa-bullhorn',
+    children: [
+      { id: 'notice_all', label: '공고/공지' },
+      { id: 'family_events', label: '경조사' },
+    ]
+  },
   { id: 'free', label: '자유게시판', icon: 'fa-comments' },
   { id: 'resources', label: '자료실', icon: 'fa-folder-open' },
   { id: 'signup', label: '회원가입', icon: 'fa-user-plus' },
