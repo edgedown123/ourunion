@@ -30,7 +30,13 @@ const NoticeSingle: React.FC<NoticeSingleProps> = ({
   onDeleteComment,
 }) => {
   return (
-    <div className="max-w-7xl mx-auto py-8 px-4 scroll-mt-24">
+    <div className="scroll-mt-24">
+      {/*
+        공지/경조사(NoticeSingle)는 내부에서 <Board />를 그대로 렌더링한다.
+        Board 자체가 이미 max-width/spacing(예: py-10, px-4)를 가지고 있어서,
+        여기서 다시 max-w/py를 주면 자유게시판 대비 상단 여백이 2중으로 들어가
+        레이아웃 폭/간격이 달라 보인다.
+      */}
       <Board
         type={type}
         posts={posts}
