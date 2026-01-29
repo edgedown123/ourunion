@@ -5,7 +5,7 @@ import { Post, BoardType, UserRole } from "../types";
 interface NoticeSingleProps {
   posts: Post[];
   userRole: UserRole;
-  type: BoardType; // 'notice_all' | 'family_events'
+  type: BoardType;
   selectedPostId: string | null;
   onWriteClick: (specificType?: BoardType) => void;
   onEditClick: (post: Post) => void;
