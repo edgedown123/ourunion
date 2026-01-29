@@ -37,8 +37,7 @@ const NoticeSingle: React.FC<NoticeSingleProps> = ({
       <div className="scroll-mt-24">
         <div className="mb-3" />
 
-        <div className="rounded-3xl bg-white shadow-sm border border-gray-100 overflow-hidden">
-          <Board
+        <Board
             type={type}
             posts={posts}
             onWriteClick={() => onWriteClick(type)}

@@ -50,8 +50,7 @@ const NoticeCombined: React.FC<NoticeCombinedProps> = ({
         <div id="notice-section-general" ref={generalRef} className="scroll-mt-24">
           <div className="mb-3" />
 
-          <div className="rounded-3xl bg-white shadow-sm border border-gray-100 overflow-hidden">
-            <Board
+          <Board
               type={"notice_all" as BoardType}
               posts={posts}
               onWriteClick={() => onWriteClick("notice_all")}
@@ -70,8 +69,7 @@ const NoticeCombined: React.FC<NoticeCombinedProps> = ({
         <div id="notice-section-family" ref={familyRef} className="scroll-mt-24">
           <div className="mb-3" />
 
-          <div className="rounded-3xl bg-white shadow-sm border border-gray-100 overflow-hidden">
-            <Board
+          <Board
               type={"family_events" as BoardType}
               posts={posts}
               onWriteClick={() => onWriteClick("family_events")}
