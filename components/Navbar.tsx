@@ -1,6 +1,5 @@
 
 import React from 'react';
-import adminBadge from '../assets/admin-badge.png';
 import { NAV_ITEMS } from '../constants';
 import { UserRole } from '../types';
 
@@ -32,21 +31,18 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
 
           <div className="flex items-center space-x-3">
             {userRole !== 'guest' && (
-              <div className="flex items-center mr-2">
-                {userRole === 'admin' ? (
-                  <img
-                    src={adminBadge}
-                    alt="ADMIN"
-                    className="h-6 md:h-7 w-auto select-none"
-                    draggable={false}
-                  />
-                ) : (
-                  <span className="text-[11px] md:text-xs font-bold text-gray-700">
-                    {memberName} <span className="text-gray-400 font-normal">님</span>
-                  </span>
-                )}
-              </div>
-            )}
+  <div className="flex items-center mr-2">
+    {userRole === 'admin' ? (
+      <span className="text-[11px] md:text-xs font-bold text-gray-700">
+        관리자 <span className="text-gray-400 font-normal">님</span>
+      </span>
+    ) : (
+      <span className="text-[11px] md:text-xs font-bold text-gray-700">
+        {memberName} <span className="text-gray-400 font-normal">님</span>
+      </span>
+    )}
+  </div>
+)}
             
             <button
               onClick={onToggleLogin}
