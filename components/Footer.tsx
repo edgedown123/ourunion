@@ -1,7 +1,20 @@
 import { useMemo, useState } from "react";
 import PolicyModal from "./PolicyModal";
 
-export default function Footer() {
+interface FooterProps {
+  siteName?: string;
+  onTabChange?: (tab: string) => void;
+  youtubeLinks?: { label: string; url: string }[];
+  showWithdrawButton?: boolean;
+  onRequestWithdraw?: () => void;
+}
+
+export default function Footer({
+  siteName = "우리노동조합",
+  youtubeLinks = [],
+  showWithdrawButton = false,
+  onRequestWithdraw,
+}: FooterProps) {
   const [open, setOpen] = useState<null | "privacy" | "email">(null);
 
   const privacyText = useMemo(
@@ -59,7 +72,8 @@ export default function Footer() {
 
   return (
     <footer className="bg-gray-100 text-gray-500 text-sm px-4 py-8">
-      <div className="max-w-6xl mx-auto space-y-2 text-center md:text-left">
+      <div className="max-w-6xl mx-auto md:flex md:items-start md:justify-between md:gap-10">
+        <div className="space-y-2 text-center md:text-left">
         <p className="font-semibold text-gray-700">우리노동조합</p>
 
         <p>서울특별시 은평구 통일로 1190 진관버스공영차고지</p>
@@ -82,9 +96,51 @@ export default function Footer() {
             이메일무단수집거부
           </button>
         </div>
-      </div>
+        </div>
 
-      <PolicyModal isOpen={open === "privacy"} title="개인정보처리방침" onClose={() => setOpen(null)}>
+  {/* 데스크톱 우측 하단 영역: 유튜브 링크 + 회원탈퇴 */}
+  <div className="hidden md:flex md:flex-col md:items-end md:gap-3 md:min-w-[320px]">
+    {youtubeLinks.length > 0 && (
+      <div className="grid grid-cols-2 gap-3 w-full max-w-[360px]">
+        {youtubeLinks.slice(0, 4).map((it) => (
+          <a
+            key={it.label}
+            href={it.url}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-red-600 text-white font-black text-sm shadow-md hover:brightness-95 transition-all"
+          >
+            <i className="fab fa-youtube text-base" />
+            <span>{it.label}</span>
+          </a>
+        ))}
+        {showWithdrawButton && (
+          <button
+            type="button"
+            onClick={() => onRequestWithdraw?.()}
+            className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-red-600 text-white font-black text-sm shadow-md hover:brightness-95 transition-all"
+          >
+            <i className="fas fa-user-slash text-base" />
+            <span>회원 탈퇴</span>
+          </button>
+        )}
+      </div>
+    )}
+
+    {youtubeLinks.length === 0 && showWithdrawButton && (
+      <button
+        type="button"
+        onClick={() => onRequestWithdraw?.()}
+        className="w-full max-w-[360px] flex items-center justify-center gap-2 py-3 rounded-2xl bg-red-600 text-white font-black text-sm shadow-md hover:brightness-95 transition-all"
+      >
+        <i className="fas fa-user-slash text-base" />
+        <span>회원 탈퇴</span>
+      </button>
+    )}
+  </div>
+</div>
+
+<PolicyModal isOpen={open === "privacy"} title="개인정보처리방침" onClose={() => setOpen(null)}>
         {privacyText}
       </PolicyModal>
 

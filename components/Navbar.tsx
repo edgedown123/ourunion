@@ -7,12 +7,15 @@ interface NavbarProps {
   siteName: string;
   activeTab: string;
   onTabChange: (tab: string) => void;
-  userRole: UserRole;
-  memberName?: string;
+  userRole: 'guest' | 'member' | 'admin';
+  memberName: string;
   onToggleLogin: () => void;
+  youtubeLinks?: { label: string; url: string }[];
+  showWithdrawButton?: boolean;
+  onRequestWithdraw?: () => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userRole, memberName, onToggleLogin }) => {
+const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userRole, memberName, onToggleLogin, youtubeLinks = [], showWithdrawButton = false, onRequestWithdraw }) => {
   const activeParent = NAV_ITEMS.find(item => 
     item.id === activeTab || item.children?.some(child => child.id === activeTab)
   );
@@ -254,8 +257,49 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
                   );
                 })}
               </ul>
-            </div>
-          </aside>
+  </div>
+
+  {/* 모바일 메뉴 하단: 유튜브 링크 + 회원탈퇴 */}
+  <div className="border-t px-4 py-4">
+    {youtubeLinks.length > 0 && (
+      <div className="grid grid-cols-2 gap-3">
+        {youtubeLinks.slice(0, 4).map((it) => (
+          <a
+            key={it.label}
+            href={it.url}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-red-600 text-white font-black text-sm shadow-md active:scale-[0.99] transition-all"
+          >
+            <i className="fab fa-youtube text-base" />
+            <span>{it.label}</span>
+          </a>
+        ))}
+        {showWithdrawButton && (
+          <button
+            type="button"
+            onClick={() => { onRequestWithdraw?.(); setMobileOpen(false); }}
+            className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-red-600 text-white font-black text-sm shadow-md active:scale-[0.99] transition-all"
+          >
+            <i className="fas fa-user-slash text-base" />
+            <span>회원 탈퇴</span>
+          </button>
+        )}
+      </div>
+    )}
+
+    {youtubeLinks.length === 0 && showWithdrawButton && (
+      <button
+        type="button"
+        onClick={() => { onRequestWithdraw?.(); setMobileOpen(false); }}
+        className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-red-600 text-white font-black text-sm shadow-md active:scale-[0.99] transition-all"
+      >
+        <i className="fas fa-user-slash text-base" />
+        <span>회원 탈퇴</span>
+      </button>
+    )}
+  </div>
+</aside>
         </div>
       )}
       

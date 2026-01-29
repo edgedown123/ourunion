@@ -610,7 +610,13 @@ const App: React.FC = () => {
     handleTabChange('home');
   };
 
-  const handleRequestWithdraw = () => {
+  const YOUTUBE_LINKS = [
+  { label: "한국brt축구단", url: "https://www.youtube.com/@brt4866" },
+  { label: "김동걸TV", url: "https://www.youtube.com/@SeoulCityBusDriver" },
+  { label: "겸손은 힘들다", url: "https://www.youtube.com/@gyeomsonisnothing" },
+];
+
+const handleRequestWithdraw = () => {
     if (userRole !== 'member' || !loggedInMember) {
       setShowApprovalPending(true);
       return;
@@ -726,6 +732,9 @@ const App: React.FC = () => {
         userRole={userRole} 
         memberName={userRole === 'admin' ? '관리자' : (loggedInMember?.name || '')} 
         onToggleLogin={userRole === 'guest' ? () => setShowMemberLogin(true) : handleLogout}
+        youtubeLinks={YOUTUBE_LINKS}
+        showWithdrawButton={userRole === 'member' || userRole === 'admin'}
+        onRequestWithdraw={handleRequestWithdraw}
       />
       
       <main className="flex-grow">
@@ -1075,6 +1084,7 @@ const App: React.FC = () => {
       <Footer
         siteName={settings.siteName}
         onTabChange={handleTabChange}
+        youtubeLinks={YOUTUBE_LINKS}
         showWithdrawButton={userRole === 'member' || userRole === 'admin'}
         onRequestWithdraw={handleRequestWithdraw}
       />
