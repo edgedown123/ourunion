@@ -173,7 +173,7 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
       </div>
 
       {/* 데스크톱 하위 메뉴(기존 유지) */}
-      {activeParent && activeParent.children && (
+      {activeParent && activeParent.children && !(activeParent.id === 'notice' && (activeTab === 'notice_all' || activeTab === 'family_events')) && (
         <div className="hidden md:block bg-gray-50 px-4 animate-slideDown border-b border-gray-100">
           <div className="max-w-7xl mx-auto overflow-x-auto scrollbar-hide flex items-center h-12">
             <div className="flex space-x-3 h-full items-center min-w-max">
