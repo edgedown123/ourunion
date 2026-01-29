@@ -84,10 +84,18 @@ export const NAV_ITEMS: NavItem[] = [
       { id: 'map', label: '찾아오시는 길' },
     ]
   },
-  // 공지사항(공고/공지)
-  { id: 'notice_all', label: '공지사항', icon: 'fa-bullhorn' },
-  // 경조사(독립 메뉴)
-  { id: 'family_events', label: '경조사', icon: 'fa-bullhorn' },
+
+  // ✅ 공지사항(통합)
+  { 
+    id: 'notice',
+    label: '공지사항',
+    icon: 'fa-bullhorn',
+    children: [
+      { id: 'notice_all', label: '공고/공지' },
+      { id: 'family_events', label: '경조사' },
+    ]
+  },
+
   { id: 'free', label: '자유게시판', icon: 'fa-comments' },
   { id: 'resources', label: '자료실', icon: 'fa-folder-open' },
   { id: 'signup', label: '회원가입', icon: 'fa-user-plus' },

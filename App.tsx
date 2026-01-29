@@ -6,6 +6,7 @@ import Layout from './components/Layout';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Board from './components/Board';
+import NoticeCombined from './components/NoticeCombined';
 import AdminPanel from './components/AdminPanel';
 import PostEditor from './components/PostEditor';
 import Introduction from './components/Introduction';
@@ -243,20 +244,22 @@ const App: React.FC = () => {
   };
 
   const handleTabChange = (tab: string) => {
+    // 공지사항(부모) 클릭 시 실제 탭은 공고/공지로 정규화
+    const nextTab = tab === 'notice' ? 'notice_all' : tab;
     // 제한된 메뉴: 자유게시판(free), 자료실(resources)
     const restrictedTabs = ['free', 'resources'];
     
-    if (userRole === 'guest' && restrictedTabs.includes(tab)) {
+    if (userRole === 'guest' && restrictedTabs.includes(nextTab)) {
       setShowApprovalPending(true);
       return;
     }
     
-    setActiveTab(tab);
+    setActiveTab(nextTab);
     setIsWriting(false);
     setWritingType(null);
     setEditingPost(null);
     setSelectedPostId(null);
-    pushNav({ tab, postId: null, writing: false });
+    pushNav({ tab: nextTab, postId: null, writing: false });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -268,7 +271,7 @@ const App: React.FC = () => {
     } else {
       targetPost = {
         id: Date.now().toString(),
-        type: (writingType || activeTab) as BoardType,
+        type: ((writingType || (activeTab === 'notice' ? 'notice_all' : activeTab)) as BoardType),
         title,
         content,
         author: userRole === 'admin' ? '관리자' : (loggedInMember?.name || '조합원'),
@@ -653,7 +656,8 @@ const App: React.FC = () => {
   };
 
   const handleWriteClick = (specificType?: BoardType) => {
-    const targetType = specificType || activeTab;
+    const rawType = specificType || activeTab;
+    const targetType = (rawType === 'notice' ? 'notice_all' : rawType) as any;
     if (['notice_all', 'family_events', 'resources'].includes(targetType as string) && userRole !== 'admin') {
       setShowAdminLogin(true);
       return;
@@ -756,6 +760,20 @@ const App: React.FC = () => {
           <Introduction settings={settings} activeTab={activeTab} />
         ) : activeTab === 'signup' ? (
           <SignupForm onGoHome={() => handleTabChange('home')} onSignup={handleSignup} />
+        ) : ['notice_all', 'family_events', 'notice'].includes(activeTab) ? (
+          <NoticeCombined
+            posts={posts}
+            userRole={userRole}
+            activeTab={activeTab}
+            selectedPostId={selectedPostId}
+            onWriteClick={handleWriteClick}
+            onEditClick={handleEditClick}
+            onSelectPost={handleSelectPost}
+            onDeletePost={handleDeletePost}
+            onSaveComment={handleSaveComment}
+            onEditComment={handleEditComment}
+            onDeleteComment={handleDeleteComment}
+          />
         ) : (
           <div className="relative">
             <Board 
