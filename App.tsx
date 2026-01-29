@@ -805,12 +805,12 @@ const App: React.FC = () => {
               />
             </div>
 
-            {/* 데스크톱: 기존처럼 공고/공지 + 경조사를 함께 보여주고, 선택 섹션으로 스크롤 */}
+            {/* 데스크톱: 선택한 하위 게시판만 단독으로 */}
             <div className="hidden md:block">
-              <NoticeCombined
+              <NoticeSingle
                 posts={posts}
                 userRole={userRole}
-                activeTab={activeTab}
+                type={activeTab as BoardType}
                 selectedPostId={selectedPostId}
                 onWriteClick={handleWriteClick}
                 onEditClick={handleEditClick}
