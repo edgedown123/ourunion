@@ -36,7 +36,15 @@ const NoticeCombined: React.FC<NoticeCombinedProps> = ({
 
   // 하위 탭(공고/공지 or 경조사)을 눌렀을 때 해당 섹션으로 스크롤
   useEffect(() => {
-    const id = activeTab === "family_events" ? "notice-section-family" : "notice-section-general";
+    // 하위 탭(공고/공지 or 경조사)에서만 해당 섹션으로 스크롤합니다.
+    // '공지사항'(notice) 상위 탭으로 들어올 때는 스크롤을 건드리지 않아야
+    // 우측 스크롤바(페이지 스크롤)가 항상 최상단에 위치합니다.
+    if (!["notice_all", "family_events"].includes(activeTab)) return;
+
+    const id =
+      activeTab === "family_events"
+        ? "notice-section-family"
+        : "notice-section-general";
     const el = document.getElementById(id);
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "start" });
