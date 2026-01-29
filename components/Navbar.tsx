@@ -2,10 +2,6 @@
 import React, { useMemo, useState } from 'react';
 import { NAV_ITEMS } from '../constants';
 import { UserRole } from '../types';
-import ytHumble from '../assets/buttons/youtube-겸손은힘들다.png';
-import ytKim from '../assets/buttons/youtube-김동걸TV.png';
-import ytBrt from '../assets/buttons/youtube-한국brt축구단.png';
-import btnWithdraw from '../assets/buttons/youtube-회원탈퇴.png';
 
 interface NavbarProps {
   siteName: string;
@@ -278,47 +274,46 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
   {/* 모바일 메뉴 하단: 유튜브 링크 + 회원탈퇴 */}
   <div className="border-t px-4 pt-4 pb-4 bg-white sticky bottom-0"
                       style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)" }}>
-    <div className="grid grid-cols-2 gap-3">
-      {youtubeLinks.slice(0, 3).map((it) => {
-        const src =
-          it.label === '겸손은힘들다' ? ytHumble :
-          it.label === '김동걸TV' ? ytKim :
-          it.label === '한국brt축구단' ? ytBrt :
-          undefined;
-
-        return (
+    {youtubeLinks.length > 0 && (
+      <div className="grid grid-cols-2 gap-3">
+        {youtubeLinks.slice(0, 4).map((it) => (
           <a
             key={it.label}
             href={it.url}
             target="_blank"
             rel="noreferrer"
-            className="rounded-2xl overflow-hidden shadow-md active:scale-[0.99] transition-all hover:brightness-95 bg-white border border-gray-100"
-            title={it.label}
+            className="flex items-center justify-center gap-2 py-3 rounded-2xl text-white font-black text-sm shadow-md active:scale-[0.99] transition-all hover:brightness-95"
+                              style={{ backgroundColor: "var(--point-color)" }}
           >
-            {src ? (
-              <img src={src} alt={it.label} className="w-full h-auto block" />
-            ) : (
-              <div className="flex items-center justify-center gap-2 py-3 text-white font-black text-sm"
-                   style={{ backgroundColor: "var(--point-color)" }}>
-                <i className="fab fa-youtube text-base text-white" />
-                <span>{it.label}</span>
-              </div>
-            )}
+            <i className="fab fa-youtube text-base text-white" />
+            <span>{it.label}</span>
           </a>
-        );
-      })}
+        ))}
+        {showWithdrawButton && (
+          <button
+            type="button"
+            onClick={() => { onRequestWithdraw?.(); setMobileOpen(false); }}
+            className="flex items-center justify-center gap-2 py-3 rounded-2xl text-white font-black text-sm shadow-md active:scale-[0.99] transition-all hover:brightness-95"
+                              style={{ backgroundColor: "var(--point-color)" }}
+          >
+            <i className="fas fa-user-slash text-base" />
+            <span>회원 탈퇴</span>
+          </button>
+        )}
+      </div>
+    )}
 
-      {showWithdrawButton && (
-        <button
-          type="button"
-          onClick={() => { onRequestWithdraw?.(); setMobileOpen(false); }}
-          className="rounded-2xl overflow-hidden shadow-md active:scale-[0.99] transition-all hover:brightness-95 bg-white border border-gray-100"
-          title="회원 탈퇴"
-        >
-          <img src={btnWithdraw} alt="회원 탈퇴" className="w-full h-auto block" />
-        </button>
-      )}
-    </div>
+    {youtubeLinks.length === 0 && showWithdrawButton && (
+      <button
+        type="button"
+        onClick={() => { onRequestWithdraw?.(); setMobileOpen(false); }}
+        className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-white font-black text-sm shadow-md active:scale-[0.99] transition-all hover:brightness-95"
+                          style={{ backgroundColor: "var(--point-color)" }}
+      >
+        <i className="fas fa-user-slash text-base" />
+        <span>회원 탈퇴</span>
+      </button>
+    )}
   </div>
 </aside>
         </div>

@@ -1,9 +1,5 @@
 import { useMemo, useState } from "react";
 import PolicyModal from "./PolicyModal";
-import ytHumble from '../assets/buttons/youtube-겸손은힘들다.png';
-import ytKim from '../assets/buttons/youtube-김동걸TV.png';
-import ytBrt from '../assets/buttons/youtube-한국brt축구단.png';
-import btnWithdraw from '../assets/buttons/youtube-회원탈퇴.png';
 
 interface FooterProps {
   siteName?: string;
