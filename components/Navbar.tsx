@@ -75,8 +75,16 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
             <span className="font-black text-base tracking-tight text-gray-900">{siteName}</span>
           </button>
 
-          {/* 우측 상단 톱니(설정) 제거: 모바일은 드로어 메뉴로 이동 */}
-          <div className="w-10" />
+          {/* 모바일 우측: 로그인 사용자명 표시 (기존 설정 아이콘 자리) */}
+          <div className="min-w-[48px] flex justify-end">
+            {userRole !== 'guest' ? (
+              <span className="text-xs font-bold text-gray-600 whitespace-nowrap">
+                {memberName} <span className="text-gray-400 font-normal">님</span>
+              </span>
+            ) : (
+              <div className="w-10" />
+            )}
+          </div>
         </div>
       </div>
 
@@ -208,12 +216,6 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
                   회원가입
                 </button>
               </div>
-
-              {userRole !== 'guest' && (
-                <div className="mt-3 text-xs font-bold text-gray-600">
-                  {memberName} <span className="text-gray-400 font-normal">님</span>
-                </div>
-              )}
             </div>
 
             <div className="flex-1 overflow-y-auto">
