@@ -24,6 +24,20 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openGroup, setOpenGroup] = useState<string | null>(null);
 
+  const getLinkImageSrc = (label: string) => {
+    const key = label.replace(/\s+/g, '');
+    switch (key) {
+      case '겸손은힘들다':
+        return '/images/youtube-겸손은힘들다.png';
+      case '김동걸TV':
+        return '/images/youtube-김동걸TV.png';
+      case '한국brt축구단':
+        return '/images/youtube-한국brt축구단.png';
+      default:
+        return null;
+    }
+  };
+
   const mobileGroups = useMemo(() => {
     const intro = NAV_ITEMS.find(i => i.id === 'intro');
     const notice = NAV_ITEMS.find(i => i.id === 'notice');
@@ -276,28 +290,42 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
                       style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)" }}>
     {youtubeLinks.length > 0 && (
       <div className="grid grid-cols-2 gap-3">
-        {youtubeLinks.slice(0, 4).map((it) => (
-          <a
-            key={it.label}
-            href={it.url}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center justify-center gap-2 py-3 rounded-2xl text-white font-black text-sm shadow-md active:scale-[0.99] transition-all hover:brightness-95"
-                              style={{ backgroundColor: "var(--point-color)" }}
-          >
-            <i className="fab fa-youtube text-base text-white" />
-            <span>{it.label}</span>
-          </a>
-        ))}
+        {youtubeLinks.slice(0, 4).map((it) => {
+          const src = getLinkImageSrc(it.label);
+          return (
+            <a
+              key={it.label}
+              href={it.url}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center justify-center"
+            >
+              {src ? (
+                <img
+                  src={src}
+                  alt={it.label}
+                  className="w-full rounded-2xl shadow-md active:scale-[0.99] transition-all hover:brightness-95"
+                />
+              ) : (
+                <span className="w-full py-3 rounded-2xl text-white font-black text-sm shadow-md text-center"
+                      style={{ backgroundColor: "var(--point-color)" }}>
+                  {it.label}
+                </span>
+              )}
+            </a>
+          );
+        })}
         {showWithdrawButton && (
           <button
             type="button"
             onClick={() => { onRequestWithdraw?.(); setMobileOpen(false); }}
-            className="flex items-center justify-center gap-2 py-3 rounded-2xl text-white font-black text-sm shadow-md active:scale-[0.99] transition-all hover:brightness-95"
-                              style={{ backgroundColor: "var(--point-color)" }}
+            className="flex items-center justify-center"
           >
-            <i className="fas fa-user-slash text-base" />
-            <span>회원 탈퇴</span>
+            <img
+              src="/images/youtube-회원탈퇴.png"
+              alt="회원 탈퇴"
+              className="w-full rounded-2xl shadow-md active:scale-[0.99] transition-all hover:brightness-95"
+            />
           </button>
         )}
       </div>
@@ -307,14 +335,16 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
       <button
         type="button"
         onClick={() => { onRequestWithdraw?.(); setMobileOpen(false); }}
-        className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-white font-black text-sm shadow-md active:scale-[0.99] transition-all hover:brightness-95"
-                          style={{ backgroundColor: "var(--point-color)" }}
+        className="w-full flex items-center justify-center"
       >
-        <i className="fas fa-user-slash text-base" />
-        <span>회원 탈퇴</span>
+        <img
+          src="/images/youtube-회원탈퇴.png"
+          alt="회원 탈퇴"
+          className="w-full rounded-2xl shadow-md active:scale-[0.99] transition-all hover:brightness-95"
+        />
       </button>
     )}
-  </div>
+</div>
 </aside>
         </div>
       )}

@@ -17,6 +17,20 @@ export default function Footer({
 }: FooterProps) {
   const [open, setOpen] = useState<null | "privacy" | "email">(null);
 
+  const getLinkImageSrc = (label: string) => {
+    const key = label.replace(/\s+/g, '');
+    switch (key) {
+      case '겸손은힘들다':
+        return '/images/youtube-겸손은힘들다.png';
+      case '김동걸TV':
+        return '/images/youtube-김동걸TV.png';
+      case '한국brt축구단':
+        return '/images/youtube-한국brt축구단.png';
+      default:
+        return null;
+    }
+  };
+
   const privacyText = useMemo(
     () => `우리노동조합(이하 “조합”)은 개인정보 보호법 등 관련 법령을 준수하며,
 조합원의 개인정보를 소중하게 보호하고 있습니다.
@@ -97,33 +111,48 @@ export default function Footer({
           </button>
         </div>
         </div>
-
   {/* 데스크톱 우측 하단 영역: 유튜브 링크 + 회원탈퇴 */}
   <div className="hidden md:flex md:flex-col md:items-end md:gap-3 md:min-w-[320px]">
     {youtubeLinks.length > 0 && (
       <div className="grid grid-cols-2 gap-3 w-full max-w-[360px]">
-        {youtubeLinks.slice(0, 4).map((it) => (
-          <a
-            key={it.label}
-            href={it.url}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center justify-center gap-2 py-3 rounded-2xl text-white font-black text-sm shadow-md hover:brightness-95 transition-all"
+        {youtubeLinks.slice(0, 4).map((it) => {
+          const src = getLinkImageSrc(it.label);
+          return (
+            <a
+              key={it.label}
+              href={it.url}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center justify-center"
+            >
+              {src ? (
+                <img
+                  src={src}
+                  alt={it.label}
+                  className="w-full rounded-2xl shadow-md hover:brightness-95 transition-all"
+                />
+              ) : (
+                <span
+                  className="w-full py-3 rounded-2xl text-white font-black text-sm shadow-md text-center"
                   style={{ backgroundColor: "var(--point-color)" }}
-          >
-            <i className="fab fa-youtube text-base text-white" />
-            <span>{it.label}</span>
-          </a>
-        ))}
+                >
+                  {it.label}
+                </span>
+              )}
+            </a>
+          );
+        })}
         {showWithdrawButton && (
           <button
             type="button"
             onClick={() => onRequestWithdraw?.()}
-            className="flex items-center justify-center gap-2 py-3 rounded-2xl text-white font-black text-sm shadow-md hover:brightness-95 transition-all"
-                  style={{ backgroundColor: "var(--point-color)" }}
+            className="flex items-center justify-center"
           >
-            <i className="fas fa-user-slash text-base" />
-            <span>회원 탈퇴</span>
+            <img
+              src="/images/youtube-회원탈퇴.png"
+              alt="회원 탈퇴"
+              className="w-full rounded-2xl shadow-md hover:brightness-95 transition-all"
+            />
           </button>
         )}
       </div>
@@ -133,14 +162,17 @@ export default function Footer({
       <button
         type="button"
         onClick={() => onRequestWithdraw?.()}
-        className="w-full max-w-[360px] flex items-center justify-center gap-2 py-3 rounded-2xl text-white font-black text-sm shadow-md hover:brightness-95 transition-all"
-              style={{ backgroundColor: "var(--point-color)" }}
+        className="w-full max-w-[360px] flex items-center justify-center"
       >
-        <i className="fas fa-user-slash text-base" />
-        <span>회원 탈퇴</span>
+        <img
+          src="/images/youtube-회원탈퇴.png"
+          alt="회원 탈퇴"
+          className="w-full rounded-2xl shadow-md hover:brightness-95 transition-all"
+        />
       </button>
     )}
   </div>
+
 </div>
 
 <PolicyModal isOpen={open === "privacy"} title="개인정보처리방침" onClose={() => setOpen(null)}>
