@@ -1,96 +1,104 @@
-import { useMemo, useState } from "react";
-import PolicyModal from "./PolicyModal";
+import React from 'react';
 
-export default function Footer() {
-  const [open, setOpen] = useState<null | "privacy" | "email">(null);
+interface FooterProps {
+  siteName: string;
+  onTabChange: (tab: string) => void;
+  /** 로그인/승인된 조합원에게만 노출 */
+  showWithdrawButton?: boolean;
+  /** 회원 탈퇴 모달 열기 */
+  onRequestWithdraw?: () => void;
+}
 
-  const privacyText = useMemo(
-    () => `우리노동조합(이하 “조합”)은 개인정보 보호법 등 관련 법령을 준수하며,
-조합원의 개인정보를 소중하게 보호하고 있습니다.
-
-1. 수집하는 개인정보 항목
-조합은 다음과 같은 개인정보를 수집할 수 있습니다.
-- 이름
-- 이메일 주소
-- 연락처
-- 아이디(회원 가입 시)
-- 서비스 이용 기록, 접속 로그
-
-2. 개인정보의 수집 및 이용 목적
-수집한 개인정보는 다음 목적을 위해 사용됩니다.
-- 조합 가입 및 회원 관리
-- 공지사항 전달 및 조합 활동 안내
-- 문의사항 응대 및 민원 처리
-- 서비스 개선 및 운영 관리
-
-3. 개인정보의 보유 및 이용 기간
-- 개인정보는 수집·이용 목적이 달성되면 지체 없이 파기합니다.
-- 단, 관계 법령에 따라 보관이 필요한 경우 해당 기간 동안 보관합니다.
-
-4. 개인정보의 제3자 제공
-조합은 원칙적으로 개인정보를 외부에 제공하지 않습니다.
-다만, 법령에 따라 요구되는 경우에 한해 제공될 수 있습니다.
-
-5. 개인정보 보호를 위한 조치
-조합은 개인정보 보호를 위해 다음과 같은 조치를 취하고 있습니다.
-- 개인정보 접근 권한 최소화
-- 내부 관리 절차 수립 및 운영
-- 개인정보 유출 방지를 위한 기술적 보호조치
-
-6. 개인정보 관련 문의
-개인정보 보호와 관련한 문의는 아래 이메일로 연락 주시기 바랍니다.
-이메일: edgedown@naver.com
-
-본 방침은 2026년 1월 1일부터 적용됩니다.`,
-    []
-  );
-
-  const emailPolicyText = useMemo(
-    () => `우리노동조합은 본 웹사이트에 게시된 이메일 주소가
-전자우편 수집 프로그램이나 기타 기술적 장치를 이용하여
-무단으로 수집되는 것을 거부합니다.
-
-이를 위반할 경우 「정보통신망 이용촉진 및 정보보호 등에 관한 법률」에 의해
-형사 처벌 대상이 될 수 있습니다.
-
-조합의 사전 동의 없이 영리 목적의 광고성 이메일을 발송하는 행위를 금지합니다.`,
-    []
-  );
-
+const Footer: React.FC<FooterProps> = ({ siteName, onTabChange, showWithdrawButton = false, onRequestWithdraw }) => {
   return (
-    <footer className="bg-gray-100 text-gray-500 text-sm px-4 py-8">
-      <div className="max-w-6xl mx-auto space-y-2 text-center md:text-left">
-        <p className="font-semibold text-gray-700">우리노동조합</p>
+    <footer className="bg-gray-100 border-t mt-auto py-12 text-gray-600">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-12">
+          {/* 사이트 정보 및 통합 고객지원 정보 */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-8 md:space-y-0">
+            <div className="max-w-xl">
+              <div className="flex items-center mb-4">
+                <div className="w-8 h-8 bg-sky-primary rounded-lg flex items-center justify-center mr-3 shadow-sm">
+                  <i className="fas fa-users text-white text-sm"></i>
+                </div>
+                <span className="font-black text-xl text-gray-900 tracking-tight">{siteName}</span>
+              </div>
+              <p className="text-sm leading-relaxed text-gray-500 font-medium">
+                우리는 노동자의 정당한 권리를 찾고, 더 안전하고 민주적인 노동 환경을 만들기 위해 함께합니다. 
+                조합원의 목소리가 우리의 힘입니다.
+              </p>
+            </div>
+            
+            {/* 유튜브 채널 + 회원 탈퇴 버튼
+                - 모바일: 2열 그리드(김동걸TV 아래 오른쪽 칸)
+                - PC(md+): 3열 그리드(겸손은 힘들다 아래)
+            */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 justify-start md:justify-end items-center">
+              <a 
+                href="https://www.youtube.com/@brt4866" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center bg-[#FF0000] text-white px-4 py-2.5 rounded-xl hover:opacity-90 transition-all shadow-md active:scale-95 text-xs font-black"
+              >
+                <i className="fab fa-youtube mr-2 text-base"></i> 
+                한국brt축구단
+              </a>
+              <a 
+                href="https://www.youtube.com/@SeoulCityBusDriver" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center bg-[#FF0000] text-white px-4 py-2.5 rounded-xl hover:opacity-90 transition-all shadow-md active:scale-95 text-xs font-black"
+              >
+                <i className="fab fa-youtube mr-2 text-base"></i> 
+                김동걸TV
+              </a>
+              <a 
+                href="https://www.youtube.com/@gyeomsonisnothing" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center bg-[#FF0000] text-white px-4 py-2.5 rounded-xl hover:opacity-90 transition-all shadow-md active:scale-95 text-xs font-black"
+              >
+                <i className="fab fa-youtube mr-2 text-base"></i> 
+                겸손은 힘들다
+              </a>
 
-        <p>서울특별시 은평구 통일로 1190 진관버스공영차고지</p>
+              {/* 회원 탈퇴 (조합원 로그인/승인된 경우만 표시) */}
+              {showWithdrawButton && (
+                <button
+                  type="button"
+                  onClick={() => onRequestWithdraw?.()}
+                  className="flex items-center bg-[#FF0000] text-white px-4 py-2.5 rounded-xl hover:opacity-90 transition-all shadow-md active:scale-95 text-xs font-black md:col-start-3 md:row-start-2"
+                  aria-label="회원 탈퇴"
+                >
+                  <i className="fas fa-user-slash mr-2 text-base"></i>
+                  회원 탈퇴
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
 
-        <p>
-          TEL: 02-123-4567&nbsp;&nbsp; FAX: 02-1234-5678
-        </p>
-
-        <p>EMAIL: edgedown@naver.com</p>
-
-        <p className="pt-4 text-xs text-gray-400">
-          Copyright © 2025 우리노동조합. All rights reserved.
-        </p>
-
-        <div className="pt-2 flex justify-center md:justify-start gap-6 text-sm">
-          <button type="button" onClick={() => setOpen("privacy")} className="hover:underline">
-            개인정보처리방침
-          </button>
-          <button type="button" onClick={() => setOpen("email")} className="hover:underline">
-            이메일무단수집거부
-          </button>
+        {/* 하단 상세 정보 */}
+        <div className="border-t border-gray-200 pt-10">
+          <div className="text-[11px] leading-6 font-medium text-gray-400 space-y-1">
+            <p className="flex flex-wrap items-center">
+              <span className="font-black text-gray-600 mr-4 text-xs">{siteName}</span>
+              <span className="mr-4">위원장: 홍길동</span>
+              <span>사업자등록번호: 123-45-67890</span>
+            </p>
+            <p>서울특별시 은평구 통일로 1190 (진관사업소 내) | FAX: 02-371-0000</p>
+            <p className="mt-4 opacity-70 italic">Copyright © 2024 {siteName}. All rights reserved.</p>
+          </div>
+          
+          <div className="flex space-x-6 mt-8 text-[11px] font-black uppercase tracking-wider">
+            <a href="#" className="text-gray-400 hover:text-gray-900 transition-colors">이용약관</a>
+            <a href="#" className="text-gray-900 hover:underline">개인정보처리방침</a>
+            <a href="#" className="text-gray-400 hover:text-gray-900 transition-colors">이메일무단수집거부</a>
+          </div>
         </div>
       </div>
-
-      <PolicyModal isOpen={open === "privacy"} title="개인정보처리방침" onClose={() => setOpen(null)}>
-        {privacyText}
-      </PolicyModal>
-
-      <PolicyModal isOpen={open === "email"} title="이메일무단수집거부" onClose={() => setOpen(null)}>
-        {emailPolicyText}
-      </PolicyModal>
     </footer>
   );
-}
+};
+
+export default Footer;

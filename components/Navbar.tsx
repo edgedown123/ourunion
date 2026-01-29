@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { NAV_ITEMS } from '../constants';
 import { UserRole } from '../types';
 
@@ -17,9 +17,79 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
     item.id === activeTab || item.children?.some(child => child.id === activeTab)
   );
 
+  // 모바일: 햄버거 드로어 내비
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
+
+  const mobileGroups = useMemo(() => {
+    const intro = NAV_ITEMS.find(i => i.id === 'intro');
+    const notice = NAV_ITEMS.find(i => i.id === 'notice');
+    return [
+      {
+        id: 'intro',
+        label: '조합소개',
+        children: intro?.children || [
+          { id: 'greeting', label: '인사말' },
+          { id: 'history', label: '연혁' },
+          { id: 'map', label: '찾아오시는 길' },
+        ]
+      },
+      {
+        id: 'notice',
+        label: '공지사항',
+        children: notice?.children || [
+          { id: 'notice_all', label: '공고/공지' },
+          { id: 'family_events', label: '경조사' },
+        ]
+      },
+      { id: 'free', label: '자유게시판' },
+      { id: 'resources', label: '자료실' },
+      { id: 'admin', label: '설정' },
+    ];
+  }, []);
+
+  const go = (tab: string) => {
+    onTabChange(tab);
+    setMobileOpen(false);
+  };
+
+  const toggleGroup = (id: string) => {
+    setOpenGroup(prev => (prev === id ? null : id));
+  };
+
   return (
     <nav className="bg-white border-b sticky top-0 z-50 shadow-sm">
-      <div className="bg-white px-4 border-b border-gray-100">
+      {/* 모바일 상단바 (햄버거) */}
+      <div className="bg-white px-4 border-b border-gray-100 md:hidden">
+        <div className="max-w-7xl mx-auto flex items-center justify-between h-14">
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="p-2 -ml-2 rounded-xl hover:bg-gray-100 active:scale-95 transition-all"
+            aria-label="메뉴 열기"
+          >
+            <i className="fas fa-bars text-xl text-gray-800"></i>
+          </button>
+
+          <button onClick={() => onTabChange('home')} className="flex items-center">
+            <i className="fas fa-users text-sky-primary text-lg mr-2"></i>
+            <span className="font-black text-base tracking-tight text-gray-900">{siteName}</span>
+          </button>
+
+          {/* 모바일 우측: 로그인 사용자명 표시 (기존 설정 아이콘 자리) */}
+          <div className="min-w-[48px] flex justify-end">
+            {userRole !== 'guest' ? (
+              <span className="text-xs font-bold text-gray-600 whitespace-nowrap">
+                {memberName} <span className="text-gray-400 font-normal">님</span>
+              </span>
+            ) : (
+              <div className="w-10" />
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 데스크톱 상단바 (기존 유지) */}
+      <div className="bg-white px-4 border-b border-gray-100 hidden md:block">
         <div className="max-w-7xl mx-auto flex items-center justify-between h-16 md:h-18">
           <button 
             onClick={() => onTabChange('home')}
@@ -31,18 +101,12 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
 
           <div className="flex items-center space-x-3">
             {userRole !== 'guest' && (
-  <div className="flex items-center mr-2">
-    {userRole === 'admin' ? (
-      <span className="text-[11px] md:text-xs font-bold text-gray-700">
-        관리자 <span className="text-gray-400 font-normal">님</span>
-      </span>
-    ) : (
-      <span className="text-[11px] md:text-xs font-bold text-gray-700">
-        {memberName} <span className="text-gray-400 font-normal">님</span>
-      </span>
-    )}
-  </div>
-)}
+              <div className="flex items-center mr-2">
+                <span className="text-[11px] md:text-xs font-bold text-gray-700">
+                  {memberName} <span className="text-gray-400 font-normal">님</span>
+                </span>
+              </div>
+            )}
             
             <button
               onClick={onToggleLogin}
@@ -66,7 +130,8 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
         </div>
       </div>
 
-      <div className="bg-white px-2 md:px-4 border-b border-gray-50">
+      {/* 데스크톱 탭(기존 유지) */}
+      <div className="bg-white px-2 md:px-4 border-b border-gray-50 hidden md:block">
         <div className="max-w-7xl mx-auto md:overflow-visible overflow-x-auto scrollbar-hide flex items-center h-14">
           <div className="flex space-x-1 md:space-x-2 h-full items-center min-w-max md:min-w-0 md:w-full md:justify-start">
             {NAV_ITEMS.map((item) => {
@@ -92,8 +157,9 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
         </div>
       </div>
 
+      {/* 데스크톱 하위 메뉴(기존 유지) */}
       {activeParent && activeParent.children && (
-        <div className="bg-gray-50 px-4 animate-slideDown border-b border-gray-100">
+        <div className="hidden md:block bg-gray-50 px-4 animate-slideDown border-b border-gray-100">
           <div className="max-w-7xl mx-auto overflow-x-auto scrollbar-hide flex items-center h-12">
             <div className="flex space-x-3 h-full items-center min-w-max">
               {activeParent.children.map((child) => (
@@ -111,6 +177,85 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
               ))}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 모바일 드로어 메뉴 */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-[200] md:hidden">
+          <button
+            className="absolute inset-0 bg-black/40"
+            aria-label="메뉴 닫기"
+            onClick={() => setMobileOpen(false)}
+          />
+
+          <aside className="absolute left-0 top-0 h-full w-[82%] max-w-[360px] bg-white shadow-2xl flex flex-col">
+            <div className="h-14 px-4 border-b flex items-center justify-between">
+              <span className="font-black text-base text-gray-900">메뉴</span>
+              <button
+                onClick={() => setMobileOpen(false)}
+                className="p-2 -mr-2 rounded-xl hover:bg-gray-100 active:scale-95 transition-all"
+                aria-label="닫기"
+              >
+                <i className="fas fa-times text-xl text-gray-700"></i>
+              </button>
+            </div>
+
+            <div className="px-4 py-4 border-b bg-gray-50/50">
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => { onToggleLogin(); setMobileOpen(false); }}
+                  className="py-3 rounded-2xl border bg-white font-black text-sm"
+                >
+                  {userRole === 'guest' ? '로그인' : '로그아웃'}
+                </button>
+                <button
+                  onClick={() => go('signup')}
+                  className="py-3 rounded-2xl border bg-white font-black text-sm"
+                >
+                  회원가입
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+              <ul className="divide-y">
+                {mobileGroups.map((item) => {
+                  const hasChildren = !!(item as any).children?.length;
+                  const isOpen = openGroup === item.id;
+                  return (
+                    <li key={item.id}>
+                      <button
+                        onClick={() => (hasChildren ? toggleGroup(item.id) : go(item.id))}
+                        className="w-full px-4 py-5 flex items-center justify-between text-left"
+                      >
+                        <span className="text-[15px] font-black text-gray-900">{item.label}</span>
+                        {hasChildren ? (
+                          <i className={`fas ${isOpen ? 'fa-minus' : 'fa-plus'} text-gray-400`} />
+                        ) : (
+                          <i className="fas fa-chevron-right text-gray-300" />
+                        )}
+                      </button>
+
+                      {hasChildren && isOpen && (
+                        <div className="pb-3">
+                          {(item as any).children.map((child: any) => (
+                            <button
+                              key={child.id}
+                              onClick={() => go(child.id)}
+                              className="w-full px-8 py-3 text-left text-sm font-bold text-gray-600 hover:bg-gray-50"
+                            >
+                              {child.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </aside>
         </div>
       )}
       
