@@ -18,8 +18,7 @@ export default function PolicyModal({ isOpen, title, children, onClose }: Policy
       />
 
       {/* Panel */}
-      <div className="relative w-[92vw] max-w-2xl max-h-[85vh] overflow-hidden rounded-2xl bg-white shadow-xl flex flex-col">
-        {/* Header */}
+      <div className="relative w-[92vw] max-w-2xl max-h-[85vh] overflow-hidden rounded-2xl bg-white shadow-xl">
         <div className="flex items-center justify-between px-5 py-4 border-b">
           <h2 className="text-base font-semibold text-gray-900">{title}</h2>
           <button
@@ -31,19 +30,8 @@ export default function PolicyModal({ isOpen, title, children, onClose }: Policy
           </button>
         </div>
 
-        {/* Content */}
-        <div className="px-5 py-4 overflow-auto text-sm text-gray-700 leading-6 whitespace-pre-line flex-1">
+        <div className="px-5 py-4 overflow-auto max-h-[calc(85vh-56px)] text-sm text-gray-700 leading-6 whitespace-pre-line">
           {children}
-        </div>
-
-        {/* Bottom Close Button */}
-        <div className="border-t px-5 py-3 flex justify-end">
-          <button
-            onClick={onClose}
-            className="rounded-md bg-gray-800 text-white px-4 py-2 text-sm hover:bg-gray-700"
-          >
-            닫기
-          </button>
         </div>
       </div>
     </div>
