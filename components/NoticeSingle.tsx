@@ -35,10 +35,7 @@ const NoticeSingle: React.FC<NoticeSingleProps> = ({
   return (
     <div className="max-w-7xl mx-auto py-8 px-4">
       <div className="scroll-mt-24">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg md:text-xl font-black text-gray-900">{title}</h2>
-          <span className="text-xs text-gray-400 font-bold">{subtitle}</span>
-        </div>
+        <div className="mb-3" />
 
         <div className="rounded-3xl bg-white shadow-sm border border-gray-100 overflow-hidden">
           <Board

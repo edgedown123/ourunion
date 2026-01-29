@@ -1,21 +1,5 @@
-/* 공지사항 / 경조사 페이지 상단 중복 텍스트 제거 */
-
-/* 데스크톱 + 모바일 공통 */
-.page-title,
-.page-title-wrap,
-.board-title,
-.board-header-title,
-.page-sub-title,
-.board-category,
-.board-breadcrumb {
+/* (옵션) 공지사항 영역 타이틀/서브타이틀을 CSS로 숨기고 싶을 때 사용 */
+.notice-hide-title .page-title,
+.notice-hide-title .page-sub-title {
   display: none !important;
-}
-
-/* 모바일 전용 추가 안전 처리 */
-@media (max-width: 768px) {
-  .page-title,
-  .page-sub-title,
-  .board-title {
-    display: none !important;
-  }
 }
