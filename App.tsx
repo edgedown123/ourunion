@@ -7,6 +7,8 @@ import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Board from './components/Board';
 import NoticeCombined from './components/NoticeCombined';
+import NoticeLanding from './components/NoticeLanding';
+import NoticeSingle from './components/NoticeSingle';
 import AdminPanel from './components/AdminPanel';
 import PostEditor from './components/PostEditor';
 import Introduction from './components/Introduction';
@@ -760,11 +762,33 @@ const App: React.FC = () => {
           <Introduction settings={settings} activeTab={activeTab} />
         ) : activeTab === 'signup' ? (
           <SignupForm onGoHome={() => handleTabChange('home')} onSignup={handleSignup} />
-        ) : ['notice_all', 'family_events', 'notice'].includes(activeTab) ? (
-          <NoticeCombined
+        ) : activeTab === 'notice' ? (
+          <>
+            {/* 모바일: 공고/공지 / 경조사 메뉴만 노출 */}
+            <NoticeLanding onSelect={handleTabChange} />
+
+            {/* 데스크톱: 기존 공지사항(통합) 화면 유지 */}
+            <div className="hidden md:block">
+              <NoticeCombined
+                posts={posts}
+                userRole={userRole}
+                activeTab={activeTab}
+                selectedPostId={selectedPostId}
+                onWriteClick={handleWriteClick}
+                onEditClick={handleEditClick}
+                onSelectPost={handleSelectPost}
+                onDeletePost={handleDeletePost}
+                onSaveComment={handleSaveComment}
+                onEditComment={handleEditComment}
+                onDeleteComment={handleDeleteComment}
+              />
+            </div>
+          </>
+        ) : ['notice_all', 'family_events'].includes(activeTab) ? (
+          <NoticeSingle
             posts={posts}
             userRole={userRole}
-            activeTab={activeTab}
+            type={activeTab as BoardType}
             selectedPostId={selectedPostId}
             onWriteClick={handleWriteClick}
             onEditClick={handleEditClick}
@@ -774,7 +798,7 @@ const App: React.FC = () => {
             onEditComment={handleEditComment}
             onDeleteComment={handleDeleteComment}
           />
-        ) : (
+        )) : (
           <div className="relative">
             <Board 
               type={activeTab as BoardType} 
