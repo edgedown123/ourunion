@@ -150,7 +150,7 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
         <div className="max-w-7xl mx-auto md:overflow-visible overflow-x-auto scrollbar-hide flex items-center h-14">
           <div className="flex space-x-1 md:space-x-2 h-full items-center min-w-max md:min-w-0 md:w-full md:justify-start">
             {desktopNavItems.map((item) => {
-              const isActive = item.id === activeTab || (activeParent?.id === 'notice' && (item.id === 'notice_all' || item.id === 'family_events') && (activeTab === 'notice_all' || activeTab === 'family_events'));
+              const isActive = item.id === activeTab;
               const isSignup = item.id === 'signup';
               return (
                 <button
