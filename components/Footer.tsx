@@ -75,36 +75,20 @@ export default function Footer() {
         </p>
 
         <div className="pt-2 flex justify-center md:justify-start gap-6 text-sm">
-          <button
-            type="button"
-            onClick={() => setOpen("privacy")}
-            className="hover:underline"
-          >
+          <button type="button" onClick={() => setOpen("privacy")} className="hover:underline">
             개인정보처리방침
           </button>
-          <button
-            type="button"
-            onClick={() => setOpen("email")}
-            className="hover:underline"
-          >
+          <button type="button" onClick={() => setOpen("email")} className="hover:underline">
             이메일무단수집거부
           </button>
         </div>
       </div>
 
-      <PolicyModal
-        isOpen={open === "privacy"}
-        title="개인정보처리방침"
-        onClose={() => setOpen(null)}
-      >
+      <PolicyModal isOpen={open === "privacy"} title="개인정보처리방침" onClose={() => setOpen(null)}>
         {privacyText}
       </PolicyModal>
 
-      <PolicyModal
-        isOpen={open === "email"}
-        title="이메일무단수집거부"
-        onClose={() => setOpen(null)}
-      >
+      <PolicyModal isOpen={open === "email"} title="이메일무단수집거부" onClose={() => setOpen(null)}>
         {emailPolicyText}
       </PolicyModal>
     </footer>
