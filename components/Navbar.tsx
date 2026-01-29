@@ -273,7 +273,7 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
             className="flex items-center justify-center gap-2 py-3 rounded-2xl text-white font-black text-sm shadow-md active:scale-[0.99] transition-all hover:brightness-95"
                               style={{ backgroundColor: "var(--point-color)" }}
           >
-            <i className="fab fa-youtube text-base text-red-500" />
+            <i className="fab fa-youtube text-base text-white" />
             <span>{it.label}</span>
           </a>
         ))}

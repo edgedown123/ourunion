@@ -111,7 +111,7 @@ export default function Footer({
             className="flex items-center justify-center gap-2 py-3 rounded-2xl text-white font-black text-sm shadow-md hover:brightness-95 transition-all"
                   style={{ backgroundColor: "var(--point-color)" }}
           >
-            <i className="fab fa-youtube text-base text-red-500" />
+            <i className="fab fa-youtube text-base text-white" />
             <span>{it.label}</span>
           </a>
         ))}
