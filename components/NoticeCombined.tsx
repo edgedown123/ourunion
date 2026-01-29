@@ -44,50 +44,53 @@ const NoticeCombined: React.FC<NoticeCombinedProps> = ({
   }, [activeTab]);
 
   return (
-    <div className="max-w-6xl mx-auto py-8 px-4 space-y-10">
-      <div id="notice-section-general" ref={generalRef} className="scroll-mt-24">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg md:text-xl font-black text-gray-900">공고 / 공지</h2>
-          <span className="text-xs text-gray-400 font-bold">공지사항</span>
+    <div className="max-w-7xl mx-auto py-8 px-4">
+      {/* 한 화면에 '공고/공지' + '경조사' 섹션을 가로로 배치 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <div id="notice-section-general" ref={generalRef} className="scroll-mt-24">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg md:text-xl font-black text-gray-900">공고 / 공지</h2>
+            <span className="text-xs text-gray-400 font-bold">공지사항</span>
+          </div>
+
+          <div className="rounded-3xl bg-white shadow-sm border border-gray-100 overflow-hidden">
+            <Board
+              type={"notice_all" as BoardType}
+              posts={posts}
+              onWriteClick={() => onWriteClick("notice_all")}
+              onEditClick={onEditClick}
+              selectedPostId={selectedPostId}
+              onSelectPost={onSelectPost}
+              userRole={userRole}
+              onDeletePost={onDeletePost}
+              onSaveComment={onSaveComment}
+              onEditComment={onEditComment}
+              onDeleteComment={onDeleteComment}
+            />
+          </div>
         </div>
 
-        <div className="rounded-3xl bg-white shadow-sm border border-gray-100 overflow-hidden">
-          <Board
-            type={"notice_all" as BoardType}
-            posts={posts}
-            onWriteClick={() => onWriteClick("notice_all")}
-            onEditClick={onEditClick}
-            selectedPostId={selectedPostId}
-            onSelectPost={onSelectPost}
-            userRole={userRole}
-            onDeletePost={onDeletePost}
-            onSaveComment={onSaveComment}
-            onEditComment={onEditComment}
-            onDeleteComment={onDeleteComment}
-          />
-        </div>
-      </div>
+        <div id="notice-section-family" ref={familyRef} className="scroll-mt-24">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg md:text-xl font-black text-gray-900">경조사</h2>
+            <span className="text-xs text-gray-400 font-bold">공지사항</span>
+          </div>
 
-      <div id="notice-section-family" ref={familyRef} className="scroll-mt-24">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg md:text-xl font-black text-gray-900">경조사</h2>
-          <span className="text-xs text-gray-400 font-bold">공지사항</span>
-        </div>
-
-        <div className="rounded-3xl bg-white shadow-sm border border-gray-100 overflow-hidden">
-          <Board
-            type={"family_events" as BoardType}
-            posts={posts}
-            onWriteClick={() => onWriteClick("family_events")}
-            onEditClick={onEditClick}
-            selectedPostId={selectedPostId}
-            onSelectPost={onSelectPost}
-            userRole={userRole}
-            onDeletePost={onDeletePost}
-            onSaveComment={onSaveComment}
-            onEditComment={onEditComment}
-            onDeleteComment={onDeleteComment}
-          />
+          <div className="rounded-3xl bg-white shadow-sm border border-gray-100 overflow-hidden">
+            <Board
+              type={"family_events" as BoardType}
+              posts={posts}
+              onWriteClick={() => onWriteClick("family_events")}
+              onEditClick={onEditClick}
+              selectedPostId={selectedPostId}
+              onSelectPost={onSelectPost}
+              userRole={userRole}
+              onDeletePost={onDeletePost}
+              onSaveComment={onSaveComment}
+              onEditComment={onEditComment}
+              onDeleteComment={onDeleteComment}
+            />
+          </div>
         </div>
       </div>
     </div>
