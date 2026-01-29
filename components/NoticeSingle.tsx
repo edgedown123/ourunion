@@ -29,29 +29,21 @@ const NoticeSingle: React.FC<NoticeSingleProps> = ({
   onEditComment,
   onDeleteComment,
 }) => {
-  const title = type === "family_events" ? "경조사" : "공고 / 공지";
-  const subtitle = "공지사항";
-
   return (
-    <div className="max-w-7xl mx-auto py-8 px-4">
-      <div className="scroll-mt-24">
-        <div className="mb-3" />
-
-        <Board
-            type={type}
-            posts={posts}
-            onWriteClick={() => onWriteClick(type)}
-            onEditClick={onEditClick}
-            selectedPostId={selectedPostId}
-            onSelectPost={onSelectPost}
-            userRole={userRole}
-            onDeletePost={onDeletePost}
-            onSaveComment={onSaveComment}
-            onEditComment={onEditComment}
-            onDeleteComment={onDeleteComment}
-          />
-        </div>
-      </div>
+    <div className="max-w-7xl mx-auto py-8 px-4 scroll-mt-24">
+      <Board
+        type={type}
+        posts={posts}
+        onWriteClick={() => onWriteClick(type)}
+        onEditClick={onEditClick}
+        selectedPostId={selectedPostId}
+        onSelectPost={onSelectPost}
+        userRole={userRole}
+        onDeletePost={onDeletePost}
+        onSaveComment={onSaveComment}
+        onEditComment={onEditComment}
+        onDeleteComment={onDeleteComment}
+      />
     </div>
   );
 };
