@@ -215,12 +215,28 @@ const Board: React.FC<BoardProps> = ({
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {selectedPost.attachments.map((file, idx) => (
-                  <div key={idx} className="bg-white p-4 rounded-2xl border flex items-center justify-between shadow-sm hover:border-sky-primary transition-all group">
-                    <div className="flex items-center overflow-hidden">
-                      <i className={`fas ${file.type.startsWith('image/') ? 'fa-file-image' : 'fa-file-alt'} text-gray-300 mr-4 text-xl`}></i>
-                      <span className="text-sm font-bold text-gray-700 truncate">{file.name}</span>
+                  <div
+                    key={idx}
+                    className="bg-white p-4 rounded-2xl border flex flex-col gap-3 shadow-sm hover:border-sky-primary transition-all group sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    {/* 파일명 (모바일: 2줄까지 최대한 보여주기 / 데스크톱: 한 줄 말줄임) */}
+                    <div className="flex items-start sm:items-center sm:min-w-0">
+                      <i
+                        className={`fas ${file.type.startsWith('image/') ? 'fa-file-image' : 'fa-file-alt'} text-gray-300 mr-4 text-xl mt-0.5 sm:mt-0`}
+                      ></i>
+                      <span className="text-sm font-bold text-gray-700 whitespace-normal break-words leading-snug sm:truncate">
+                        {file.name}
+                      </span>
                     </div>
-                    <a href={file.data} download={file.name} className="ml-4 px-5 py-2 bg-sky-primary text-white text-[11px] font-black rounded-xl shadow-md hover:opacity-90 active:scale-95 transition-all">다운로드</a>
+
+                    {/* 다운로드 버튼 (모바일: 아래로 분리 / 텍스트 줄바꿈 방지) */}
+                    <a
+                      href={file.data}
+                      download={file.name}
+                      className="inline-flex w-fit items-center justify-center px-4 py-2 bg-sky-primary text-white text-xs font-black rounded-xl shadow-md hover:opacity-90 active:scale-95 transition-all whitespace-nowrap"
+                    >
+                      다운로드
+                    </a>
                   </div>
                 ))}
               </div>
