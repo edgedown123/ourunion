@@ -246,15 +246,15 @@ const Board: React.FC<BoardProps> = ({
         </article>
 
         {/* 댓글 섹션 */}
-        <section className="bg-white rounded-[2.5rem] border p-4 md:p-7 shadow-sm">
-          <h3 className="text-lg md:text-xl font-black text-gray-900 mb-3 md:mb-5 flex items-center">
+        <section className="bg-white rounded-[2.5rem] border p-2 md:p-7 shadow-sm">
+          <h3 className="text-base md:text-xl font-black text-gray-900 mb-2 md:mb-5 flex items-center">
             <i className="fas fa-comments mr-2 md:mr-3 text-sky-primary"></i> 댓글 
-            <span className="ml-3 bg-sky-50 text-sky-primary px-2 py-0.5 md:px-3 md:py-1 rounded-xl text-xs md:text-sm">
+            <span className="ml-2 bg-sky-50 text-sky-primary px-1.5 py-0 md:px-3 md:py-1 rounded-lg text-[11px] md:text-sm">
               {selectedPost.comments?.reduce((acc, curr) => acc + 1 + (curr.replies?.length || 0), 0) || 0}
             </span>
           </h3>
           
-          <div className="space-y-3 md:space-y-4 mb-5 md:mb-7">
+          <div className="space-y-2 md:space-y-4 mb-3 md:mb-7">
             {selectedPost.comments?.map((comment) => (
               <div key={comment.id} className="border-b border-gray-50 last:border-0 pb-5 md:pb-8 animate-fadeIn">
                 <div className="flex justify-between items-center mb-3">
@@ -462,16 +462,16 @@ const Board: React.FC<BoardProps> = ({
           </div>
           
           {userRole !== 'guest' && (
-            <form onSubmit={handleCommentSubmit} className="relative pt-3 md:pt-5 border-t">
+            <form onSubmit={handleCommentSubmit} className="relative pt-2 md:pt-5 border-t">
               <textarea 
                 value={newComment} 
                 onChange={(e) => setNewComment(e.target.value)} 
-                className="w-full border-2 border-gray-100 rounded-[2rem] p-3 md:p-4 text-sm md:text-base focus:border-sky-primary outline-none min-h-[44px] md:min-h-[70px] resize-none pr-24 md:pr-32 transition-all bg-gray-50/30"
+                className="w-full border-2 border-gray-100 rounded-[2rem] p-2 md:p-4 text-sm md:text-base focus:border-sky-primary outline-none min-h-[36px] md:min-h-[70px] resize-none pr-20 md:pr-32 transition-all bg-gray-50/30"
               />
               <button 
                 type="submit" 
                 disabled={!newComment.trim()} 
-                className="absolute right-4 bottom-4 md:right-8 md:bottom-8 bg-gray-900 text-white px-4 py-2 md:px-8 md:py-3.5 rounded-xl md:rounded-2xl text-xs md:text-sm font-black hover:bg-black disabled:opacity-30 shadow-lg md:shadow-xl active:scale-95 transition-all"
+                className="absolute right-3 bottom-3 md:right-8 md:bottom-8 bg-gray-900 text-white h-9 px-3 md:h-auto md:px-8 md:py-3.5 rounded-lg md:rounded-2xl text-[11px] md:text-sm font-black hover:bg-black disabled:opacity-30 shadow-lg md:shadow-xl active:scale-95 transition-all"
               >
                 댓글 등록
               </button>
