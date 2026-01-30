@@ -120,8 +120,8 @@ const Board: React.FC<BoardProps> = ({
     const hasPassword = !!selectedPost.password;
     const isNoticeCategory = selectedPost.type === 'notice_all' || selectedPost.type === 'family_events';
 
+    // 모바일에서 좌우 여백을 조금 더 줄여 콘텐츠 폭을 넓게 사용
     return (
-      {/* 모바일에서 좌우 여백을 조금 더 줄여 콘텐츠 폭을 넓게 사용 */}
       <div className="max-w-4xl mx-auto py-8 px-2 sm:px-5 animate-fadeIn">
         <div className="flex justify-between items-center mb-8">
           <button onClick={() => onSelectPost(null)} className="flex items-center text-gray-500 hover:text-sky-primary group font-bold">
@@ -222,9 +222,11 @@ const Board: React.FC<BoardProps> = ({
                     className="bg-white p-4 rounded-2xl border flex flex-col gap-3 shadow-sm hover:border-sky-primary transition-all group sm:flex-row sm:items-center sm:justify-between"
                   >
                     {/* 파일명 (모바일: 2줄까지 최대한 보여주기 / 데스크톱: 한 줄 말줄임) */}
-                    {/* 아이콘 제거 + 긴 파일명 오버플로우 방지(모바일에서 강제 줄바꿈) */}
-                    <div className="flex items-start sm:items-center min-w-0">
-                      <span className="flex-1 text-[13px] font-bold text-gray-700 whitespace-normal break-all leading-snug sm:truncate">
+                    <div className="flex items-start sm:items-center sm:min-w-0">
+                      <i
+                        className={`fas ${file.type.startsWith('image/') ? 'fa-file-image' : 'fa-file-alt'} text-gray-300 mr-4 text-xl mt-0.5 sm:mt-0`}
+                      ></i>
+                      <span className="text-sm font-bold text-gray-700 whitespace-normal break-words leading-snug sm:truncate">
                         {file.name}
                       </span>
                     </div>
