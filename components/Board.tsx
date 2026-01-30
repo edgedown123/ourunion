@@ -142,6 +142,7 @@ const Board: React.FC<BoardProps> = ({
                 >
                   <i className="fas fa-trash-alt mr-2"></i> 삭제
                 </button>
+              </>
             )}
           </div>
         </div>
