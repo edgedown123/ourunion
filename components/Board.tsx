@@ -121,7 +121,7 @@ const Board: React.FC<BoardProps> = ({
     const isNoticeCategory = selectedPost.type === 'notice_all' || selectedPost.type === 'family_events';
 
     return (
-      <div className="max-w-4xl mx-auto py-8 px-5 animate-fadeIn">
+      <div className="max-w-4xl mx-auto py-8 px-3 sm:px-5 animate-fadeIn">
         <div className="flex justify-between items-center mb-8">
           <button onClick={() => onSelectPost(null)} className="flex items-center text-gray-500 hover:text-sky-primary group font-bold">
             <i className="fas fa-arrow-left mr-2 group-hover:-translate-x-1 transition-transform"></i> 목록으로
@@ -233,7 +233,7 @@ const Board: React.FC<BoardProps> = ({
                     <a
                       href={file.data}
                       download={file.name}
-                      className="inline-flex w-fit items-center justify-center px-4 py-2 bg-sky-primary text-white text-xs font-black rounded-xl shadow-md hover:opacity-90 active:scale-95 transition-all whitespace-nowrap"
+                      className="inline-flex w-fit items-center justify-center px-3 py-1.5 bg-sky-primary text-white text-[11px] font-black rounded-lg shadow-sm hover:opacity-90 active:scale-95 transition-all whitespace-nowrap"
                     >
                       다운로드
                     </a>
