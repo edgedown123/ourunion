@@ -120,7 +120,6 @@ const Board: React.FC<BoardProps> = ({
     const hasPassword = !!selectedPost.password;
     const isNoticeCategory = selectedPost.type === 'notice_all' || selectedPost.type === 'family_events';
 
-    // 모바일에서 좌우 여백을 조금 더 줄여 콘텐츠 폭을 넓게 사용
     return (
       <div className="max-w-4xl mx-auto py-8 px-2 sm:px-5 animate-fadeIn">
         <div className="flex justify-between items-center mb-8">
@@ -195,12 +194,7 @@ const Board: React.FC<BoardProps> = ({
             </div>
           </header>
 
-	          {/*
-	            모바일에서 게시글 본문 영역이 과하게 길어 보이지 않도록 최소 높이를 줄였습니다.
-	            - 모바일: 120px (기존 200px의 약 60%)
-	            - 데스크톱(md 이상): 기존 200px 유지
-	          */}
-	          <div className="prose prose-sky max-w-none text-gray-700 whitespace-pre-wrap leading-relaxed min-h-[120px] md:min-h-[200px] text-base md:text-lg">
+          <div className="prose prose-sky max-w-none text-gray-700 whitespace-pre-wrap leading-relaxed min-h-[120px] md:min-h-[200px] text-base md:text-lg">
             {selectedPost.content}
           </div>
 
@@ -215,20 +209,23 @@ const Board: React.FC<BoardProps> = ({
           )}
 
           {selectedPost.attachments && selectedPost.attachments.length > 0 && (
-            // 모바일: 첨부파일이 많아져도 화면을 과하게 잡아먹지 않도록 최대 높이를 주고 내부 스크롤 처리
-            <div className="mt-14 md:mt-20 p-4 md:p-10 bg-gray-50/50 rounded-[2.5rem] border-2 border-dashed border-gray-200">
-              <p className="text-xs font-black text-gray-400 mb-4 uppercase tracking-widest flex items-center">
+            // 모바일에서 점선 박스(첨부파일 영역) 내부 패딩을 줄여 카드/파일명이 더 넓게 보이도록
+            <div className="mt-20 p-4 md:p-10 bg-gray-50/50 rounded-[2.5rem] border-2 border-dashed border-gray-200">
+              <p className="text-xs font-black text-gray-400 mb-6 uppercase tracking-widest flex items-center">
                 <i className="fas fa-paperclip mr-2.5 text-sky-primary text-base"></i> 첨부파일 ({selectedPost.attachments.length})
               </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[40vh] md:max-h-none overflow-y-auto pr-1">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {selectedPost.attachments.map((file, idx) => (
                   <div
                     key={idx}
-                    className="bg-white p-2.5 rounded-2xl border flex flex-col gap-1.5 shadow-sm hover:border-sky-primary transition-all group sm:flex-row sm:items-center sm:justify-between"
+                    className="bg-white p-4 rounded-2xl border flex flex-col gap-3 shadow-sm hover:border-sky-primary transition-all group sm:flex-row sm:items-center sm:justify-between"
                   >
                     {/* 파일명 (모바일: 2줄까지 최대한 보여주기 / 데스크톱: 한 줄 말줄임) */}
                     <div className="flex items-start sm:items-center sm:min-w-0">
-                      <span className="text-[13px] font-bold text-gray-700 whitespace-normal break-words leading-snug sm:truncate">
+                      <i
+                        className={`fas ${file.type.startsWith('image/') ? 'fa-file-image' : 'fa-file-alt'} text-gray-300 mr-4 text-xl mt-0.5 sm:mt-0`}
+                      ></i>
+                      <span className="text-sm font-bold text-gray-700 whitespace-normal break-words leading-snug sm:truncate">
                         {file.name}
                       </span>
                     </div>
@@ -250,16 +247,16 @@ const Board: React.FC<BoardProps> = ({
 
         {/* 댓글 섹션 */}
         <section className="bg-white rounded-[2.5rem] border p-4 md:p-7 shadow-sm">
-          <h3 className="text-xl font-black text-gray-900 mb-5 flex items-center">
-            <i className="fas fa-comments mr-3 text-sky-primary"></i> 댓글 
-            <span className="ml-3 bg-sky-50 text-sky-primary px-3 py-1 rounded-xl text-sm">
+          <h3 className="text-lg md:text-xl font-black text-gray-900 mb-3 md:mb-5 flex items-center">
+            <i className="fas fa-comments mr-2 md:mr-3 text-sky-primary"></i> 댓글 
+            <span className="ml-3 bg-sky-50 text-sky-primary px-2 py-0.5 md:px-3 md:py-1 rounded-xl text-xs md:text-sm">
               {selectedPost.comments?.reduce((acc, curr) => acc + 1 + (curr.replies?.length || 0), 0) || 0}
             </span>
           </h3>
           
-          <div className="space-y-4 mb-7">
+          <div className="space-y-3 md:space-y-4 mb-5 md:mb-7">
             {selectedPost.comments?.map((comment) => (
-              <div key={comment.id} className="border-b border-gray-50 last:border-0 pb-8 animate-fadeIn">
+              <div key={comment.id} className="border-b border-gray-50 last:border-0 pb-5 md:pb-8 animate-fadeIn">
                 <div className="flex justify-between items-center mb-3">
                   <span className="text-base font-black text-gray-900 flex items-center">
                     <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center mr-3 text-xs text-gray-400">
@@ -465,16 +462,16 @@ const Board: React.FC<BoardProps> = ({
           </div>
           
           {userRole !== 'guest' && (
-            <form onSubmit={handleCommentSubmit} className="relative pt-5 border-t">
+            <form onSubmit={handleCommentSubmit} className="relative pt-3 md:pt-5 border-t">
               <textarea 
                 value={newComment} 
                 onChange={(e) => setNewComment(e.target.value)} 
-                className="w-full border-2 border-gray-100 rounded-[2rem] p-4 md:p-4 text-sm md:text-base focus:border-sky-primary outline-none min-h-[70px] resize-none pr-32 transition-all bg-gray-50/30 md:min-h-[90px]"
+                className="w-full border-2 border-gray-100 rounded-[2rem] p-3 md:p-4 text-sm md:text-base focus:border-sky-primary outline-none min-h-[44px] md:min-h-[70px] resize-none pr-24 md:pr-32 transition-all bg-gray-50/30"
               />
               <button 
                 type="submit" 
                 disabled={!newComment.trim()} 
-                className="absolute right-6 bottom-6 md:right-8 md:bottom-8 bg-gray-900 text-white px-8 py-3.5 rounded-2xl text-sm font-black hover:bg-black disabled:opacity-30 shadow-xl active:scale-95 transition-all"
+                className="absolute right-4 bottom-4 md:right-8 md:bottom-8 bg-gray-900 text-white px-4 py-2 md:px-8 md:py-3.5 rounded-xl md:rounded-2xl text-xs md:text-sm font-black hover:bg-black disabled:opacity-30 shadow-lg md:shadow-xl active:scale-95 transition-all"
               >
                 댓글 등록
               </button>
