@@ -10,6 +10,10 @@ interface SignupFormProps {
 const SignupForm: React.FC<SignupFormProps> = ({ onGoHome, onSignup }) => {
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const allowedGarages = ['진관', '도봉', '송파'];
+  const [garageError, setGarageError] = useState<string>('');
+
   
   const [formData, setFormData] = useState({
     name: '',
@@ -35,6 +39,16 @@ const SignupForm: React.FC<SignupFormProps> = ({ onGoHome, onSignup }) => {
     const { name, value } = e.target;
     let processedValue = value;
     if (name === 'phone') processedValue = formatPhoneNumber(value);
+    if (name === 'garage') {
+      // 공백 제거(앞/뒤)
+      processedValue = value.trimStart();
+      const trimmed = value.trim();
+      if (trimmed && !allowedGarages.includes(trimmed)) {
+        setGarageError('소속 차고지는 진관, 도봉, 송파 중 하나만 입력해주세요.');
+      } else {
+        setGarageError('');
+      }
+    }
     setFormData({ ...formData, [name]: processedValue });
   };
 
@@ -44,6 +58,13 @@ const SignupForm: React.FC<SignupFormProps> = ({ onGoHome, onSignup }) => {
     // 필수 인적 사항 확인
     if (!formData.name || !formData.phone || !formData.garage || !formData.email) {
       return alert('필수 항목을 모두 입력해주세요.');
+    }
+
+    // 소속 차고지 검증 (진관/도봉/송파만 허용)
+    const garageTrimmed = formData.garage.trim();
+    if (!allowedGarages.includes(garageTrimmed)) {
+      setGarageError('소속 차고지는 진관, 도봉, 송파 중 하나만 입력해주세요.');
+      return alert('소속 차고지는 진관, 도봉, 송파 중 하나만 입력해주세요.');
     }
 
     if (!formData.password || formData.password.length < 6) {
@@ -112,7 +133,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onGoHome, onSignup }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">연락처</label>
+            <label className="block text-sm font-bold text-gray-700 mb-2">연락처 (숫자만 입력)</label>
             <input required type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full border-gray-300 rounded-lg p-3 border focus:ring-2 focus:ring-sky-primary outline-none transition-all" placeholder="010-0000-0000" />
           </div>
 
@@ -134,7 +155,10 @@ const SignupForm: React.FC<SignupFormProps> = ({ onGoHome, onSignup }) => {
 
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-2">소속 차고지</label>
-            <input required type="text" name="garage" value={formData.garage} onChange={handleChange} className="w-full border-gray-300 rounded-lg p-3 border focus:ring-2 focus:ring-sky-primary outline-none transition-all" placeholder="예: 진관, 도봉, 송파 등" />
+            <input required type="text" name="garage" value={formData.garage} onChange={handleChange} className="w-full border-gray-300 rounded-lg p-3 border focus:ring-2 focus:ring-sky-primary outline-none transition-all" placeholder="예: 진관, 도봉, 송파" />
+            {garageError && (
+              <p className="mt-2 text-sm text-red-500 font-semibold">{garageError}</p>
+            )}
           </div>
         </div>
 
