@@ -210,23 +210,20 @@ const Board: React.FC<BoardProps> = ({
           )}
 
           {selectedPost.attachments && selectedPost.attachments.length > 0 && (
-            // 모바일에서 점선 박스(첨부파일 영역) 내부 패딩을 줄여 카드/파일명이 더 넓게 보이도록
-            <div className="mt-20 p-4 md:p-10 bg-gray-50/50 rounded-[2.5rem] border-2 border-dashed border-gray-200">
-              <p className="text-xs font-black text-gray-400 mb-6 uppercase tracking-widest flex items-center">
+            // 모바일: 첨부파일이 많아져도 화면을 과하게 잡아먹지 않도록 최대 높이를 주고 내부 스크롤 처리
+            <div className="mt-14 md:mt-20 p-4 md:p-10 bg-gray-50/50 rounded-[2.5rem] border-2 border-dashed border-gray-200">
+              <p className="text-xs font-black text-gray-400 mb-4 uppercase tracking-widest flex items-center">
                 <i className="fas fa-paperclip mr-2.5 text-sky-primary text-base"></i> 첨부파일 ({selectedPost.attachments.length})
               </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[40vh] md:max-h-none overflow-y-auto pr-1">
                 {selectedPost.attachments.map((file, idx) => (
                   <div
                     key={idx}
-                    className="bg-white p-4 rounded-2xl border flex flex-col gap-3 shadow-sm hover:border-sky-primary transition-all group sm:flex-row sm:items-center sm:justify-between"
+                    className="bg-white p-2.5 rounded-2xl border flex flex-col gap-1.5 shadow-sm hover:border-sky-primary transition-all group sm:flex-row sm:items-center sm:justify-between"
                   >
                     {/* 파일명 (모바일: 2줄까지 최대한 보여주기 / 데스크톱: 한 줄 말줄임) */}
                     <div className="flex items-start sm:items-center sm:min-w-0">
-                      <i
-                        className={`fas ${file.type.startsWith('image/') ? 'fa-file-image' : 'fa-file-alt'} text-gray-300 mr-4 text-xl mt-0.5 sm:mt-0`}
-                      ></i>
-                      <span className="text-sm font-bold text-gray-700 whitespace-normal break-words leading-snug sm:truncate">
+                      <span className="text-[13px] font-bold text-gray-700 whitespace-normal break-words leading-snug sm:truncate">
                         {file.name}
                       </span>
                     </div>
