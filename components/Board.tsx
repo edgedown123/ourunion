@@ -195,7 +195,12 @@ const Board: React.FC<BoardProps> = ({
             </div>
           </header>
 
-          <div className="prose prose-sky max-w-none text-gray-700 whitespace-pre-wrap leading-relaxed min-h-[140px] md:min-h-[160px] text-base md:text-lg">
+	          {/*
+	            모바일에서 게시글 본문 영역이 과하게 길어 보이지 않도록 최소 높이를 줄였습니다.
+	            - 모바일: 120px (기존 200px의 약 60%)
+	            - 데스크톱(md 이상): 기존 200px 유지
+	          */}
+	          <div className="prose prose-sky max-w-none text-gray-700 whitespace-pre-wrap leading-relaxed min-h-[120px] md:min-h-[200px] text-base md:text-lg">
             {selectedPost.content}
           </div>
 
@@ -245,17 +250,17 @@ const Board: React.FC<BoardProps> = ({
 
         {/* 댓글 섹션 */}
         <section className="bg-white rounded-[2.5rem] border p-4 md:p-7 shadow-sm">
-          <h3 className="text-lg font-black text-gray-900 mb-3 flex items-center">
-            <i className="fas fa-comments mr-2 text-sky-primary"></i> 댓글 
-            <span className="ml-2 bg-sky-50 text-sky-primary px-2 py-0.5 rounded-lg text-xs font-bold">
+          <h3 className="text-xl font-black text-gray-900 mb-5 flex items-center">
+            <i className="fas fa-comments mr-3 text-sky-primary"></i> 댓글 
+            <span className="ml-3 bg-sky-50 text-sky-primary px-3 py-1 rounded-xl text-sm">
               {selectedPost.comments?.reduce((acc, curr) => acc + 1 + (curr.replies?.length || 0), 0) || 0}
             </span>
           </h3>
           
-          <div className="space-y-3 mb-4">
+          <div className="space-y-4 mb-7">
             {selectedPost.comments?.map((comment) => (
-              <div key={comment.id} className="border-b border-gray-50 last:border-0 pb-5 animate-fadeIn">
-                <div className="flex justify-between items-center mb-2">
+              <div key={comment.id} className="border-b border-gray-50 last:border-0 pb-8 animate-fadeIn">
+                <div className="flex justify-between items-center mb-3">
                   <span className="text-base font-black text-gray-900 flex items-center">
                     <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center mr-3 text-xs text-gray-400">
                       <i className="fas fa-user"></i>
@@ -460,16 +465,16 @@ const Board: React.FC<BoardProps> = ({
           </div>
           
           {userRole !== 'guest' && (
-            <form onSubmit={handleCommentSubmit} className="relative pt-3 border-t">
+            <form onSubmit={handleCommentSubmit} className="relative pt-5 border-t">
               <textarea 
                 value={newComment} 
                 onChange={(e) => setNewComment(e.target.value)} 
-                className="w-full border-2 border-gray-100 rounded-[1.5rem] p-3 md:p-3 text-sm md:text-base focus:border-sky-primary outline-none min-h-[56px] resize-none pr-28 transition-all bg-gray-50/30 md:min-h-[72px]"
+                className="w-full border-2 border-gray-100 rounded-[2rem] p-4 md:p-4 text-sm md:text-base focus:border-sky-primary outline-none min-h-[70px] resize-none pr-32 transition-all bg-gray-50/30 md:min-h-[90px]"
               />
               <button 
                 type="submit" 
                 disabled={!newComment.trim()} 
-                className="absolute right-4 bottom-4 md:right-5 md:bottom-5 bg-gray-900 text-white px-5 py-2 rounded-xl text-xs font-black hover:bg-black disabled:opacity-30 shadow-md active:scale-95 transition-all"
+                className="absolute right-6 bottom-6 md:right-8 md:bottom-8 bg-gray-900 text-white px-8 py-3.5 rounded-2xl text-sm font-black hover:bg-black disabled:opacity-30 shadow-xl active:scale-95 transition-all"
               >
                 댓글 등록
               </button>
