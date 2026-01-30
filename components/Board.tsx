@@ -142,7 +142,6 @@ const Board: React.FC<BoardProps> = ({
                 >
                   <i className="fas fa-trash-alt mr-2"></i> 삭제
                 </button>
-              </>
             )}
           </div>
         </div>
@@ -266,17 +265,6 @@ const Board: React.FC<BoardProps> = ({
                   </span>
                   <div className="flex items-center gap-2">
                     <span className="text-[11px] font-bold text-gray-300 uppercase">{formatDate(comment.createdAt)}</span>
-                    {userRole !== 'guest' && (
-                      <button
-                        onClick={() => {
-                          setReplyingToId(replyingToId === comment.id ? null : comment.id);
-                          setReplyContent('');
-                        }}
-                        className="text-xs font-black text-sky-primary hover:underline flex items-center"
-                      >
-                        <i className="fas fa-reply fa-rotate-180 mr-1.5"></i> 답글쓰기
-                      </button>
-                    )}
                     {canManageComment(comment.author) && (
                       <div className="relative">
                         <button
@@ -345,7 +333,24 @@ const Board: React.FC<BoardProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <p className="text-base text-gray-600 leading-relaxed pl-11 mb-3">{comment.content}</p>
+                  <>
+                    <p className="text-base text-gray-600 leading-relaxed pl-11 mb-3">{comment.content}</p>
+                    {userRole !== 'guest' && (
+                  <div className="flex justify-end pl-11 mt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReplyingToId(replyingToId === comment.id ? null : comment.id);
+                        setReplyContent('');
+                      }}
+                      className="text-xs font-black text-sky-primary hover:underline flex items-center"
+                    >
+                      <i className="fas fa-reply fa-rotate-180 mr-1.5"></i> 답글쓰기
+                    </button>
+                  </div>
+                )}
+                  </>
+
                 )}
                 
 
