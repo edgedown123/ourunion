@@ -162,7 +162,7 @@ const PostEditor: React.FC<PostEditorProps> = ({ type, initialPost, onSave, onCa
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">내용</label>
           <textarea
-            className="w-full border-gray-300 rounded-lg p-3 h-64 border focus:ring-sky-500 outline-none resize-none leading-relaxed"
+            className="w-full border-gray-300 rounded-lg p-3 h-44 md:h-56 border focus:ring-sky-500 outline-none resize-none leading-relaxed"
             value={content}
             onChange={(e) => setContent(e.target.value)}
           ></textarea>
