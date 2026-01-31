@@ -417,7 +417,6 @@ const Board: React.FC<BoardProps> = ({
                             </div>
                           )}
                         </div>
-                        </div>
                         {editingTarget?.commentId === reply.id && editingTarget.parentId === comment.id ? (
                         <div className="pl-7">
                           <textarea
