@@ -342,9 +342,9 @@ const Board: React.FC<BoardProps> = ({
                         setReplyingToId(replyingToId === comment.id ? null : comment.id);
                         setReplyContent('');
                       }}
-                      className="text-xs font-black text-sky-primary hover:underline flex items-center"
+                      className="text-xs font-black text-gray-400 hover:text-gray-500 hover:underline flex items-center"
                     >
-                      <i className="fas fa-reply fa-rotate-180 mr-1.5"></i> 답글쓰기
+                      답글쓰기
                     </button>
                   )}
                 </div>
@@ -376,7 +376,6 @@ const Board: React.FC<BoardProps> = ({
                       <div key={reply.id} className="animate-fadeIn">
                         <div className="flex justify-between items-center mb-2">
                           <span className="text-sm font-black text-gray-700 flex items-center">
-                            <i className="fas fa-reply fa-rotate-180 mr-3 text-gray-300 text-xs"></i>
                             {reply.author}
                           </span>
                           {canManageComment(reply.author) && (
