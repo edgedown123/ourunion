@@ -117,6 +117,31 @@ const Board: React.FC<BoardProps> = ({
   // 상세 보기 모드
   if (selectedPost) {
     const imageAttachments = selectedPost.attachments?.filter(a => a.type.startsWith('image/')) || [];
+
+
+const renderContentWithInlineImages = (raw: string) => {
+  const parts = raw.split(/\[\[img:(\d+)\]\]/g);
+  const used = new Set<number>();
+  const nodes: React.ReactNode[] = [];
+
+  for (let i = 0; i < parts.length; i++) {
+    if (i % 2 === 0) {
+      if (parts[i]) nodes.push(<span key={`t-${i}`} className="whitespace-pre-wrap">{parts[i]}</span>);
+    } else {
+      const idx = Number(parts[i]);
+      if (!Number.isNaN(idx) && imageAttachments[idx]) {
+        used.add(idx);
+        nodes.push(
+          <div key={`img-${i}`} className="my-6 rounded-3xl overflow-hidden shadow-xl border border-gray-100 bg-gray-50">
+            <img src={imageAttachments[idx].data} alt={`본문 이미지 ${idx + 1}`} className="w-full h-auto object-contain" />
+          </div>
+        );
+      }
+    }
+  }
+
+  return { nodes, used };
+};
     const hasPassword = !!selectedPost.password;
     const isNoticeCategory = selectedPost.type === 'notice_all' || selectedPost.type === 'family_events';
 
@@ -194,19 +219,24 @@ const Board: React.FC<BoardProps> = ({
             </div>
           </header>
 
-          <div className="prose prose-sky max-w-none text-gray-700 whitespace-pre-wrap leading-relaxed min-h-[120px] md:min-h-[200px] text-base md:text-lg">
-            {selectedPost.content}
+          <div className="prose prose-sky max-w-none text-gray-700 leading-relaxed min-h-[120px] md:min-h-[200px] text-base md:text-lg">
+            {renderContentWithInlineImages(selectedPost.content).nodes}
           </div>
 
-          {imageAttachments.length > 0 && (
-            <div className="mt-14 space-y-8">
-              {imageAttachments.map((img, idx) => (
-                <div key={idx} className="rounded-3xl overflow-hidden shadow-xl border border-gray-100">
-                  <img src={img.data} alt={`첨부 이미지 ${idx + 1}`} className="w-full h-auto object-contain bg-gray-50" />
-                </div>
-              ))}
-            </div>
-          )}
+          {(() => {
+            const { used } = renderContentWithInlineImages(selectedPost.content);
+            const remaining = imageAttachments.filter((_, idx) => !used.has(idx));
+            if (remaining.length === 0) return null;
+            return (
+              <div className="mt-14 space-y-8">
+                {remaining.map((img, idx) => (
+                  <div key={idx} className="rounded-3xl overflow-hidden shadow-xl border border-gray-100">
+                    <img src={img.data} alt={`첨부 이미지 ${idx + 1}`} className="w-full h-auto object-contain bg-gray-50" />
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
 
           {selectedPost.attachments && selectedPost.attachments.length > 0 && (
             // 모바일에서 점선 박스(첨부파일 영역) 내부 패딩을 줄여 카드/파일명이 더 넓게 보이도록

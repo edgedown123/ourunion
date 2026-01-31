@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect  } from 'react';
 import { BoardType, PostAttachment, Post } from '../types';
 interface PostEditorProps {
   type: BoardType;
@@ -65,12 +65,17 @@ const PostEditor: React.FC<PostEditorProps> = ({ type, initialPost, onSave, onCa
         if (file.type.startsWith('image/')) {
           fileData = await compressImage(fileData);
         }
-        setAttachments(prev => [...prev, {
-          name: file.name,
-          data: fileData,
-          type: file.type
-        }]);
-      };
+        setAttachments(prev => {
+          const imageIndex = file.type.startsWith('image/')
+            ? prev.filter(p => p.type.startsWith('image/')).length
+            : -1;
+          const next = [...prev, { name: file.name, data: fileData, type: file.type }];
+          if (imageIndex >= 0) {
+            insertImageTokenAtCursor(`[[img:${imageIndex}]]`);
+          }
+          return next;
+        });
+};
       reader.readAsDataURL(file);
     };
     
@@ -83,6 +88,34 @@ const PostEditor: React.FC<PostEditorProps> = ({ type, initialPost, onSave, onCa
   const removeAttachment = (index: number) => {
     setAttachments(prev => prev.filter((_, i) => i !== index));
   };
+
+
+const insertImageTokenAtCursor = (token: string) => {
+  const ta = contentRef.current;
+  setContent(prev => {
+    if (!ta) return prev ? `${prev}\n${token}\n` : `${token}\n`;
+    const start = ta.selectionStart ?? prev.length;
+    const end = ta.selectionEnd ?? prev.length;
+
+    const prefix = prev.slice(0, start);
+    const suffix = prev.slice(end);
+
+    const before = prefix && !prefix.endsWith('\n') ? prefix + '\n' : prefix;
+    const after = suffix && !suffix.startsWith('\n') ? '\n' + suffix : suffix;
+
+    const next = `${before}${token}${after}`;
+
+    requestAnimationFrame(() => {
+      try {
+        const pos = before.length + token.length + 1;
+        ta.focus();
+        ta.setSelectionRange(pos, pos);
+      } catch {}
+    });
+
+    return next;
+  });
+};
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4"> 
@@ -162,6 +195,7 @@ const PostEditor: React.FC<PostEditorProps> = ({ type, initialPost, onSave, onCa
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">내용</label>
           <textarea
+            ref={contentRef}
             className="w-full border-gray-300 rounded-lg p-3 h-64 border focus:ring-sky-500 outline-none resize-none leading-relaxed"
             value={content}
             onChange={(e) => setContent(e.target.value)}
