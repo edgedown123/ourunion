@@ -416,6 +416,42 @@ const App: React.FC = () => {
     alert('삭제가 완료되었습니다.');
   };
 
+// 휴지통에서 복구 / 영구삭제 (관리자)
+const handleRestorePost = async (postId: string) => {
+  const postToRestore = deletedPosts.find(p => p.id === postId);
+  if (!postToRestore) return;
+
+  const updatedDeleted = deletedPosts.filter(p => p.id !== postId);
+  const updatedPosts = [postToRestore, ...posts];
+
+  setPosts(updatedPosts);
+  setDeletedPosts(updatedDeleted);
+
+  saveToLocal('posts', updatedPosts);
+  saveToLocal('deletedPosts', updatedDeleted);
+
+  try {
+    // 휴지통에서 복구 시 다시 클라우드에 저장
+    cloud.savePostToCloud(postToRestore);
+  } catch (e) {
+    console.warn('restore cloud save failed', e);
+  }
+
+  alert('복구가 완료되었습니다.');
+};
+
+const handlePermanentDelete = (postId: string) => {
+  if (!window.confirm('휴지통에서 영구삭제 하시겠습니까?')) return;
+
+  const updatedDeleted = deletedPosts.filter(p => p.id !== postId);
+  setDeletedPosts(updatedDeleted);
+  saveToLocal('deletedPosts', updatedDeleted);
+
+  // 이미 삭제 시점에 클라우드에서는 제거되어 있을 수 있으므로, 여기서는 목록에서만 제거합니다.
+  alert('영구삭제가 완료되었습니다.');
+};
+
+
   const handleSignup = async (
     memberData: Omit<Member, 'id' | 'signupDate' | 'isApproved' | 'password' | 'loginId'>,
     password: string
@@ -755,8 +791,8 @@ const handleRequestWithdraw = () => {
               members={members} 
               posts={posts} 
               deletedPosts={deletedPosts} 
-              onRestorePost={() => {}} 
-              onPermanentDelete={() => {}} 
+              onRestorePost={handleRestorePost} 
+              onPermanentDelete={handlePermanentDelete} 
               onEditPost={handleEditClick} 
               onViewPost={handleViewPostFromAdmin} 
               onClose={() => handleTabChange('home')} 
