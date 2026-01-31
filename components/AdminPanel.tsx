@@ -34,6 +34,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const importFileInputRef = useRef<HTMLInputElement>(null);
   
   const [adminTab, setAdminTab] = useState<'members' | 'intro' | 'offices' | 'posts' | 'settings'>('members');
+  const [openMemberActionId, setOpenMemberActionId] = useState<string | null>(null);
   const [activeOfficeId, setActiveOfficeId] = useState<string | null>(settings.offices[0]?.id || null);
 
   const [newYear, setNewYear] = useState('');
@@ -209,7 +210,89 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
               <div><h3 className="text-xl font-black text-gray-900">가입 신청 명단</h3><p className="text-xs text-gray-400 mt-1 font-bold">현재 총 {members.length}명의 신청자가 있습니다.</p></div>
               <button onClick={handleDownloadExcel} className="px-6 py-3 bg-emerald-600 text-white rounded-2xl text-xs font-black shadow-lg shadow-emerald-50 hover:bg-emerald-700 transition-all"><i className="fas fa-file-excel mr-2"></i> 엑셀로 내려받기</button>
             </div>
-            <div className="overflow-x-auto">
+            
+{/* 모바일 카드형 리스트 (sm 미만) */}
+<div className="sm:hidden p-6 space-y-3">
+  {members.length === 0 ? (
+    <div className="py-16 text-center text-gray-400 font-bold italic">가입 신청 명단이 없습니다.</div>
+  ) : (
+    members.map(m => (
+      <div key={m.id} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="font-black text-gray-900 truncate">{m.name}</div>
+              {m.isApproved ? (
+                <span className="bg-sky-100 text-sky-600 text-[10px] px-2 py-0.5 rounded-full font-black whitespace-nowrap">승인됨</span>
+              ) : (
+                <span className="bg-amber-100 text-amber-700 text-[10px] px-2 py-0.5 rounded-full font-black whitespace-nowrap">미승인</span>
+              )}
+            </div>
+            <div className="mt-2 space-y-1 text-xs text-gray-600">
+              <div className="flex gap-2">
+                <span className="text-gray-400 font-bold w-12 shrink-0">연락처</span>
+                <span className="font-bold whitespace-nowrap break-keep">{String(m.phone ?? "").replace(/\s+/g, "")}</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-gray-400 font-bold w-12 shrink-0">이메일</span>
+                <span className="truncate">{m.email}</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-gray-400 font-bold w-12 shrink-0">차고지</span>
+                <span className="font-bold whitespace-nowrap break-keep">{m.garage}</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-gray-400 font-bold w-12 shrink-0">가입일</span>
+                <span className="font-bold whitespace-nowrap">{formatDate(m.signupDate)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 액션 정리: 더보기(⋯) 메뉴 */}
+          <div className="relative shrink-0">
+            <button
+              onClick={() => setOpenMemberActionId(openMemberActionId === m.id ? null : m.id)}
+              className="w-9 h-9 rounded-xl border border-gray-100 bg-gray-50 text-gray-700 flex items-center justify-center font-black active:scale-95"
+              aria-label="조합원 관리 메뉴"
+            >
+              ⋯
+            </button>
+
+            {openMemberActionId === m.id && (
+              <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-100 rounded-2xl shadow-lg overflow-hidden z-20">
+                {!m.isApproved && (
+                  <button
+                    onClick={() => {
+                      setOpenMemberActionId(null);
+                      if (confirm(`${m.name} 조합원의 가입을 승인하시겠습니까?`)) {
+                        onApproveMember?.(m.id);
+                      }
+                    }}
+                    className="w-full text-left px-4 py-3 text-xs font-black text-sky-600 hover:bg-sky-50 whitespace-nowrap"
+                  >
+                    ✓ 가입승인
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    setOpenMemberActionId(null);
+                    if (confirm(`${m.name} 조합원을 강제 탈퇴시키겠습니까?`)) {
+                      onRemoveMember?.(m.id);
+                    }
+                  }}
+                  className="w-full text-left px-4 py-3 text-xs font-black text-red-500 hover:bg-red-50 whitespace-nowrap"
+                >
+                  ⛔ 강제탈퇴
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    ))
+  )}
+</div>
+<div className="overflow-x-auto hidden sm:block">
               <table className="w-full text-sm text-left">
                 <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest">
                   <tr>
