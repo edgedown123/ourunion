@@ -876,10 +876,14 @@ const handleRequestWithdraw = () => {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn">
           <div className="bg-white rounded-[3rem] p-10 max-w-[360px] w-[90%] shadow-2xl relative">
             <button onClick={() => setShowMemberLogin(false)} className="absolute top-8 right-8 text-gray-300 hover:text-gray-500 transition-colors"><i className="fas fa-times text-xl"></i></button>
-            <div className="text-center mb-10">
-              <div className="w-16 h-16 bg-sky-50 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-sm shadow-sky-100"><i className="fas fa-user-check text-sky-primary text-2xl"></i></div>
-              <h3 className="text-2xl font-black text-gray-900">조합원 로그인</h3>
-              <p className="text-[11px] text-gray-400 font-bold mt-2 tracking-tight">이메일 주소와 비밀번호를 입력하세요</p>
+            <div className="mb-8 flex items-start gap-4">
+              <div className="w-16 h-16 bg-sky-50 rounded-3xl flex items-center justify-center shadow-sm shadow-sky-100 flex-shrink-0 mt-1">
+                <i className="fas fa-user-check text-sky-primary text-2xl"></i>
+              </div>
+              <div className="pt-1">
+                <h3 className="text-2xl font-black text-gray-900 leading-tight">조합원 로그인</h3>
+                <p className="text-[11px] text-gray-400 font-bold mt-2 tracking-tight">이메일 주소와 비밀번호를 입력하세요</p>
+              </div>
             </div>
             <div className="space-y-4">
               <div className="space-y-1">
@@ -890,7 +894,7 @@ const handleRequestWithdraw = () => {
                 <label className="text-[10px] font-black text-gray-400 ml-2 uppercase tracking-widest">Password</label>
                 <input type="password" placeholder="••••••••" className="w-full border-2 border-gray-50 rounded-2xl p-4 text-sm outline-none focus:border-sky-primary transition-colors bg-gray-50/50 font-bold" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleMemberLogin()} />
               </div>
-              <button onClick={handleMemberLogin} className="w-full py-4.5 bg-sky-primary text-white rounded-2xl font-black text-base shadow-xl shadow-sky-100 hover:opacity-95 active:scale-95 transition-all mt-4">로그인</button>
+              <button onClick={handleMemberLogin} className="w-full py-5 bg-sky-primary text-white rounded-2xl font-black text-base shadow-xl shadow-sky-100 hover:opacity-95 active:scale-95 transition-all mt-4">로그인</button>
               <button
                 onClick={handleOpenForgotPassword}
                 className="w-full text-center text-xs text-gray-400 font-bold hover:text-sky-primary mt-3 transition-colors"

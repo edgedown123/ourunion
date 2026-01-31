@@ -254,7 +254,7 @@ const Board: React.FC<BoardProps> = ({
             </span>
           </h3>
           
-          <div className="space-y-3 md:space-y-4 mb-5 md:mb-7 max-h-[45vh] overflow-y-auto md:max-h-none pr-1">
+          <div className="space-y-3 md:space-y-4 mb-5 md:mb-7">
             {selectedPost.comments?.map((comment) => (
               <div key={comment.id} className="border-b border-gray-50 last:border-0 pb-5 md:pb-8 animate-fadeIn">
                 <div className="flex justify-between items-center mb-3">
@@ -334,12 +334,12 @@ const Board: React.FC<BoardProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <>
-                    <p className="text-base text-gray-600 leading-relaxed pl-11 mb-3">{comment.content}</p>
-                    {userRole !== 'guest' && (
-                  <div className="flex justify-end pl-11 mt-1">
-                    <button
-                      type="button"
+                  <p className="text-base text-gray-600 leading-relaxed pl-11 mb-3">{comment.content}</p>
+                )}
+                
+                <div className="pl-11 flex space-x-6">
+                  {userRole !== 'guest' && (
+                    <button 
                       onClick={() => {
                         setReplyingToId(replyingToId === comment.id ? null : comment.id);
                         setReplyContent('');
@@ -348,12 +348,8 @@ const Board: React.FC<BoardProps> = ({
                     >
                       <i className="fas fa-reply fa-rotate-180 mr-1.5"></i> 답글쓰기
                     </button>
-                  </div>
-                )}
-                  </>
-
-                )}
-                
+                  )}
+                </div>
 
                 {replyingToId === comment.id && (
                   <form onSubmit={(e) => handleReplySubmit(e, comment.id)} className="mt-3 ml-11 animate-fadeIn">
