@@ -88,6 +88,7 @@ const App: React.FC = () => {
   const [newPassword, setNewPassword] = useState('');
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
+  const [withdrawEmail, setWithdrawEmail] = useState('');
   const [withdrawPassword, setWithdrawPassword] = useState('');
   const [withdrawLoading, setWithdrawLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -1045,19 +1046,28 @@ const handleRequestWithdraw = () => {
           <div className="bg-white rounded-[3rem] p-10 max-w-[380px] w-[92%] shadow-2xl relative">
             <button onClick={() => setShowWithdraw(false)} className="absolute top-8 right-8 text-gray-300 hover:text-gray-500 transition-colors"><i className="fas fa-times text-xl"></i></button>
 
-            <div className="text-center mb-8">
-              <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
-                <i className="fas fa-user-slash text-red-500 text-3xl"></i>
+            <div className="mb-8 flex items-start gap-4">
+              <div className="w-16 h-16 bg-red-50 rounded-3xl flex items-center justify-center shadow-sm shadow-red-100 flex-shrink-0 mt-1">
+                <i className="fas fa-user-slash text-red-500 text-2xl"></i>
               </div>
-              <h3 className="text-2xl font-black text-gray-900 mb-3">회원 탈퇴</h3>
-              <p className="text-sm text-gray-500 font-medium leading-relaxed">
-                정말 탈퇴하시겠습니까?<br />
-                탈퇴하면 <span className="font-bold">자유게시판·자료실 이용 권한</span>이 종료됩니다.<br />
-                계속 진행하시려면 비밀번호를 입력해 주세요.
-              </p>
+              <div className="pt-1">
+                <h3 className="text-2xl font-black text-gray-900 leading-tight">회원 탈퇴</h3>
+                <p className="text-[11px] text-gray-400 font-bold mt-2 tracking-tight">정말 탈퇴하시겠습니까?</p>
+              </div>
             </div>
 
             <div className="space-y-4">
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 ml-2 uppercase tracking-widest">Email Address</label>
+                <input
+                  type="email"
+                  placeholder="example@email.com"
+                  className="w-full border-2 border-gray-50 rounded-2xl p-4 text-sm outline-none focus:border-red-400 transition-colors bg-gray-50/50 font-bold"
+                  value={withdrawEmail}
+                  onChange={(e) => setWithdrawEmail(e.target.value)}
+                />
+              </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-gray-400 ml-2 uppercase tracking-widest">Password</label>
                 <input
