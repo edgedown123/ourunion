@@ -132,8 +132,17 @@ const renderContentWithInlineImages = (raw: string) => {
       if (!Number.isNaN(idx) && imageAttachments[idx]) {
         used.add(idx);
         nodes.push(
-          <div key={`img-${i}`} className="my-6 rounded-3xl overflow-hidden shadow-xl border border-gray-100 bg-gray-50">
-            <img src={imageAttachments[idx].data} alt={`본문 이미지 ${idx + 1}`} className="w-full h-auto object-contain" />
+          <div
+            key={`img-${i}`}
+            // 모바일에서 이미지가 더 "꽉 차" 보이고, 이미지-텍스트 간격이 과하지 않도록 조정
+            className="my-2 w-full overflow-hidden rounded-2xl border border-gray-100 bg-white"
+          >
+            <img
+              src={imageAttachments[idx].data}
+              alt={`본문 이미지 ${idx + 1}`}
+              className="w-full h-auto object-contain"
+              loading="lazy"
+            />
           </div>
         );
       }
@@ -219,7 +228,7 @@ const renderContentWithInlineImages = (raw: string) => {
             </div>
           </header>
 
-          <div className="prose prose-sky max-w-none text-gray-700 leading-relaxed min-h-[120px] md:min-h-[200px] text-base md:text-lg">
+          <div className="prose prose-sky max-w-none text-gray-700 leading-relaxed min-h-[120px] md:min-h-[200px] text-base md:text-lg prose-p:my-3">
             {renderContentWithInlineImages(selectedPost.content).nodes}
           </div>
 
