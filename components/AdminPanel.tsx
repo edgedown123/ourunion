@@ -540,8 +540,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                       <tr key={p.id} className="hover:bg-red-50/20">
                         <td className="px-8 py-4 font-bold text-gray-500 truncate max-sm">{p.title}</td>
                         <td className="px-8 py-4 text-right space-x-4">
-                          <button onClick={() => onRestorePost(p.id)} className="text-sky-500 font-black text-xs hover:underline">복구</button>
-                          <button onClick={() => onPermanentDelete(p.id)} className="text-red-400 font-black text-xs hover:underline">영구삭제</button>
+                          <div className="flex items-center gap-6 whitespace-nowrap">
+                      <button onClick={() => onRestorePost(p.id)} className="text-sky-500 font-black text-xs hover:underline whitespace-nowrap">복구</button> <button onClick={() => onPermanentDelete(p.id)} className="text-red-400 font-black text-xs hover:underline whitespace-nowrap">영구삭제</button>
+                    </div>
                         </td>
                       </tr>
                     ))}
