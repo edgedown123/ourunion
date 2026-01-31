@@ -371,10 +371,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                       <tr key={p.id} className="hover:bg-gray-50/50">
                         <td className="px-8 py-4"><span className="text-[10px] bg-sky-50 text-sky-600 px-2 py-1 rounded font-black">{p.type}</span></td>
                         <td className="px-8 py-4 font-bold text-gray-700 truncate max-w-xs">{p.title}</td>
-                        <td className="px-8 py-4 text-gray-400">{p.author}</td>
-                        <td className="px-8 py-4 space-x-4">
-                          <button onClick={() => onViewPost(p.id, p.type)} className="text-sky-500 hover:underline font-bold text-xs">보기</button>
-                          <button onClick={() => onEditPost(p)} className="text-gray-500 hover:text-gray-900 font-bold text-xs">수정</button>
+                        <td className="px-8 py-4 text-gray-400 whitespace-nowrap break-keep">{p.author}</td>
+                        <td className="px-8 py-4">
+                          <div className="flex flex-col gap-1 sm:flex-row sm:gap-0 sm:space-x-4">
+                            <button onClick={() => onViewPost(p.id, p.type)} className="text-sky-500 hover:underline font-bold text-xs whitespace-nowrap">보기</button>
+                            <button onClick={() => onEditPost(p)} className="text-gray-500 hover:text-gray-900 font-bold text-xs whitespace-nowrap">수정</button>
+                          </div>
                         </td>
                       </tr>
                     ))}
