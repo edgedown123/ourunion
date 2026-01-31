@@ -11,6 +11,7 @@ interface PostEditorProps {
 const PostEditor: React.FC<PostEditorProps> = ({ type, initialPost, onSave, onCancel }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const contentRef = useRef<HTMLTextAreaElement | null>(null);
   const [postPassword, setPostPassword] = useState('');
   const [attachments, setAttachments] = useState<PostAttachment[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
