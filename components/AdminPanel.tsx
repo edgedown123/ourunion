@@ -208,7 +208,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           <div className="bg-white rounded-[2.5rem] border shadow-sm overflow-hidden animate-fadeIn">
             <div className="p-8 border-b flex justify-between items-center bg-gray-50/30">
               <div><h3 className="text-xl font-black text-gray-900">가입 신청 명단</h3><p className="text-xs text-gray-400 mt-1 font-bold">현재 총 {members.length}명의 신청자가 있습니다.</p></div>
-              <button onClick={handleDownloadExcel} className="px-6 py-3 bg-emerald-600 text-white rounded-2xl text-xs font-black shadow-lg shadow-emerald-50 hover:bg-emerald-700 transition-all"><i className="fas fa-file-excel mr-2"></i> 엑셀로 내려받기</button>
+              <button onClick={handleDownloadExcel} className="px-4 py-2 sm:px-6 sm:py-3 bg-emerald-600 text-white rounded-2xl text-xs font-black shadow-lg shadow-emerald-50 hover:bg-emerald-700 transition-all"><i className="fas fa-file-excel mr-2"></i> 엑셀로 내려받기</button>
             </div>
             
 {/* 모바일 카드형 리스트 (sm 미만) */}
