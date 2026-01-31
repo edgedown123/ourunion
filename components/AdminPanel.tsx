@@ -50,8 +50,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     const yyyy = date.getFullYear();
     const mm = String(date.getMonth() + 1).padStart(2, '0');
     const dd = String(date.getDate()).padStart(2, '0');
+    const hh = String(date.getHours()).padStart(2, '0');
+    const min = String(date.getMinutes()).padStart(2, '0');
 
-    return `${yyyy}.${mm}.${dd}`;
+    return `${yyyy}.${mm}.${dd} ${hh}:${min}`;
   };
 
   const handleSettingsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -172,7 +174,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 animate-fadeIn">
       <div className="flex justify-between items-center mb-8 bg-white p-6 rounded-3xl border shadow-sm">
-        <div className="flex items-center flex-nowrap whitespace-nowrap">
+        <div className="flex items-center">
           <div className="w-14 h-14 bg-sky-primary text-white rounded-2xl flex items-center justify-center mr-5 shadow-lg shadow-sky-100">
             <i className="fas fa-shield-alt text-2xl"></i>
           </div>
@@ -213,12 +215,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
               <table className="w-full text-sm text-left">
                 <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest">
                   <tr>
-                    <th className="px-8 py-5 whitespace-nowrap">성함</th>
+                    <th className="px-8 py-5">성함</th>
                     <th className="px-8 py-5">연락처</th>
                     <th className="px-8 py-5">이메일</th>
-                    <th className="px-8 py-5 whitespace-nowrap">차고지</th>
+                    <th className="px-8 py-5">차고지</th>
                     <th className="px-8 py-5">가입일</th>
-                    <th className="px-8 py-5 whitespace-nowrap">관리</th>
+                    <th className="px-8 py-5">관리</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
@@ -227,19 +229,19 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                   ) : members.map(m => (
                     <tr key={m.id} className="hover:bg-gray-50/50 transition-colors">
                       <td className="px-8 py-5 font-black text-gray-900">
-                        <div className="flex items-center flex-nowrap whitespace-nowrap">
+                        <div className="flex items-center">
                           {m.name}
                           {m.isApproved && (
-                            <span className="ml-2 bg-sky-100 text-sky-600 text-[8px] px-1.5 py-0.5 rounded-full font-black whitespace-nowrap">승인됨</span>
+                            <span className="ml-2 bg-sky-100 text-sky-600 text-[8px] px-1.5 py-0.5 rounded-full font-black">승인됨</span>
                           )}
                         </div>
                       </td>
-                      <td className="px-8 py-5 text-gray-600 whitespace-nowrap"><span className="inline-block whitespace-nowrap break-keep">{String(m.phone ?? "").replace(/\s+/g, "")}</span></td>
+                      <td className="px-8 py-5 text-gray-600">{m.phone}</td>
                       <td className="px-8 py-5 text-gray-600 font-medium">{m.email}</td>
-                      <td className="px-8 py-5 text-gray-600 font-bold whitespace-nowrap">{m.garage}</td>
+                      <td className="px-8 py-5 text-gray-600 font-bold">{m.garage}</td>
                       <td className="px-8 py-5 text-gray-400 text-xs font-medium">{formatDate(m.signupDate)}</td>
                       <td className="px-8 py-5">
-                        <div className="flex flex-col gap-2 sm:flex-row sm:gap-0 sm:space-x-2">
+                        <div className="flex space-x-2">
                           {!m.isApproved && (
                             <button 
                               onClick={() => {
@@ -247,7 +249,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                                   onApproveMember?.(m.id);
                                 }
                               }}
-                              className="px-4 py-2 bg-sky-50 text-sky-600 rounded-xl text-[10px] font-black hover:bg-sky-primary hover:text-white transition-all border border-sky-100 shadow-sm active:scale-95 flex items-center whitespace-nowrap"
+                              className="px-4 py-2 bg-sky-50 text-sky-600 rounded-xl text-[10px] font-black hover:bg-sky-primary hover:text-white transition-all border border-sky-100 shadow-sm active:scale-95 flex items-center"
                             >
                               <i className="fas fa-check mr-1.5"></i> 가입승인
                             </button>
@@ -258,7 +260,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                                 onRemoveMember?.(m.id);
                               }
                             }}
-                            className="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-[10px] font-black hover:bg-red-500 hover:text-white transition-all border border-red-100 shadow-sm active:scale-95 flex items-center whitespace-nowrap"
+                            className="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-[10px] font-black hover:bg-red-500 hover:text-white transition-all border border-red-100 shadow-sm active:scale-95 flex items-center"
                           >
                             <i className="fas fa-user-minus mr-1.5"></i> 강제탈퇴
                           </button>
@@ -275,7 +277,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         {adminTab === 'intro' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fadeIn">
             <div className="bg-white p-8 rounded-[2.5rem] border shadow-sm space-y-8">
-              <h3 className="font-black text-gray-900 text-lg flex items-center whitespace-nowrap"><i className="fas fa-comment-dots mr-3 text-sky-primary"></i> 인사말 편집</h3>
+              <h3 className="font-black text-gray-900 text-lg flex items-center"><i className="fas fa-comment-dots mr-3 text-sky-primary"></i> 인사말 편집</h3>
               <div className="space-y-4">
                 <div className="aspect-video bg-gray-100 rounded-2xl overflow-hidden border relative group">
                   <img src={settings.greetingImageUrl} className="w-full h-full object-cover" />
@@ -287,14 +289,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
             </div>
             <div className="bg-white p-8 rounded-[2.5rem] border shadow-sm space-y-8">
-              <h3 className="font-black text-gray-900 text-lg flex items-center whitespace-nowrap"><i className="fas fa-history mr-3 text-sky-primary"></i> 연혁 데이터 관리</h3>
+              <h3 className="font-black text-gray-900 text-lg flex items-center"><i className="fas fa-history mr-3 text-sky-primary"></i> 연혁 데이터 관리</h3>
               <div className="bg-sky-50/50 p-6 rounded-2xl border border-sky-100 space-y-4">
                 <div className="grid grid-cols-3 gap-2">
                   <input type="text" placeholder="연(2025)" value={newYear} onChange={e => setNewYear(e.target.value)} className="border rounded-lg p-3 text-sm outline-none focus:border-sky-primary" />
                   <input type="text" placeholder="월(01)" value={newMonth} onChange={e => setNewMonth(e.target.value)} className="border rounded-lg p-3 text-sm outline-none focus:border-sky-primary" />
                   <input type="text" placeholder="일(01)" value={newDay} onChange={e => setNewDay(e.target.value)} className="border rounded-lg p-3 text-sm outline-none focus:border-sky-primary" />
                 </div>
-                <div className="flex flex-col gap-2 sm:flex-row sm:gap-0 sm:space-x-2">
+                <div className="flex space-x-2">
                   <input type="text" placeholder="연혁 내용을 입력하세요" value={newText} onChange={e => setNewText(e.target.value)} className="flex-1 border rounded-lg p-3 text-sm outline-none focus:border-sky-primary" />
                   <button onClick={handleAddHistory} className="px-6 py-3 bg-sky-primary text-white rounded-lg font-black text-sm whitespace-nowrap shadow-md">추가</button>
                 </div>
@@ -316,7 +318,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
         {adminTab === 'offices' && (
           <div className="bg-white p-8 rounded-[2.5rem] border shadow-sm animate-fadeIn">
-            <h3 className="font-black text-gray-900 text-lg mb-8 flex items-center whitespace-nowrap"><i className="fas fa-map-marked-alt mr-3 text-sky-primary"></i> 찾아오시는 길 관리</h3>
+            <h3 className="font-black text-gray-900 text-lg mb-8 flex items-center"><i className="fas fa-map-marked-alt mr-3 text-sky-primary"></i> 찾아오시는 길 관리</h3>
             <div className="flex space-x-2 mb-8 border-b pb-4 overflow-x-auto scrollbar-hide no-scrollbar">
               {settings.offices.map(off => (
                 <button key={off.id} onClick={() => setActiveOfficeId(off.id)} className={`px-6 py-2 rounded-full text-xs font-black transition-all whitespace-nowrap ${activeOfficeId === off.id ? 'bg-sky-primary text-white shadow-md' : 'bg-gray-100 text-gray-400'}`}>{off.name}</button>
@@ -371,11 +373,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                       <tr key={p.id} className="hover:bg-gray-50/50">
                         <td className="px-8 py-4"><span className="text-[10px] bg-sky-50 text-sky-600 px-2 py-1 rounded font-black">{p.type}</span></td>
                         <td className="px-8 py-4 font-bold text-gray-700 truncate max-w-xs">{p.title}</td>
-                        <td className="px-8 py-4 text-gray-400">{p.author}</td>
-                        <td className="px-8 py-4 space-x-4">
-                          <button onClick={() => onViewPost(p.id, p.type)} className="text-sky-500 hover:underline font-bold text-xs">보기</button>
-                          <button onClick={() => onEditPost(p)} className="text-gray-500 hover:text-gray-900 font-bold text-xs">수정</button>
-                        </td>
+                        <td className="px-8 py-4 text-gray-400 whitespace-nowrap break-keep">{p.author}</td>
+                        <td className="px-8 py-4">
+  <div className="flex flex-col gap-1 sm:flex-row sm:gap-0 sm:space-x-4">
+    <button onClick={() => onViewPost(p.id, p.type)} className="text-sky-500 hover:underline font-bold text-xs whitespace-nowrap">보기</button>
+    <button onClick={() => onEditPost(p)} className="text-gray-500 hover:text-gray-900 font-bold text-xs whitespace-nowrap">수정</button>
+  </div>
+</td>
                       </tr>
                     ))}
                   </tbody>
@@ -384,7 +388,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
             <div className="bg-white rounded-[2.5rem] border border-red-100 shadow-sm overflow-hidden">
               <div className="p-8 border-b bg-red-50/30 flex justify-between items-center">
-                <h3 className="font-black text-red-900 flex items-center whitespace-nowrap"><i className="fas fa-trash-alt mr-3"></i> 휴지통</h3>
+                <h3 className="font-black text-red-900 flex items-center"><i className="fas fa-trash-alt mr-3"></i> 휴지통</h3>
                 <span className="text-xs text-red-400 font-bold">{deletedPosts.length}개의 삭제된 글</span>
               </div>
               <div className="max-h-64 overflow-y-auto custom-scrollbar">
@@ -412,7 +416,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           <div className="space-y-8 animate-fadeIn">
             <div className="bg-white p-10 rounded-[2.5rem] border shadow-sm space-y-12">
               <div>
-                <h3 className="font-black text-gray-900 text-lg mb-8 flex items-center whitespace-nowrap"><i className="fas fa-palette mr-3 text-sky-primary"></i> 메인 슬라이드 관리 (최대 5장)</h3>
+                <h3 className="font-black text-gray-900 text-lg mb-8 flex items-center"><i className="fas fa-palette mr-3 text-sky-primary"></i> 메인 슬라이드 관리 (최대 5장)</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-12">
                   {[0, 1, 2, 3, 4].map((idx) => (
                     <div key={idx} className="space-y-3">
@@ -452,7 +456,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             <div className="bg-gray-900 rounded-[2.5rem] p-10 text-white shadow-2xl space-y-8">
               <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                 <div>
-                  <h3 className="text-xl font-black mb-2 flex items-center whitespace-nowrap"><i className="fas fa-sync-alt mr-3 text-sky-400"></i> 데이터 백업 및 관리</h3>
+                  <h3 className="text-xl font-black mb-2 flex items-center"><i className="fas fa-sync-alt mr-3 text-sky-400"></i> 데이터 백업 및 관리</h3>
                   <p className="text-sm text-gray-400 font-bold leading-relaxed">다른 기기로 데이터를 옮기기 위해 백업 파일을 활용하세요.</p>
                 </div>
               </div>
