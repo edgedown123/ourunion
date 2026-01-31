@@ -222,9 +222,6 @@ const Board: React.FC<BoardProps> = ({
                   >
                     {/* 파일명 (모바일: 2줄까지 최대한 보여주기 / 데스크톱: 한 줄 말줄임) */}
                     <div className="flex items-start sm:items-center sm:min-w-0">
-                      <i
-                        className={`fas ${file.type.startsWith('image/') ? 'fa-file-image' : 'fa-file-alt'} text-gray-300 mr-4 text-xl mt-0.5 sm:mt-0`}
-                      ></i>
                       <span className="text-sm font-bold text-gray-700 whitespace-normal break-words leading-snug sm:truncate">
                         {file.name}
                       </span>
