@@ -444,6 +444,7 @@ const Board: React.FC<BoardProps> = ({
                             >
                               취소
                             </button>
+                          </div>
                         </div>
                       ) : (
                         <p className="text-sm text-gray-500 leading-relaxed pl-7">{reply.content}</p>
