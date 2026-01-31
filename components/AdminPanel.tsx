@@ -50,10 +50,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     const yyyy = date.getFullYear();
     const mm = String(date.getMonth() + 1).padStart(2, '0');
     const dd = String(date.getDate()).padStart(2, '0');
-    const hh = String(date.getHours()).padStart(2, '0');
-    const min = String(date.getMinutes()).padStart(2, '0');
 
-    return `${yyyy}.${mm}.${dd} ${hh}:${min}`;
+    return `${yyyy}.${mm}.${dd}`;
   };
 
   const handleSettingsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -236,9 +234,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                           )}
                         </div>
                       </td>
-                      <td className="px-8 py-5 text-gray-600 whitespace-nowrap">
-  <span className="inline-block whitespace-nowrap break-keep">{String(m.phone ?? "").replace(/\s+/g, "")}</span>
-</td>
+                      <td className="px-8 py-5 text-gray-600 whitespace-nowrap"><span className="inline-block whitespace-nowrap break-keep">{String(m.phone ?? "").replace(/\s+/g, "")}</span></td>
                       <td className="px-8 py-5 text-gray-600 font-medium">{m.email}</td>
                       <td className="px-8 py-5 text-gray-600 font-bold whitespace-nowrap">{m.garage}</td>
                       <td className="px-8 py-5 text-gray-400 text-xs font-medium">{formatDate(m.signupDate)}</td>
