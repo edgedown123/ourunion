@@ -264,9 +264,7 @@ const Board: React.FC<BoardProps> = ({
                     </div>
                     {comment.author}
                   </span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-bold text-gray-300 uppercase">{formatDate(comment.createdAt)}</span>
-                    {canManageComment(comment.author) && (
+                  {canManageComment(comment.author) && (
                       <div className="relative">
                         <button
                           type="button"
@@ -303,7 +301,6 @@ const Board: React.FC<BoardProps> = ({
                         )}
                       </div>
                     )}
-                  </div>
                 </div>
                 {editingTarget?.commentId === comment.id && !editingTarget.parentId ? (
                   <div className="pl-11 mb-3">
@@ -337,9 +334,10 @@ const Board: React.FC<BoardProps> = ({
                   <p className="text-base text-gray-600 leading-relaxed pl-11 mb-3">{comment.content}</p>
                 )}
                 
-                <div className="pl-11 flex space-x-6">
+                <div className="pl-11 flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-gray-300 uppercase">{formatDate(comment.createdAt)}</span>
                   {userRole !== 'guest' && (
-                    <button 
+                    <button
                       onClick={() => {
                         setReplyingToId(replyingToId === comment.id ? null : comment.id);
                         setReplyContent('');
@@ -381,8 +379,6 @@ const Board: React.FC<BoardProps> = ({
                             <i className="fas fa-reply fa-rotate-180 mr-3 text-gray-300 text-xs"></i>
                             {reply.author}
                           </span>
-                          <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold text-gray-300 uppercase">{formatDate(reply.createdAt)}</span>
                           {canManageComment(reply.author) && (
                             <div className="relative">
                               <button
@@ -448,11 +444,13 @@ const Board: React.FC<BoardProps> = ({
                             >
                               취소
                             </button>
-                          </div>
                         </div>
                       ) : (
                         <p className="text-sm text-gray-500 leading-relaxed pl-7">{reply.content}</p>
                       )}
+                      </div>
+                      <div className="pl-7 flex justify-end mt-1">
+                        <span className="text-[10px] font-bold text-gray-300 uppercase">{formatDate(reply.createdAt)}</span>
                       </div>
                     ))}
                   </div>
