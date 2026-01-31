@@ -206,9 +206,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
       <div className="space-y-6">
         {adminTab === 'members' && (
           <div className="bg-white rounded-[2.5rem] border shadow-sm overflow-hidden animate-fadeIn">
-            <div className="p-8 border-b flex justify-between items-center bg-gray-50/30">
+            <div className="p-8 border-b flex justify-between items-center bg-gray-50/30 relative">
               <div><h3 className="text-xl font-black text-gray-900">가입 신청 명단</h3><p className="text-xs text-gray-400 mt-1 font-bold">현재 총 {members.length}명의 신청자가 있습니다.</p></div>
-              <button onClick={handleDownloadExcel} className="px-3 py-1.5 sm:px-6 sm:py-3 bg-emerald-600 text-white rounded-2xl font-black shadow-lg shadow-emerald-50 hover:bg-emerald-700 transition-all text-[11px] sm:text-xs"><i className="fas fa-file-excel mr-2"></i> 엑셀로 내려받기</button>
+              <button onClick={handleDownloadExcel} className="absolute right-6 bottom-4 px-3 py-1.5 sm:px-6 sm:py-3 bg-emerald-600 text-white rounded-2xl font-black shadow-lg shadow-emerald-50 hover:bg-emerald-700 transition-all text-[11px] sm:text-xs whitespace-nowrap sm:static sm:right-auto sm:bottom-auto sm:ml-4">내려받기</button>
             </div>
             
 {/* 모바일 카드형 리스트 (sm 미만) */}
