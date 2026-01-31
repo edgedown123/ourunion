@@ -448,9 +448,9 @@ const Board: React.FC<BoardProps> = ({
                       ) : (
                         <p className="text-sm text-gray-500 leading-relaxed pl-7">{reply.content}</p>
                       )}
-                      </div>
                       <div className="pl-7 flex justify-end mt-1">
                         <span className="text-[10px] font-bold text-gray-300 uppercase">{formatDate(reply.createdAt)}</span>
+                      </div>
                       </div>
                     ))}
                   </div>
