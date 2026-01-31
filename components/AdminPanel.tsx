@@ -35,6 +35,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   
   const [adminTab, setAdminTab] = useState<'members' | 'intro' | 'offices' | 'posts' | 'settings'>('members');
   const [openMemberActionId, setOpenMemberActionId] = useState<string | null>(null);
+  const [openPostActionId, setOpenPostActionId] = useState<string | null>(null);
   const [activeOfficeId, setActiveOfficeId] = useState<string | null>(settings.offices[0]?.id || null);
 
   const [newYear, setNewYear] = useState('');
@@ -442,7 +443,65 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 <h3 className="font-black text-gray-900">게시글 관리</h3>
                 <span className="text-xs text-gray-400 font-bold">총 {posts.length}개</span>
               </div>
-              <div className="max-h-96 overflow-y-auto custom-scrollbar">
+              
+{/* 모바일 카드형 리스트 (게시글 관리) */}
+<div className="sm:hidden p-6 space-y-3">
+  {posts.length === 0 ? (
+    <div className="py-16 text-center text-gray-400 font-bold italic">게시글이 없습니다.</div>
+  ) : (
+    posts.map(p => (
+      <div key={p.id} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] bg-sky-50 text-sky-600 px-2 py-1 rounded font-black whitespace-nowrap">{p.type}</span>
+              <div className="font-black text-gray-900 truncate max-w-[220px]">{p.title}</div>
+            </div>
+            <div className="mt-2 text-xs text-gray-600 flex gap-2">
+              <span className="text-gray-400 font-bold shrink-0">작성자</span>
+              <span className="font-bold whitespace-nowrap break-keep">{p.author}</span>
+            </div>
+          </div>
+
+          {/* 액션 정리: 더보기(⋯) 메뉴 */}
+          <div className="relative shrink-0">
+            <button
+              onClick={() => setOpenPostActionId(openPostActionId === p.id ? null : p.id)}
+              className="w-9 h-9 rounded-xl border border-gray-100 bg-gray-50 text-gray-700 flex items-center justify-center font-black active:scale-95"
+              aria-label="게시글 관리 메뉴"
+            >
+              ⋯
+            </button>
+
+            {openPostActionId === p.id && (
+              <div className="absolute right-0 mt-2 w-36 bg-white border border-gray-100 rounded-2xl shadow-lg overflow-hidden z-20">
+                <button
+                  onClick={() => {
+                    setOpenPostActionId(null);
+                    onViewPost(p.id, p.type);
+                  }}
+                  className="w-full text-left px-4 py-3 text-xs font-black text-sky-600 hover:bg-sky-50 whitespace-nowrap"
+                >
+                  보기
+                </button>
+                <button
+                  onClick={() => {
+                    setOpenPostActionId(null);
+                    onEditPost(p);
+                  }}
+                  className="w-full text-left px-4 py-3 text-xs font-black text-gray-700 hover:bg-gray-50 whitespace-nowrap"
+                >
+                  수정
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    ))
+  )}
+</div>
+<div className="max-h-96 overflow-y-auto custom-scrollbar hidden sm:block">
                 <table className="w-full text-sm text-left">
                   <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase">
                     <tr><th className="px-8 py-4">구분</th><th className="px-8 py-4">제목</th><th className="px-8 py-4">작성자</th><th className="px-8 py-4">관리</th></tr>
