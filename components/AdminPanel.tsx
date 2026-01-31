@@ -236,7 +236,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                           )}
                         </div>
                       </td>
-                      <td className="px-8 py-5 text-gray-600">{m.phone}</td>
+                      <td className="px-8 py-5 text-gray-600 whitespace-nowrap">
+  <span className="inline-block whitespace-nowrap break-keep">{String(m.phone ?? "").replace(/\s+/g, "")}</span>
+</td>
                       <td className="px-8 py-5 text-gray-600 font-medium">{m.email}</td>
                       <td className="px-8 py-5 text-gray-600 font-bold whitespace-nowrap">{m.garage}</td>
                       <td className="px-8 py-5 text-gray-400 text-xs font-medium">{formatDate(m.signupDate)}</td>
