@@ -71,8 +71,11 @@ const PostEditor: React.FC<PostEditorProps> = ({ type, initialPost, onSave, onCa
             : -1;
           const next = [...prev, { name: file.name, data: fileData, type: file.type }];
           if (imageIndex >= 0) {
+          // 글쓰기 textarea가 마운트된 경우에만 커서 위치에 토큰 삽입
+          if (contentRef.current) {
             insertImageTokenAtCursor(`[[img:${imageIndex}]]`);
           }
+        }
           return next;
         });
 };
@@ -92,7 +95,14 @@ const PostEditor: React.FC<PostEditorProps> = ({ type, initialPost, onSave, onCa
 
 const insertImageTokenAtCursor = (token: string) => {
   const ta = contentRef.current;
-  setContent(prev => {
+    if (!ta) {
+      setContent(prev => (prev ? `${prev}
+${token}
+` : `${token}
+`));
+      return;
+    }
+    setContent(prev => {
     if (!ta) return prev ? `${prev}\n${token}\n` : `${token}\n`;
     const start = ta.selectionStart ?? prev.length;
     const end = ta.selectionEnd ?? prev.length;
