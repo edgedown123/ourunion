@@ -1,0 +1,145 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>관리자 커맨더 센터 - 첨부파일 사용량</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', Arial, sans-serif; background:#0f172a; color:#e5e7eb; margin:0; padding:24px; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    h1 { font-size: 22px; margin-bottom: 8px; }
+    .subtitle { color:#94a3b8; margin-bottom: 20px; }
+    .card { background:#020617; border:1px solid #1f2937; border-radius:14px; padding:16px; margin-bottom:16px; }
+    .grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; }
+    .stat { padding:14px; border-radius:12px; background:#020617; border:1px solid #1f2937; }
+    .stat .label { color:#94a3b8; font-size:12px; }
+    .stat .value { font-size:20px; margin-top:6px; }
+    .progress { height:10px; background:#020617; border-radius:999px; border:1px solid #1f2937; overflow:hidden; }
+    .progress > div { height:100%; background:#22c55e; width:0%; transition:width .4s ease; }
+    table { width:100%; border-collapse:collapse; }
+    th, td { text-align:left; padding:10px; border-bottom:1px solid #1f2937; }
+    th { color:#cbd5f5; font-weight:600; }
+    td { color:#e5e7eb; }
+    .muted { color:#94a3b8; }
+    .btn { background:#2563eb; color:white; border:none; padding:10px 14px; border-radius:10px; cursor:pointer; }
+    .btn.secondary { background:#020617; border:1px solid #1f2937; color:#e5e7eb; }
+    .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .footer { color:#64748b; font-size:12px; margin-top:12px; }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>첨부파일 사용량 대시보드</h1>
+    <div class="subtitle">관리자 커맨더 센터용 · 전체/조합원별 첨부파일 용량 모니터링</div>
+
+    <div class="card">
+      <div class="grid">
+        <div class="stat">
+          <div class="label">전체 사용량</div>
+          <div class="value" id="totalUsed">—</div>
+        </div>
+        <div class="stat">
+          <div class="label">전체 한도</div>
+          <div class="value" id="totalQuota">—</div>
+        </div>
+        <div class="stat">
+          <div class="label">사용률</div>
+          <div class="value"><span id="usagePct">—</span></div>
+        </div>
+      </div>
+      <div style="margin-top:12px" class="progress"><div id="bar"></div></div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between; margin-bottom:8px">
+        <strong>조합원/부서별 사용량</strong>
+        <div class="row">
+          <button class="btn secondary" onclick="loadMock()">목업 데이터</button>
+          <button class="btn" onclick="exportCSV()">CSV 내보내기</button>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>구분</th>
+            <th>파일 수</th>
+            <th>사용량</th>
+            <th>비율</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <strong>연동 가이드</strong>
+      <p class="muted">
+        실제 운영 시에는 서버 API에서 <code>/admin/attachments/usage</code> 같은 엔드포인트로
+        JSON(<code>{ totalUsedBytes, totalQuotaBytes, rows[] }</code>)를 받아
+        <code>render(data)</code> 함수에 전달하면 됩니다.
+      </p>
+      <pre class="muted">
+예시 rows:
+[{ name: "조합원 A", files: 12, bytes: 34567890 }]
+      </pre>
+    </div>
+
+    <div class="footer">ⓘ 이 파일은 단독 HTML로 배포 가능하며, 내부 관리자 페이지에 iframe으로도 삽입할 수 있습니다.</div>
+  </div>
+
+<script>
+  function fmt(bytes) {
+    const units = ['B','KB','MB','GB','TB'];
+    let i = 0;
+    while (bytes >= 1024 && i < units.length-1) { bytes/=1024; i++; }
+    return bytes.toFixed(2) + ' ' + units[i];
+  }
+
+  function render(data) {
+    document.getElementById('totalUsed').innerText = fmt(data.totalUsedBytes);
+    document.getElementById('totalQuota').innerText = fmt(data.totalQuotaBytes);
+    const pct = Math.min(100, Math.round(data.totalUsedBytes / data.totalQuotaBytes * 100));
+    document.getElementById('usagePct').innerText = pct + '%';
+    document.getElementById('bar').style.width = pct + '%';
+    document.getElementById('bar').style.background = pct > 85 ? '#ef4444' : (pct > 65 ? '#f59e0b' : '#22c55e');
+
+    const tbody = document.getElementById('tbody');
+    tbody.innerHTML = '';
+    data.rows.forEach(r => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${r.name}</td><td>${r.files}</td><td>${fmt(r.bytes)}</td><td>${Math.round(r.bytes/data.totalUsedBytes*100)}%</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function loadMock() {
+    render({
+      totalUsedBytes: 12_345_678_901,
+      totalQuotaBytes: 50_000_000_000,
+      rows: [
+        { name: '조합원 A', files: 18, bytes: 3_456_789_012 },
+        { name: '조합원 B', files: 9, bytes: 1_234_567_890 },
+        { name: '공지/자료실', files: 42, bytes: 7_654_321_999 }
+      ]
+    });
+  }
+
+  function exportCSV() {
+    let csv = '구분,파일 수,사용량(바이트)\n';
+    document.querySelectorAll('#tbody tr').forEach(tr => {
+      const tds = tr.querySelectorAll('td');
+      csv += `${tds[0].innerText},${tds[1].innerText},${tds[2].innerText}\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'attachment_usage.csv'; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  loadMock();
+</script>
+</body>
+</html>
