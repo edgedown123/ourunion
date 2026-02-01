@@ -307,16 +307,107 @@ export const saveSettingsToCloud = async (settings: SiteSettings) => {
 // 이미지 업로드 (Supabase Storage: site-assets)
 // settings에는 base64 대신 URL을 저장하세요.
 // --------------------------------------
+
+type ResizeOptions = {
+  maxWidth: number;
+  maxHeight: number;
+  jpegQuality: number; // 0~1
+};
+
+const DEFAULT_RESIZE_OPTIONS: ResizeOptions = {
+  maxWidth: 1280,
+  maxHeight: 1280,
+  jpegQuality: 0.82,
+};
+
+/**
+ * 업로드 전에 이미지 파일을 클라이언트에서 리사이즈/압축합니다.
+ * - 사진(대부분 JPEG)은 JPEG로 저장(quality 적용)
+ * - PNG는 PNG 유지(투명도 보존)
+ * - 파일이 이미지가 아니거나, 이미 충분히 작으면 원본 반환
+ */
+const resizeImageBeforeUpload = async (
+  file: File,
+  options: Partial<ResizeOptions> = {}
+): Promise<File> => {
+  if (!file.type.startsWith('image/')) return file;
+
+  const { maxWidth, maxHeight, jpegQuality } = { ...DEFAULT_RESIZE_OPTIONS, ...options };
+
+  // 이미지 로드
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error('Failed to read image file'));
+    reader.readAsDataURL(file);
+  });
+
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('Failed to load image'));
+    image.src = dataUrl;
+  });
+
+  const srcW = img.naturalWidth || img.width;
+  const srcH = img.naturalHeight || img.height;
+  if (!srcW || !srcH) return file;
+
+  // 이미 충분히 작으면 원본 사용
+  if (srcW <= maxWidth && srcH <= maxHeight) return file;
+
+  const ratio = Math.min(maxWidth / srcW, maxHeight / srcH);
+  const dstW = Math.max(1, Math.round(srcW * ratio));
+  const dstH = Math.max(1, Math.round(srcH * ratio));
+
+  const canvas = document.createElement('canvas');
+  canvas.width = dstW;
+  canvas.height = dstH;
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return file;
+
+  // 고품질 스케일링
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, 0, 0, dstW, dstH);
+
+  const keepPng = file.type === 'image/png';
+  const outType = keepPng ? 'image/png' : 'image/jpeg';
+
+  const blob = await new Promise<Blob | null>((resolve) => {
+    canvas.toBlob(
+      (b) => resolve(b),
+      outType,
+      keepPng ? undefined : jpegQuality
+    );
+  });
+
+  if (!blob) return file;
+
+  const baseName = file.name.replace(/\.[^/.]+$/, '');
+  const ext = outType === 'image/png' ? 'png' : 'jpg';
+  const newName = `${baseName}.${ext}`;
+
+  return new File([blob], newName, {
+    type: outType,
+    lastModified: Date.now(),
+  });
+};
+
 export const uploadSiteImage = async (file: File, pathPrefix: string): Promise<string> => {
   if (!supabase) throw new Error('Supabase is not enabled');
 
-  const ext = file.name.split('.').pop() || 'png';
+  // ✅ 추천 1순위: 업로드 전에 클라이언트에서 리사이즈/압축
+  const processedFile = await resizeImageBeforeUpload(file);
+
+  const ext = processedFile.name.split('.').pop() || 'png';
   const safeName = `${Date.now()}_${Math.random().toString(16).slice(2)}.${ext}`;
   const path = `${pathPrefix}/${safeName}`;
 
   const { error: uploadError } = await supabase.storage
     .from('site-assets')
-    .upload(path, file, { upsert: true, contentType: file.type });
+    .upload(path, processedFile, { upsert: true, contentType: processedFile.type });
 
   if (uploadError) throw uploadError;
 
