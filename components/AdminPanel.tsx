@@ -1,5 +1,5 @@
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import { SiteSettings, Member, Post, BoardType } from '../types';
 
 interface AdminPanelProps {
@@ -33,7 +33,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const officeMapInputRef = useRef<HTMLInputElement>(null);
   const importFileInputRef = useRef<HTMLInputElement>(null);
   
-  const [adminTab, setAdminTab] = useState<'members' | 'intro' | 'offices' | 'posts' | 'settings'>('members');
+  const [adminTab, setAdminTab] = useState<'members' | 'intro' | 'offices' | 'posts' | 'storage' | 'settings'>('members');
   const [openMemberActionId, setOpenMemberActionId] = useState<string | null>(null);
   const [openPostActionId, setOpenPostActionId] = useState<string | null>(null);
   const [activeOfficeId, setActiveOfficeId] = useState<string | null>(settings.offices[0]?.id || null);
@@ -55,6 +55,126 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
     return `${yyyy}.${mm}.${dd}`;
   };
+
+
+  // -----------------------------
+  // 첨부파일(게시글 attachments) 사용량 계산
+  // - attachments.data 는 dataURL(base64) 형태로 저장됩니다.
+  // - base64를 실제로 디코딩하지 않고 길이로 대략 바이트를 계산합니다.
+  // -----------------------------
+  const dataUrlToBytes = (dataUrl: string): number => {
+    if (!dataUrl) return 0;
+    const commaIdx = dataUrl.indexOf(',');
+    const base64 = commaIdx >= 0 ? dataUrl.slice(commaIdx + 1) : dataUrl;
+    let padding = 0;
+    if (base64.endsWith('==')) padding = 2;
+    else if (base64.endsWith('=')) padding = 1;
+    return Math.max(0, Math.floor((base64.length * 3) / 4) - padding);
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (!Number.isFinite(bytes) || bytes <= 0) return '0B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let size = bytes;
+    let idx = 0;
+    while (size >= 1024 && idx < units.length - 1) {
+      size /= 1024;
+      idx += 1;
+    }
+    const fixed = idx === 0 ? 0 : 1;
+    return `${size.toFixed(fixed)}${units[idx]}`;
+  };
+
+  const downloadDataUrl = (dataUrl: string, filename: string) => {
+    try {
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = filename || 'download';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (e) {
+      console.error('다운로드 실패:', e);
+      alert('다운로드에 실패했습니다. (브라우저 보안 정책)');
+    }
+  };
+
+  const boardLabel = (t: BoardType) => {
+    switch (t) {
+      case 'notice_all': return '공고/공지';
+      case 'family_events': return '경조사';
+      case 'free': return '자유게시판';
+      case 'resources': return '자료실';
+      case 'intro': return '소개';
+      case 'signup': return '가입';
+      case 'trash': return '휴지통';
+      default: return t;
+    }
+  };
+
+  const attachmentStats = useMemo(() => {
+    const rows: Array<{
+      postId: string;
+      postTitle: string;
+      postType: BoardType;
+      postCreatedAt: string;
+      fileName: string;
+      mime: string;
+      bytes: number;
+      dataUrl: string;
+    }> = [];
+
+    for (const p of posts || []) {
+      const list = p.attachments || [];
+      for (const a of list) {
+        const bytes = dataUrlToBytes(a.data);
+        rows.push({
+          postId: p.id,
+          postTitle: p.title,
+          postType: p.type,
+          postCreatedAt: p.createdAt,
+          fileName: a.name,
+          mime: a.type,
+          bytes,
+          dataUrl: a.data,
+        });
+      }
+    }
+
+    const totalBytes = rows.reduce((s, r) => s + r.bytes, 0);
+    const totalFiles = rows.length;
+    const images = rows.filter(r => (r.mime || '').startsWith('image/'));
+    const docs = rows.filter(r => !(r.mime || '').startsWith('image/'));
+
+    const byBoard = new Map<BoardType, { bytes: number; files: number }>();
+    for (const r of rows) {
+      const cur = byBoard.get(r.postType) || { bytes: 0, files: 0 };
+      cur.bytes += r.bytes;
+      cur.files += 1;
+      byBoard.set(r.postType, cur);
+    }
+
+    const boardRows = Array.from(byBoard.entries())
+      .map(([type, v]) => ({ type, ...v }))
+      .sort((a, b) => b.bytes - a.bytes);
+
+    const topFiles = [...rows].sort((a, b) => b.bytes - a.bytes).slice(0, 10);
+    const largest = topFiles[0];
+
+    return {
+      rows,
+      totalBytes,
+      totalFiles,
+      imageBytes: images.reduce((s, r) => s + r.bytes, 0),
+      imageFiles: images.length,
+      docBytes: docs.reduce((s, r) => s + r.bytes, 0),
+      docFiles: docs.length,
+      boardRows,
+      topFiles,
+      largest,
+    };
+  }, [posts]);
+
 
   const handleSettingsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -151,6 +271,68 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     link.click();
   };
 
+  const handleDownloadAttachmentReportCSV = () => {
+    const rows = attachmentStats.rows;
+    if (!rows || rows.length === 0) return alert('첨부파일이 없습니다.');
+    const headers = ['게시글ID', '게시판', '게시글제목', '게시글작성일', '파일명', 'MIME', '바이트', '용량'];
+    const lines = [
+      headers.join(','),
+      ...rows.map(r => [
+        r.postId,
+        boardLabel(r.postType),
+        (r.postTitle || '').replace(/\n/g, ' ').replace(/,/g, ' '),
+        r.postCreatedAt,
+        (r.fileName || '').replace(/,/g, ' '),
+        r.mime || '',
+        String(r.bytes),
+        formatFileSize(r.bytes),
+      ].join(',')),
+    ];
+    const csvContent = "\uFEFF" + lines.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `우리노동조합_첨부파일_사용량_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
+  const handleDownloadAttachmentReportJSON = () => {
+    const payload = {
+      generatedAt: new Date().toISOString(),
+      summary: {
+        totalFiles: attachmentStats.totalFiles,
+        totalBytes: attachmentStats.totalBytes,
+        imageFiles: attachmentStats.imageFiles,
+        imageBytes: attachmentStats.imageBytes,
+        docFiles: attachmentStats.docFiles,
+        docBytes: attachmentStats.docBytes,
+      },
+      byBoard: attachmentStats.boardRows.map(b => ({
+        board: boardLabel(b.type),
+        boardKey: b.type,
+        files: b.files,
+        bytes: b.bytes,
+      })),
+      files: attachmentStats.rows.map(r => ({
+        postId: r.postId,
+        boardKey: r.postType,
+        board: boardLabel(r.postType),
+        postTitle: r.postTitle,
+        postCreatedAt: r.postCreatedAt,
+        fileName: r.fileName,
+        mime: r.mime,
+        bytes: r.bytes,
+      })),
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `우리노동조합_첨부파일_사용량_${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+  };
+
   const handleImportData = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -196,6 +378,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           { id: 'intro', label: '인사말/소개 관리', icon: 'fa-info-circle' }, 
           { id: 'offices', label: '찾아오시는 길', icon: 'fa-map-marker-alt' }, 
           { id: 'posts', label: '게시글/휴지통', icon: 'fa-file-alt' }, 
+          { id: 'storage', label: '첨부파일 사용량', icon: 'fa-paperclip' }, 
           { id: 'settings', label: '시스템 설정', icon: 'fa-cog' } 
         ].map((tab) => (
           <button key={tab.id} onClick={() => setAdminTab(tab.id as any)} className={`flex items-center space-x-2 px-6 py-3.5 rounded-xl text-sm font-black transition-all whitespace-nowrap ${adminTab === tab.id ? 'bg-white text-sky-primary shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
@@ -556,7 +739,159 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           </div>
         )}
         
-        {adminTab === 'settings' && (
+        
+        {adminTab === 'storage' && (
+          <div className="bg-white rounded-[2.5rem] border shadow-sm overflow-hidden animate-fadeIn">
+            <div className="p-8 border-b bg-gray-50/30 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h3 className="text-xl font-black text-gray-900">첨부파일 사용량</h3>
+                <p className="text-xs text-gray-400 mt-1 font-bold">
+                  게시글에 첨부된 파일(dataURL/base64)의 총 용량을 계산합니다. (관리자용)
+                </p>
+              </div>
+
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={handleDownloadAttachmentReportCSV}
+                  className="px-5 py-2.5 bg-emerald-600 text-white rounded-2xl font-black shadow-lg shadow-emerald-50 hover:bg-emerald-700 transition-all text-xs whitespace-nowrap"
+                >
+                  CSV 내려받기
+                </button>
+                <button
+                  onClick={handleDownloadAttachmentReportJSON}
+                  className="px-5 py-2.5 bg-slate-900 text-white rounded-2xl font-black shadow-lg shadow-slate-200 hover:bg-black transition-all text-xs whitespace-nowrap"
+                >
+                  JSON 내려받기
+                </button>
+              </div>
+            </div>
+
+            <div className="p-8 space-y-8">
+              {/* Summary Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="rounded-3xl border bg-white p-5 shadow-sm">
+                  <div className="text-xs text-gray-400 font-black">총 첨부파일</div>
+                  <div className="mt-2 text-2xl font-black text-gray-900">{attachmentStats.totalFiles}개</div>
+                  <div className="mt-1 text-xs text-gray-500 font-bold">전체 게시글 기준</div>
+                </div>
+                <div className="rounded-3xl border bg-white p-5 shadow-sm">
+                  <div className="text-xs text-gray-400 font-black">총 용량</div>
+                  <div className="mt-2 text-2xl font-black text-gray-900">{formatFileSize(attachmentStats.totalBytes)}</div>
+                  <div className="mt-1 text-xs text-gray-500 font-bold">{attachmentStats.totalBytes.toLocaleString()} bytes</div>
+                </div>
+                <div className="rounded-3xl border bg-white p-5 shadow-sm">
+                  <div className="text-xs text-gray-400 font-black">사진</div>
+                  <div className="mt-2 text-2xl font-black text-gray-900">{attachmentStats.imageFiles}개</div>
+                  <div className="mt-1 text-xs text-gray-500 font-bold">{formatFileSize(attachmentStats.imageBytes)}</div>
+                </div>
+                <div className="rounded-3xl border bg-white p-5 shadow-sm">
+                  <div className="text-xs text-gray-400 font-black">문서/기타</div>
+                  <div className="mt-2 text-2xl font-black text-gray-900">{attachmentStats.docFiles}개</div>
+                  <div className="mt-1 text-xs text-gray-500 font-bold">{formatFileSize(attachmentStats.docBytes)}</div>
+                </div>
+              </div>
+
+              {/* By board */}
+              <div className="rounded-[2rem] border bg-gray-50/30 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <div className="text-lg font-black text-gray-900">게시판별 사용량</div>
+                    <div className="text-xs text-gray-400 font-bold mt-1">용량 기준 내림차순</div>
+                  </div>
+                  <div className="text-xs text-gray-500 font-black">
+                    총 {formatFileSize(attachmentStats.totalBytes)}
+                  </div>
+                </div>
+
+                {attachmentStats.boardRows.length === 0 ? (
+                  <div className="py-12 text-center text-gray-400 font-bold italic">첨부파일이 없습니다.</div>
+                ) : (
+                  <div className="space-y-3">
+                    {attachmentStats.boardRows.map((b) => {
+                      const total = attachmentStats.totalBytes || 1;
+                      const pct = Math.min(100, Math.round((b.bytes / total) * 100));
+                      return (
+                        <div key={b.type} className="bg-white rounded-2xl border p-4">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="font-black text-gray-900">{boardLabel(b.type)}</div>
+                            <div className="text-xs text-gray-500 font-black whitespace-nowrap">
+                              {b.files}개 · {formatFileSize(b.bytes)} ({pct}%)
+                            </div>
+                          </div>
+                          <div className="mt-3 h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-sky-primary rounded-full" style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Top files */}
+              <div className="rounded-[2rem] border bg-white overflow-hidden">
+                <div className="p-6 border-b bg-gray-50/30">
+                  <div className="text-lg font-black text-gray-900">용량 상위 10개 파일</div>
+                  <div className="text-xs text-gray-400 font-bold mt-1">클릭하면 해당 파일을 바로 다운로드할 수 있습니다.</div>
+                </div>
+
+                <div className="p-6">
+                  {attachmentStats.topFiles.length === 0 ? (
+                    <div className="py-10 text-center text-gray-400 font-bold italic">표시할 파일이 없습니다.</div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-[760px] w-full text-sm">
+                        <thead>
+                          <tr className="text-xs text-gray-400 font-black border-b">
+                            <th className="text-left py-3 pr-3">파일</th>
+                            <th className="text-left py-3 pr-3">게시판</th>
+                            <th className="text-left py-3 pr-3">게시글</th>
+                            <th className="text-right py-3 pr-3">용량</th>
+                            <th className="text-right py-3">다운로드</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {attachmentStats.topFiles.map((f, idx) => (
+                            <tr key={`${f.postId}-${idx}`} className="border-b last:border-b-0">
+                              <td className="py-3 pr-3">
+                                <div className="font-black text-gray-900">{f.fileName}</div>
+                                <div className="text-[11px] text-gray-400 font-bold">{f.mime || 'unknown'}</div>
+                              </td>
+                              <td className="py-3 pr-3 font-black text-gray-700 whitespace-nowrap">{boardLabel(f.postType)}</td>
+                              <td className="py-3 pr-3">
+                                <div className="font-bold text-gray-700 line-clamp-1">{f.postTitle}</div>
+                                <div className="text-[11px] text-gray-400 font-bold mt-0.5">{formatDate(f.postCreatedAt)}</div>
+                              </td>
+                              <td className="py-3 pr-3 text-right font-black text-gray-900 whitespace-nowrap">{formatFileSize(f.bytes)}</td>
+                              <td className="py-3 text-right">
+                                <button
+                                  onClick={() => downloadDataUrl(f.dataUrl, f.fileName)}
+                                  className="px-3 py-2 bg-sky-primary text-white rounded-xl font-black text-xs hover:opacity-90 transition-all whitespace-nowrap"
+                                >
+                                  다운로드
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="text-xs text-gray-500 font-bold leading-relaxed">
+                <div className="font-black text-gray-700 mb-1">참고</div>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>첨부파일은 현재 게시글 데이터에 <span className="font-black">base64(dataURL)</span>로 포함되어 저장됩니다. 파일이 많아지면 데이터 용량이 빠르게 증가합니다.</li>
+                  <li>장기 운영 시에는 Supabase Storage 같은 파일 스토리지로 옮기고, 게시글에는 파일 URL만 저장하는 방식이 권장됩니다.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+
+{adminTab === 'settings' && (
           <div className="space-y-8 animate-fadeIn">
             <div className="bg-white p-10 rounded-[2.5rem] border shadow-sm space-y-12">
               <div>
