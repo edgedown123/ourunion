@@ -1,0 +1,11 @@
+/* Soft margin for post images (mobile-friendly) */
+.post-content img {
+  display: block;
+  max-width: 100%;
+  width: 100%;
+  margin: 12px auto;
+  padding-left: 12px;
+  padding-right: 12px;
+  border-radius: 14px;
+  box-sizing: border-box;
+}
