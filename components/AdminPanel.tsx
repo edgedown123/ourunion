@@ -474,25 +474,28 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             </button>
 
             {openPostActionId === p.id && (
-              <div className="absolute right-0 mt-2 w-36 bg-white border border-gray-100 rounded-2xl shadow-lg overflow-hidden z-20">
-                <button
-                  onClick={() => {
-                    setOpenPostActionId(null);
-                    onViewPost(p.id, p.type);
-                  }}
-                  className="w-full text-left px-4 py-3 text-xs font-black text-sky-600 hover:bg-sky-50 whitespace-nowrap"
-                >
-                  보기
-                </button>
-                <button
-                  onClick={() => {
-                    setOpenPostActionId(null);
-                    onEditPost(p);
-                  }}
-                  className="w-full text-left px-4 py-3 text-xs font-black text-gray-700 hover:bg-gray-50 whitespace-nowrap"
-                >
-                  수정
-                </button>
+              <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-100 rounded-2xl shadow-lg overflow-hidden z-20">
+                <div className="flex">
+                  <button
+                    onClick={() => {
+                      setOpenPostActionId(null);
+                      onViewPost(p.id, p.type);
+                    }}
+                    className="flex-1 px-4 py-3 text-xs font-black text-sky-600 hover:bg-sky-50 whitespace-nowrap text-center"
+                  >
+                    보기
+                  </button>
+                  <div className="w-px bg-gray-100" />
+                  <button
+                    onClick={() => {
+                      setOpenPostActionId(null);
+                      onEditPost(p);
+                    }}
+                    className="flex-1 px-4 py-3 text-xs font-black text-gray-700 hover:bg-gray-50 whitespace-nowrap text-center"
+                  >
+                    수정
+                  </button>
+                </div>
               </div>
             )}
           </div>
