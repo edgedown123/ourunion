@@ -67,6 +67,12 @@ const Board: React.FC<BoardProps> = ({
   const handleEditAttempt = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!selectedPost) return;
+
+    // ✅ 관리자는 게시물 비밀번호 입력 없이 바로 수정 가능
+    if (userRole === 'admin') {
+      onEditClick(selectedPost);
+      return;
+    }
     
     setIsEditVerifyMode(true);
     setIsDeleteMode(false);
@@ -76,6 +82,12 @@ const Board: React.FC<BoardProps> = ({
   const handleDeleteAttempt = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!selectedPost || !onDeletePost) return;
+
+    // ✅ 관리자는 게시물 비밀번호 입력 없이 바로 삭제 가능
+    if (userRole === 'admin') {
+      onDeletePost(selectedPost.id);
+      return;
+    }
     
     setIsDeleteMode(true);
     setIsEditVerifyMode(false);
@@ -84,9 +96,12 @@ const Board: React.FC<BoardProps> = ({
 
   const handleConfirmVerify = () => {
     if (!selectedPost) return;
-    if (verifyPassword !== selectedPost.password) {
-      alert('비밀번호가 일치하지 않습니다.');
-      return;
+    // 안전장치: 혹시라도 관리자가 이 플로우로 들어오면 비밀번호 검증을 건너뜀
+    if (userRole !== 'admin') {
+      if (verifyPassword !== selectedPost.password) {
+        alert('비밀번호가 일치하지 않습니다.');
+        return;
+      }
     }
 
     if (isEditVerifyMode) {
@@ -134,9 +149,9 @@ const renderContentWithInlineImages = (raw: string) => {
         nodes.push(
           <div
             key={`img-${i}`}
-            // 모바일에서 본문 카드(p-10) 패딩을 "뚫고" 더 넓게 보여주기
-            // (p-10 = 2.5rem, md:p-14 = 3.5rem)
-            className="my-1.5 w-[calc(100%+5rem)] -mx-10 overflow-hidden rounded-2xl border border-gray-100 bg-white md:w-[calc(100%+7rem)] md:-mx-14"
+            // 이미지가 너무 "꽉" 차 보이지 않도록 좌우 여백을 조금 남기기
+            // (기존: 카드 패딩을 "뚫고" 풀-블리드에 가깝게 표시)
+            className="my-4 w-[calc(100%+2rem)] -mx-4 overflow-hidden rounded-2xl border border-gray-100 bg-white md:w-[calc(100%+3rem)] md:-mx-6"
           >
             <img
               src={imageAttachments[idx].data}
@@ -188,11 +203,6 @@ const renderContentWithInlineImages = (raw: string) => {
               <div className="max-w-xs w-full text-center">
                 <i className={`fas ${isEditVerifyMode ? 'fa-key' : 'fa-lock'} text-5xl ${isEditVerifyMode ? 'text-sky-500' : 'text-red-500'} mb-5`}></i>
                 <h4 className="text-xl font-black mb-4">{isEditVerifyMode ? '수정 비밀번호' : '삭제 비밀번호'}</h4>
-                {userRole === 'admin' && (
-                  <p className="text-[10px] text-gray-400 font-bold mb-4">
-                    아래 표시된 <span className="text-red-500">관리자용 비번</span>을 입력해주세요.
-                  </p>
-                )}
                 <input 
                   type="password" 
                   value={verifyPassword} 
@@ -221,11 +231,6 @@ const renderContentWithInlineImages = (raw: string) => {
               <span className="flex items-center mr-8"><i className="fas fa-user-circle mr-2.5 text-sky-primary/50"></i>{selectedPost.author}</span>
               <span className="flex items-center mr-8"><i className="fas fa-calendar-alt mr-2.5"></i>{formatDate(selectedPost.createdAt)}</span>
               <span className="flex items-center mr-8"><i className="fas fa-eye mr-2.5"></i>조회 {selectedPost.views}</span>
-              {userRole === 'admin' && selectedPost.password && (
-                <span className="flex items-center text-red-500 bg-red-50 px-3 py-1 rounded-full text-[10px] font-black border border-red-100 ml-auto md:ml-0">
-                  <i className="fas fa-key mr-1.5"></i>관리자용 비번: {selectedPost.password}
-                </span>
-              )}
             </div>
           </header>
 
