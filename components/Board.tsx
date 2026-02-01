@@ -134,13 +134,14 @@ const renderContentWithInlineImages = (raw: string) => {
         nodes.push(
           <div
             key={`img-${i}`}
-            // 모바일에서 이미지가 더 "꽉 차" 보이고, 이미지-텍스트 간격이 과하지 않도록 조정
-            className="my-2 w-full overflow-hidden rounded-2xl border border-gray-100 bg-white"
+            // 모바일에서 본문 카드(p-10) 패딩을 "뚫고" 더 넓게 보여주기
+            // (p-10 = 2.5rem, md:p-14 = 3.5rem)
+            className="my-1.5 w-[calc(100%+5rem)] -mx-10 overflow-hidden rounded-2xl border border-gray-100 bg-white md:w-[calc(100%+7rem)] md:-mx-14"
           >
             <img
               src={imageAttachments[idx].data}
               alt={`본문 이미지 ${idx + 1}`}
-              className="w-full h-auto object-contain"
+              className="w-full h-auto object-cover"
               loading="lazy"
             />
           </div>
