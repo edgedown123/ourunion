@@ -35,6 +35,20 @@ const PostEditor: React.FC<PostEditorProps> = ({ type, initialPost, onSave, onCa
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
   const MAX_TOTAL_SIZE = 15 * 1024 * 1024; // 15MB
 
+  // bytes -> human readable (e.g. 5MB)
+  const formatFileSize = (bytes: number) => {
+    if (!Number.isFinite(bytes) || bytes <= 0) return '0B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let size = bytes;
+    let idx = 0;
+    while (size >= 1024 && idx < units.length - 1) {
+      size /= 1024;
+      idx += 1;
+    }
+    const fixed = idx === 0 ? 0 : 1;
+    return `${size.toFixed(fixed)}${units[idx]}`;
+  };
+
   const compressImage = (base64Str: string, maxWidth = 1200): Promise<string> => {
     return new Promise((resolve) => {
       const img = new Image();
@@ -77,9 +91,9 @@ const PostEditor: React.FC<PostEditorProps> = ({ type, initialPost, onSave, onCa
     if (!files) return;
 
     const selected = Array.from(files);
-    const currentImages = attachments.filter(a => a.type.startsWith('image/')).length;
+    const currentImages = attachments.filter(a => a.type?.startsWith('image/')).length;
     const currentDocs = attachments.length - currentImages;
-    const selectedImages = selected.filter(f => f.type.startsWith('image/')).length;
+    const selectedImages = selected.filter(f => f.type?.startsWith('image/')).length;
     const selectedDocs = selected.length - selectedImages;
 
     if (attachments.length + selected.length > MAX_TOTAL_FILES) {
@@ -115,12 +129,12 @@ const PostEditor: React.FC<PostEditorProps> = ({ type, initialPost, onSave, onCa
       const reader = new FileReader();
       reader.onloadend = async () => {
         let fileData = reader.result as string;
-        if (file.type.startsWith('image/')) {
+        if (file.type?.startsWith('image/')) {
           fileData = await compressImage(fileData);
         }
         setAttachments(prev => {
-          const imageIndex = file.type.startsWith('image/')
-            ? prev.filter(p => p.type.startsWith('image/')).length
+          const imageIndex = file.type?.startsWith('image/')
+            ? prev.filter(p => p.type?.startsWith('image/')).length
             : -1;
           const next = [...prev, { name: file.name, data: fileData, type: file.type }];
 
@@ -216,16 +230,16 @@ const PostEditor: React.FC<PostEditorProps> = ({ type, initialPost, onSave, onCa
             {attachments.map((file, idx) => (
               <div key={idx} className="flex items-center justify-between bg-white p-3 rounded-lg border shadow-sm">
                 <div className="flex items-center">
-                  {file.type.startsWith('image/') ? (
+                  {file.type?.startsWith('image/') ? (
                     <img src={file.data} alt="preview" className="w-10 h-10 object-cover rounded mr-3" />
                   ) : (
                     <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center mr-3">
-                      <i className={`fas ${file.type.startsWith('video/') ? 'fa-video' : 'fa-file'} text-gray-400`}></i>
+                      <i className={`fas ${file.type?.startsWith('video/') ? 'fa-video' : 'fa-file'} text-gray-400`}></i>
                     </div>
                   )}
                   <div className="text-xs">
                     <p className="font-medium text-gray-800 truncate max-w-[200px]">{file.name}</p>
-                    <p className="text-gray-400">{(file.data.length * 0.75 / 1024).toFixed(1)} KB {file.type.startsWith('image/') && <span className="text-emerald-500 font-bold ml-1">(최적화됨)</span>}</p>
+                    <p className="text-gray-400">{(file.data.length * 0.75 / 1024).toFixed(1)} KB {file.type?.startsWith('image/') && <span className="text-emerald-500 font-bold ml-1">(최적화됨)</span>}</p>
                   </div>
                 </div>
                 <button onClick={() => removeAttachment(idx)} className="text-red-400 hover:text-red-600 p-2 transition-colors">
@@ -241,7 +255,7 @@ const PostEditor: React.FC<PostEditorProps> = ({ type, initialPost, onSave, onCa
             >
               <i className="fas fa-plus-circle text-2xl mb-2"></i>
               <span>
-                클릭하여 파일을 추가하세요 (현재 {attachments.length}/{MAX_TOTAL_FILES} · 사진 {attachments.filter(a => a.type.startsWith('image/')).length}/{MAX_IMAGE_FILES} · 문서 {attachments.filter(a => !a.type.startsWith('image/')).length}/{MAX_DOC_FILES})
+                클릭하여 파일을 추가하세요 (현재 {attachments.length}/{MAX_TOTAL_FILES} · 사진 {attachments.filter(a => a.type?.startsWith('image/')).length}/{MAX_IMAGE_FILES} · 문서 {attachments.filter(a => !a.type?.startsWith('image/')).length}/{MAX_DOC_FILES})
               </span>
               <span className="text-[10px] mt-1 text-sky-600 font-bold">
                 파일당 최대 {formatFileSize(MAX_FILE_SIZE)} · 총합 최대 {formatFileSize(MAX_TOTAL_SIZE)}
