@@ -25,7 +25,15 @@ const PostEditor: React.FC<PostEditorProps> = ({ type, initialPost, onSave, onCa
     }
   }, [initialPost]);
 
-  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+  // ✅ 첨부 제한 (요청사항)
+  // - 사진 5개 + 문서 3개 (총 8개)
+  // - 파일당 최대 5MB (선택 시점 체크)
+  // - 전체 합산 최대 15MB
+  const MAX_TOTAL_FILES = 8;
+  const MAX_IMAGE_FILES = 5;
+  const MAX_DOC_FILES = 3;
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+  const MAX_TOTAL_SIZE = 15 * 1024 * 1024; // 15MB
 
   const compressImage = (base64Str: string, maxWidth = 1200): Promise<string> => {
     return new Promise((resolve) => {
@@ -48,16 +56,60 @@ const PostEditor: React.FC<PostEditorProps> = ({ type, initialPost, onSave, onCa
     });
   };
 
+  // dataURL( base64 ) 대략 용량 계산 (서버에 저장된 데이터 기준)
+  const dataUrlToBytes = (dataUrl: string): number => {
+    const commaIdx = dataUrl.indexOf(',');
+    if (commaIdx === -1) return 0;
+    const base64 = dataUrl.slice(commaIdx + 1);
+    // base64 size -> bytes
+    let padding = 0;
+    if (base64.endsWith('==')) padding = 2;
+    else if (base64.endsWith('=')) padding = 1;
+    return Math.max(0, Math.floor((base64.length * 3) / 4) - padding);
+  };
+
+  const getExistingTotalBytes = () => {
+    return attachments.reduce((sum, a) => sum + dataUrlToBytes(a.data), 0);
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    if (attachments.length + files.length > 3) {
-      alert('파일은 최대 3개까지만 업로드 가능합니다.');
+
+    const selected = Array.from(files);
+    const currentImages = attachments.filter(a => a.type.startsWith('image/')).length;
+    const currentDocs = attachments.length - currentImages;
+    const selectedImages = selected.filter(f => f.type.startsWith('image/')).length;
+    const selectedDocs = selected.length - selectedImages;
+
+    if (attachments.length + selected.length > MAX_TOTAL_FILES) {
+      alert(`파일은 최대 ${MAX_TOTAL_FILES}개(사진 ${MAX_IMAGE_FILES} + 문서 ${MAX_DOC_FILES})까지만 업로드 가능합니다.`);
+      return;
+    }
+    if (currentImages + selectedImages > MAX_IMAGE_FILES) {
+      alert(`사진은 최대 ${MAX_IMAGE_FILES}개까지만 업로드 가능합니다.`);
+      return;
+    }
+    if (currentDocs + selectedDocs > MAX_DOC_FILES) {
+      alert(`문서는 최대 ${MAX_DOC_FILES}개까지만 업로드 가능합니다.`);
+      return;
+    }
+
+    const tooLarge = selected.find(f => f.size > MAX_FILE_SIZE);
+    if (tooLarge) {
+      alert(`${tooLarge.name}: 파일 용량은 5MB 이하만 가능합니다.`);
+      return;
+    }
+
+    const selectedTotal = selected.reduce((sum, f) => sum + f.size, 0);
+    const existingTotal = getExistingTotalBytes();
+    if (existingTotal + selectedTotal > MAX_TOTAL_SIZE) {
+      alert(`첨부파일 총합은 최대 15MB까지만 가능합니다. (현재 약 ${formatFileSize(existingTotal)} + 선택 ${formatFileSize(selectedTotal)})`);
       return;
     }
     const processFile = async (file: File) => {
       if (file.size > MAX_FILE_SIZE) {
-        alert(`${file.name}: 파일 용량은 10MB 이하만 가능합니다.`);
+        alert(`${file.name}: 파일 용량은 5MB 이하만 가능합니다.`);
         return;
       }
       const reader = new FileReader();
@@ -71,15 +123,14 @@ const PostEditor: React.FC<PostEditorProps> = ({ type, initialPost, onSave, onCa
             ? prev.filter(p => p.type.startsWith('image/')).length
             : -1;
           const next = [...prev, { name: file.name, data: fileData, type: file.type }];
-          if (imageIndex >= 0) {
+
           // 글쓰기 textarea가 마운트된 경우에만 커서 위치에 토큰 삽입
-          if (contentRef.current) {
+          if (imageIndex >= 0 && contentRef.current) {
             insertImageTokenAtCursor(`[[img:${imageIndex}]]`);
           }
-        }
           return next;
         });
-};
+      };
       reader.readAsDataURL(file);
     };
     
@@ -94,39 +145,33 @@ const PostEditor: React.FC<PostEditorProps> = ({ type, initialPost, onSave, onCa
   };
 
 
-const insertImageTokenAtCursor = (token: string) => {
-  const ta = contentRef.current;
-    if (!ta) {
-      setContent(prev => (prev ? `${prev}
-${token}
-` : `${token}
-`));
-      return;
-    }
+  const insertImageTokenAtCursor = (token: string) => {
+    const ta = contentRef.current;
     setContent(prev => {
-    if (!ta) return prev ? `${prev}\n${token}\n` : `${token}\n`;
-    const start = ta.selectionStart ?? prev.length;
-    const end = ta.selectionEnd ?? prev.length;
+      // textarea가 아직 없으면 맨 아래에 추가
+      if (!ta) return prev ? `${prev}\n${token}\n` : `${token}\n`;
 
-    const prefix = prev.slice(0, start);
-    const suffix = prev.slice(end);
+      const start = ta.selectionStart ?? prev.length;
+      const end = ta.selectionEnd ?? prev.length;
 
-    const before = prefix && !prefix.endsWith('\n') ? prefix + '\n' : prefix;
-    const after = suffix && !suffix.startsWith('\n') ? '\n' + suffix : suffix;
+      const prefix = prev.slice(0, start);
+      const suffix = prev.slice(end);
 
-    const next = `${before}${token}${after}`;
+      const before = prefix && !prefix.endsWith('\n') ? prefix + '\n' : prefix;
+      const after = suffix && !suffix.startsWith('\n') ? '\n' + suffix : suffix;
+      const next = `${before}${token}${after}`;
 
-    requestAnimationFrame(() => {
-      try {
-        const pos = before.length + token.length + 1;
-        ta.focus();
-        ta.setSelectionRange(pos, pos);
-      } catch {}
+      requestAnimationFrame(() => {
+        try {
+          const pos = before.length + token.length + (after.startsWith('\n') ? 1 : 0);
+          ta.focus();
+          ta.setSelectionRange(pos, pos);
+        } catch {}
+      });
+
+      return next;
     });
-
-    return next;
-  });
-};
+  };
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4"> 
@@ -157,7 +202,7 @@ ${token}
 
         <div className="bg-gray-50 p-4 rounded-xl border-2 border-dashed border-gray-200">
           <label className="block text-sm font-bold text-gray-700 mb-2">
-            <i className="fas fa-paperclip mr-2"></i> 첨부파일 (최대 3개)
+            <i className="fas fa-paperclip mr-2"></i> 첨부파일 (사진 최대 5개 / 문서 최대 3개 / 총 8개)
           </label>
           <input
             type="file"
@@ -189,14 +234,18 @@ ${token}
               </div>
             ))}
           </div>
-          {attachments.length < 3 ? (
+          {attachments.length < MAX_TOTAL_FILES ? (
             <button
               onClick={() => fileInputRef.current?.click()}
               className="w-full py-6 text-gray-400 text-sm hover:text-sky-primary hover:bg-white transition-all rounded-lg border border-dashed border-gray-300 flex flex-col items-center justify-center"
             >
               <i className="fas fa-plus-circle text-2xl mb-2"></i>
-              <span>클릭하여 파일을 추가하세요 (현재 {attachments.length}/3)</span>
-              <span className="text-[10px] mt-1 text-sky-600 font-bold">파일당 최대 10MB</span>
+              <span>
+                클릭하여 파일을 추가하세요 (현재 {attachments.length}/{MAX_TOTAL_FILES} · 사진 {attachments.filter(a => a.type.startsWith('image/')).length}/{MAX_IMAGE_FILES} · 문서 {attachments.filter(a => !a.type.startsWith('image/')).length}/{MAX_DOC_FILES})
+              </span>
+              <span className="text-[10px] mt-1 text-sky-600 font-bold">
+                파일당 최대 {formatFileSize(MAX_FILE_SIZE)} · 총합 최대 {formatFileSize(MAX_TOTAL_SIZE)}
+              </span>
             </button>
           ) : (
             <p className="text-center text-xs text-orange-500 font-medium py-2">최대 파일 개수에 도달했습니다.</p>
