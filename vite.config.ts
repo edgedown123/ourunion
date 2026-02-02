@@ -1,13 +1,11 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { VitePWA } from 'vite-plugin-pwa';
+
 
 export default defineConfig({
   plugins: [
     react(),
-    VitePWA({
-      registerType: 'autoUpdate',
-      // 이 옵션을 켜면 개발 중에도 PWA를 테스트할 수 있어요.
+
       devOptions: { enabled: true },
       manifest: {
         name: '우리노동조합',
