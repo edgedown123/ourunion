@@ -293,6 +293,16 @@ const App: React.FC = () => {
     setPosts(newPosts);
     saveToLocal('posts', newPosts);
     await cloud.savePostToCloud(targetPost);
+
+    // 새 게시글(등록)일 때만 푸시 알림 트리거
+    if (!id) {
+      try {
+        await cloud.notifyNewPost(targetPost);
+      } catch (e) {
+        // 알림 트리거 실패는 게시글 저장 자체에 영향을 주지 않도록 무시
+        console.warn('푸시 알림 트리거 실패:', e);
+      }
+    }
     
     alert('성공적으로 저장되었습니다.');
     setIsWriting(false);

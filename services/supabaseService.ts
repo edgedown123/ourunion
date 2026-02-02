@@ -143,6 +143,34 @@ export const savePostToCloud = async (post: Post) => {
   }
 };
 
+
+
+// --------------------------------------
+// (선택) 새 게시글 등록 시 푸시 알림 발송 트리거
+// - Supabase Edge Function: notify-new-post 를 호출합니다.
+// - DB Webhook(INSERT 트리거)을 별도로 설정하지 않아도, 클라이언트에서 직접 호출하면 알림이 발송됩니다.
+// - Edge Function이 아직 배포되지 않았거나 VAPID/서비스키 설정이 없으면 조용히 실패할 수 있습니다.
+// --------------------------------------
+export const notifyNewPost = async (post: Post) => {
+  if (!supabase) return;
+
+  try {
+    const { data, error } = await supabase.functions.invoke('notify-new-post', {
+      body: post as any,
+    });
+
+    if (error) {
+      console.warn('푸시 알림(Edge Function) 호출 실패:', error);
+      return;
+    }
+
+    // data에는 { ok, sent, results } 등이 들어올 수 있음
+    return data;
+  } catch (err) {
+    console.warn('푸시 알림(Edge Function) 호출 중 예외:', err);
+  }
+};
+
 export const deletePostFromCloud = async (id: string) => {
   if (!supabase) return;
 
