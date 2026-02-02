@@ -1,5 +1,7 @@
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { enableNotifications } from '../pwa';
+import { getNotificationPermission, unsubscribePush, isPushSupported } from '../services/pushService';
 import { NAV_ITEMS } from '../constants';
 import { UserRole } from '../types';
 
@@ -64,6 +66,37 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
       { id: 'admin', label: '설정' },
     ];
   }, [])
+
+
+// 푸시 알림(조합원용)
+const [notifPerm, setNotifPerm] = useState<NotificationPermission>('default');
+useEffect(() => {
+  (async () => {
+    try {
+      const p = await getNotificationPermission();
+      setNotifPerm(p);
+    } catch {}
+  })();
+}, []);
+
+const onEnableNoti = async () => {
+  if (!isPushSupported()) {
+    alert('이 브라우저는 푸시 알림을 지원하지 않습니다. (안드로이드 크롬 권장)');
+    return;
+  }
+  const ok = await enableNotifications();
+  const p = await getNotificationPermission();
+  setNotifPerm(p);
+  if (ok) alert('알림이 켜졌습니다! 이제 새 게시글이 올라오면 알림이 옵니다.');
+  else alert('알림을 켜지 못했습니다. 브라우저 설정에서 알림을 허용했는지 확인해 주세요.');
+};
+
+const onDisableNoti = async () => {
+  await unsubscribePush();
+  const p = await getNotificationPermission();
+  setNotifPerm(p);
+  alert('알림을 껐습니다.');
+};
 
   // 데스크톱: 공지사항(=공고/공지) / 경조사를 상단 메뉴로 분리
   const desktopNavItems = useMemo(() => {
@@ -148,6 +181,19 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
               {userRole === 'guest' ? '로그인' : '로그아웃'}
             </button>
             
+
+{userRole !== 'guest' && (
+  <button
+    onClick={notifPerm === 'granted' ? onDisableNoti : onEnableNoti}
+    className={`p-2.5 md:p-3 rounded-full hover:bg-gray-100 transition-colors ${
+      notifPerm === 'granted' ? 'text-sky-primary' : 'text-gray-400'
+    }`}
+    title={notifPerm === 'granted' ? '알림 끄기' : '알림 켜기'}
+  >
+    <i className={`fas ${notifPerm === 'granted' ? 'fa-bell' : 'fa-bell-slash'} text-xl`}></i>
+  </button>
+)}
+
             <button
               onClick={() => onTabChange('admin')}
               className={`p-2.5 md:p-3 rounded-full hover:bg-gray-100 transition-colors ${activeTab === 'admin' ? 'text-sky-primary' : 'text-gray-400'}`}
