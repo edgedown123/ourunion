@@ -84,6 +84,33 @@ const onEnableNoti = async () => {
     alert('이 브라우저는 푸시 알림을 지원하지 않습니다. (안드로이드 크롬 권장)');
     return;
   }
+
+  // ✅ 버튼 클릭 직후(사용자 제스처) 가장 먼저 권한 요청을 강제
+  // 안드로이드 크롬/삼성 인터넷에서 서비스워커 등록/기타 await 이후에는
+  // 권한 팝업이 안 뜨는 케이스가 있어, 먼저 requestPermission()을 호출합니다.
+  if (typeof window !== 'undefined' && 'Notification' in window) {
+    if (Notification.permission === 'denied') {
+      alert(
+        '현재 이 기기에서 우리노동조합 알림이 차단되어 있습니다.\n\n' +
+          '크롬에서 아래 경로로 들어가 알림을 허용해 주세요:\n' +
+          '설정 > 사이트 설정 > 알림 > ourunion.co.kr 허용'
+      );
+      return;
+    }
+
+    if (Notification.permission === 'default') {
+      const p0 = await Notification.requestPermission();
+      setNotifPerm(p0);
+      if (p0 !== 'granted') {
+        alert(
+          '알림을 허용해야 새 게시글 알림을 받을 수 있습니다.\n\n' +
+            '크롬에서: 주소창 왼쪽 자물쇠(🔒) > 사이트 설정 > 알림을 "허용"으로 바꿔주세요.'
+        );
+        return;
+      }
+    }
+  }
+
   const ok = await enableNotifications();
   const p = await getNotificationPermission();
   setNotifPerm(p);
