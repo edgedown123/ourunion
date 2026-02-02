@@ -1,7 +1,5 @@
 
-import React, { useMemo, useState, useEffect } from 'react';
-import { enableNotifications } from '../pwa';
-import { getNotificationPermission, unsubscribePush, isPushSupported } from '../services/pushService';
+import React, { useMemo, useState } from 'react';
 import { NAV_ITEMS } from '../constants';
 import { UserRole } from '../types';
 
@@ -66,64 +64,6 @@ const Navbar: React.FC<NavbarProps> = ({ siteName, activeTab, onTabChange, userR
       { id: 'admin', label: '설정' },
     ];
   }, [])
-
-
-// 푸시 알림(조합원용)
-const [notifPerm, setNotifPerm] = useState<NotificationPermission>('default');
-useEffect(() => {
-  (async () => {
-    try {
-      const p = await getNotificationPermission();
-      setNotifPerm(p);
-    } catch {}
-  })();
-}, []);
-
-const onEnableNoti = async () => {
-  if (!isPushSupported()) {
-    alert('이 브라우저는 푸시 알림을 지원하지 않습니다. (안드로이드 크롬 권장)');
-    return;
-  }
-
-  // ✅ 버튼 클릭 직후(사용자 제스처) 가장 먼저 권한 요청을 강제
-  // 안드로이드 크롬/삼성 인터넷에서 서비스워커 등록/기타 await 이후에는
-  // 권한 팝업이 안 뜨는 케이스가 있어, 먼저 requestPermission()을 호출합니다.
-  if (typeof window !== 'undefined' && 'Notification' in window) {
-    if (Notification.permission === 'denied') {
-      alert(
-        '현재 이 기기에서 우리노동조합 알림이 차단되어 있습니다.\n\n' +
-          '크롬에서 아래 경로로 들어가 알림을 허용해 주세요:\n' +
-          '설정 > 사이트 설정 > 알림 > ourunion.co.kr 허용'
-      );
-      return;
-    }
-
-    if (Notification.permission === 'default') {
-      const p0 = await Notification.requestPermission();
-      setNotifPerm(p0);
-      if (p0 !== 'granted') {
-        alert(
-          '알림을 허용해야 새 게시글 알림을 받을 수 있습니다.\n\n' +
-            '크롬에서: 주소창 왼쪽 자물쇠(🔒) > 사이트 설정 > 알림을 "허용"으로 바꿔주세요.'
-        );
-        return;
-      }
-    }
-  }
-
-  const ok = await enableNotifications();
-  const p = await getNotificationPermission();
-  setNotifPerm(p);
-  if (ok) alert('알림이 켜졌습니다! 이제 새 게시글이 올라오면 알림이 옵니다.');
-  else alert('알림을 켜지 못했습니다. 브라우저 설정에서 알림을 허용했는지 확인해 주세요.');
-};
-
-const onDisableNoti = async () => {
-  await unsubscribePush();
-  const p = await getNotificationPermission();
-  setNotifPerm(p);
-  alert('알림을 껐습니다.');
-};
 
   // 데스크톱: 공지사항(=공고/공지) / 경조사를 상단 메뉴로 분리
   const desktopNavItems = useMemo(() => {
@@ -208,19 +148,6 @@ const onDisableNoti = async () => {
               {userRole === 'guest' ? '로그인' : '로그아웃'}
             </button>
             
-
-{userRole !== 'guest' && (
-  <button
-    onClick={notifPerm === 'granted' ? onDisableNoti : onEnableNoti}
-    className={`p-2.5 md:p-3 rounded-full hover:bg-gray-100 transition-colors ${
-      notifPerm === 'granted' ? 'text-sky-primary' : 'text-gray-400'
-    }`}
-    title={notifPerm === 'granted' ? '알림 끄기' : '알림 켜기'}
-  >
-    <i className={`fas ${notifPerm === 'granted' ? 'fa-bell' : 'fa-bell-slash'} text-xl`}></i>
-  </button>
-)}
-
             <button
               onClick={() => onTabChange('admin')}
               className={`p-2.5 md:p-3 rounded-full hover:bg-gray-100 transition-colors ${activeTab === 'admin' ? 'text-sky-primary' : 'text-gray-400'}`}

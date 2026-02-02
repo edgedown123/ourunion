@@ -33,7 +33,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const officeMapInputRef = useRef<HTMLInputElement>(null);
   const importFileInputRef = useRef<HTMLInputElement>(null);
   
-  const [adminTab, setAdminTab] = useState<'members' | 'intro' | 'offices' | 'posts' | 'storage' | 'push' | 'settings'>('members');
+  const [adminTab, setAdminTab] = useState<'members' | 'intro' | 'offices' | 'posts' | 'storage' | 'settings'>('members');
   const [openMemberActionId, setOpenMemberActionId] = useState<string | null>(null);
   const [openPostActionId, setOpenPostActionId] = useState<string | null>(null);
   const [activeOfficeId, setActiveOfficeId] = useState<string | null>(settings.offices[0]?.id || null);
@@ -379,7 +379,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           { id: 'offices', label: '찾아오시는 길', icon: 'fa-map-marker-alt' }, 
           { id: 'posts', label: '게시글/휴지통', icon: 'fa-file-alt' }, 
           { id: 'storage', label: '첨부파일 사용량', icon: 'fa-paperclip' }, 
-          { id: 'push', label: '푸시 알림', icon: 'fa-bell' }, 
           { id: 'settings', label: '시스템 설정', icon: 'fa-cog' } 
         ].map((tab) => (
           <button key={tab.id} onClick={() => setAdminTab(tab.id as any)} className={`flex items-center space-x-2 px-6 py-3.5 rounded-xl text-sm font-black transition-all whitespace-nowrap ${adminTab === tab.id ? 'bg-white text-sky-primary shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
@@ -892,72 +891,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           </div>
         )}
 
-
-        {adminTab === 'push' && (
-          <div className="bg-white rounded-[2.5rem] border shadow p-8">
-            <h3 className="text-2xl font-extrabold mb-3">푸시 알림 (PWA)</h3>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              테스트 단계에서는 조합원이 <b>홈화면에 추가(PWA)</b> 후 <b>알림 허용</b>을 하면,
-              앱이 열려있는 동안 새 게시글 등록 시 알림이 표시됩니다.
-              <br />
-              <span className="text-sm text-gray-500">
-                ※ 앱이 꺼져있을 때도 알림(진짜 웹 푸시)을 보내려면 VAPID 키 + 발송 함수(서버/Edge Function)가 필요합니다.
-              </span>
-            </p>
-
-            <div className="flex flex-col gap-3">
-              <button
-                className="px-5 py-3 rounded-full bg-slate-900 text-white font-bold hover:bg-slate-800 transition"
-                onClick={async () => {
-                  try {
-                    await (window as any).ourunionPwa?.enableNotifications?.();
-                    const st = await (window as any).ourunionPwa?.getStatus?.();
-                    alert(`알림 권한: ${st?.permission || Notification.permission}`);
-                  } catch (e) {
-                    alert('알림 권한 요청 중 오류가 발생했습니다.');
-                  }
-                }}
-              >
-                알림 켜기 (권한 요청)
-              </button>
-
-              <button
-                className="px-5 py-3 rounded-full bg-white border font-bold hover:bg-gray-50 transition"
-                onClick={async () => {
-                  try {
-                    await (window as any).ourunionPwa?.subscribeWebPush?.();
-                    alert('구독 시도를 완료했습니다. (VAPID 키가 없으면 테스트 알림만 동작합니다.)');
-                  } catch (e) {
-                    alert('푸시 구독 중 오류가 발생했습니다.');
-                  }
-                }}
-              >
-                웹 푸시 구독 저장 (선택)
-              </button>
-
-              <button
-                className="px-5 py-3 rounded-full bg-emerald-600 text-white font-bold hover:bg-emerald-500 transition"
-                onClick={async () => {
-                  try {
-                    const reg = await navigator.serviceWorker.ready;
-                    await reg.showNotification('우리노동조합', {
-                      body: '푸시 알림 테스트입니다.',
-                      icon: '/icons/icon-192.png',
-                      badge: '/icons/icon-192.png',
-                      data: { url: '/' }
-                    });
-                  } catch {
-                    alert('테스트 알림을 표시할 수 없습니다. (서비스워커/권한 확인)');
-                  }
-                }}
-              >
-                테스트 알림 보내기 (내 폰에서)
-              </button>
-            </div>
-          </div>
-        )}
-
-        {adminTab === 'settings' && (
+{adminTab === 'settings' && (
           <div className="space-y-8 animate-fadeIn">
             <div className="bg-white p-10 rounded-[2.5rem] border shadow-sm space-y-12">
               <div>
