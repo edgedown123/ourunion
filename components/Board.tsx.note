@@ -1,0 +1,3 @@
+NOTE:
+Ensure that post content images rely on CSS styling only.
+No inline width:100vw should be applied.
