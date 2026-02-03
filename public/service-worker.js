@@ -1,12 +1,12 @@
 /* 우리노동조합 PWA Service Worker (push + basic cache) */
 
-const CACHE_NAME = 'ourunion-cache-v1';
+const CACHE_NAME = 'ourunion-cache-v2';
 const CORE_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/pwa/icon-192.png',
-  '/pwa/icon-512.png'
+  '/pwa/icon-192-v2.png',
+  '/pwa/icon-512-v2.png'
 ];
 
 self.addEventListener('install', (event) => {
@@ -74,8 +74,8 @@ self.addEventListener('push', (event) => {
       tag,
       renotify: true,
       data: { url },
-      icon: '/pwa/icon-192.png',
-      badge: '/pwa/icon-192.png'
+      icon: '/pwa/icon-192-v2.png',
+      badge: '/pwa/icon-192-v2.png'
     })
   );
 });
