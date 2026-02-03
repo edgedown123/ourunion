@@ -10,7 +10,7 @@
 3. **Environment Variables**에 아래 2개를 추가합니다.
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
-4. **Deploy** 버튼을 누르면 끝!!
+4. **Deploy** 버튼을 누르면 끝!
 
 ## 🌐 도메인 연결 정보 (아이티이지)
 Vercel 설정의 'Domains' 메뉴에서 `ourunion.co.kr`을 추가하고 아래 값을 입력하세요.
