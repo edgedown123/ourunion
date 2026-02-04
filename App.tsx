@@ -65,6 +65,36 @@ const App: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 서비스워커(notificationclick) 등으로 URL 해시가 바뀌는 경우에도 화면 상태를 동기화
+  useEffect(() => {
+    const onHashChange = () => {
+      const state = readHash();
+
+      // 탭 이동
+      setActiveTab(state.tab || 'home');
+
+      // 글쓰기 / 상세 / 목록 상태 정리
+      if (state.writing) {
+        setIsWriting(true);
+        setEditingPost(null);
+        setSelectedPostId(null);
+      } else if (state.postId) {
+        setIsWriting(false);
+        setEditingPost(null);
+        setSelectedPostId(state.postId);
+      } else {
+        setIsWriting(false);
+        setEditingPost(null);
+        setSelectedPostId(null);
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
 
   const [activeTab, setActiveTab] = useState<string>('home');
   const [isWriting, setIsWriting] = useState(false);
