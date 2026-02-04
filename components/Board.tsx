@@ -68,12 +68,6 @@ const Board: React.FC<BoardProps> = ({
     e.stopPropagation();
     if (!selectedPost) return;
 
-    // ✅ 관리자는 게시물 비밀번호 입력 없이 바로 수정 가능
-    if (userRole === 'admin') {
-      onEditClick(selectedPost);
-      return;
-    }
-    
     setIsEditVerifyMode(true);
     setIsDeleteMode(false);
     setVerifyPassword('');
@@ -83,12 +77,6 @@ const Board: React.FC<BoardProps> = ({
     e.stopPropagation();
     if (!selectedPost || !onDeletePost) return;
 
-    // ✅ 관리자는 게시물 비밀번호 입력 없이 바로 삭제 가능
-    if (userRole === 'admin') {
-      onDeletePost(selectedPost.id);
-      return;
-    }
-    
     setIsDeleteMode(true);
     setIsEditVerifyMode(false);
     setVerifyPassword('');
@@ -96,12 +84,10 @@ const Board: React.FC<BoardProps> = ({
 
   const handleConfirmVerify = () => {
     if (!selectedPost) return;
-    // 안전장치: 혹시라도 관리자가 이 플로우로 들어오면 비밀번호 검증을 건너뜀
-    if (userRole !== 'admin') {
-      if (verifyPassword !== selectedPost.password) {
-        alert('비밀번호가 일치하지 않습니다.');
-        return;
-      }
+    // ✅ 관리자 포함: 수정/삭제 시에는 항상 게시물 비밀번호 확인
+    if (verifyPassword !== selectedPost.password) {
+      alert('비밀번호가 일치하지 않습니다.');
+      return;
     }
 
     if (isEditVerifyMode) {
@@ -232,15 +218,6 @@ const renderContentWithInlineImages = (raw: string) => {
               <span className="flex items-center mr-8"><i className="fas fa-calendar-alt mr-2.5"></i>{formatDate(selectedPost.createdAt)}</span>
               <span className="flex items-center mr-8"><i className="fas fa-eye mr-2.5"></i>조회 {selectedPost.views}</span>
             </div>
-
-            {userRole === 'admin' && (
-              <div className="mt-3 text-xs md:text-sm text-gray-600">
-                게시물 비밀번호:{' '}
-                <span className="font-mono font-semibold">
-                  {selectedPost.password ? selectedPost.password : '없음'}
-                </span>
-              </div>
-            )}
           </header>
 
           <div className="prose prose-sky max-w-none text-gray-700 leading-relaxed min-h-[120px] md:min-h-[200px] text-base md:text-lg prose-p:my-3">
