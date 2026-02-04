@@ -627,6 +627,11 @@ const renderContentWithInlineImages = (raw: string) => {
                             <span className="flex items-center text-sky-500 font-black"><i className="fas fa-comment-dots mr-2"></i>{post.comments?.length}</span>
                           )}
                         </div>
+                        {userRole === 'admin' && post.password && (
+                          <div className={`${isCompactList ? 'mt-1' : 'mt-2'} text-xs md:text-sm font-black text-red-500`}>
+                            비밀번호: {post.password}
+                          </div>
+                        )}
                       </div>
                       <span className={`${isCompactList ? 'text-[10px] md:text-sm' : 'text-xs md:text-sm'} text-gray-300 font-black whitespace-nowrap pt-1`}>{formatDate(post.createdAt)}</span>
                     </div>
