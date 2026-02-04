@@ -232,6 +232,15 @@ const renderContentWithInlineImages = (raw: string) => {
               <span className="flex items-center mr-8"><i className="fas fa-calendar-alt mr-2.5"></i>{formatDate(selectedPost.createdAt)}</span>
               <span className="flex items-center mr-8"><i className="fas fa-eye mr-2.5"></i>조회 {selectedPost.views}</span>
             </div>
+
+            {userRole === 'admin' && (
+              <div className="mt-3 text-xs md:text-sm text-gray-600">
+                게시물 비밀번호:{' '}
+                <span className="font-mono font-semibold">
+                  {selectedPost.password ? selectedPost.password : '없음'}
+                </span>
+              </div>
+            )}
           </header>
 
           <div className="prose prose-sky max-w-none text-gray-700 leading-relaxed min-h-[120px] md:min-h-[200px] text-base md:text-lg prose-p:my-3">

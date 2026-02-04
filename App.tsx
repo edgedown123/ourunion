@@ -926,7 +926,7 @@ const handleRequestWithdraw = () => {
                 <label className="text-[10px] font-black text-gray-400 ml-2 uppercase tracking-widest">Password</label>
                 <input type="password" placeholder="••••••••" className="w-full border-2 border-gray-50 rounded-2xl p-4 text-sm outline-none focus:border-sky-primary transition-colors bg-gray-50/50 font-bold" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleMemberLogin()} />
               </div>
-              <button onClick={handleMemberLogin} className="w-full py-4.5 bg-sky-primary text-white rounded-2xl font-black text-base shadow-xl shadow-sky-100 hover:opacity-95 active:scale-95 transition-all mt-4">로그인</button>
+              <button onClick={handleMemberLogin} className="w-full px-10 py-4 bg-sky-primary text-white rounded-2xl font-black text-xl shadow-xl shadow-sky-100 hover:opacity-95 active:scale-[0.99] transition-all mt-4">로그인</button>
               <button
                 onClick={handleOpenForgotPassword}
                 className="w-full text-center text-xs text-gray-400 font-bold hover:text-sky-primary mt-3 transition-colors"
