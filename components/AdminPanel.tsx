@@ -910,10 +910,26 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 className="px-5 py-3 rounded-full bg-slate-900 text-white font-bold hover:bg-slate-800 transition"
                 onClick={async () => {
                   try {
-                    await (window as any).ourunionPwa?.enableNotifications?.();
-                    const st = await (window as any).ourunionPwa?.getStatus?.();
-                    alert(`알림 권한: ${st?.permission || Notification.permission}`);
+                    // ✅ 반드시 '사용자 클릭' 이벤트 안에서 호출되어야 권한 팝업이 뜹니다.
+                    if (!('Notification' in window)) {
+                      alert('이 브라우저는 알림을 지원하지 않습니다.');
+                      return;
+                    }
+
+                    // ✅ 서비스워커가 없으면 먼저 등록/대기
+                    if ('serviceWorker' in navigator) {
+                      try {
+                        await navigator.serviceWorker.register('/service-worker.js');
+                        await navigator.serviceWorker.ready;
+                      } catch (e) {
+                        console.error('서비스워커 등록 실패', e);
+                      }
+                    }
+
+                    const perm = await Notification.requestPermission();
+                    alert(`알림 권한: ${perm}`);
                   } catch (e) {
+                    console.error(e);
                     alert('알림 권한 요청 중 오류가 발생했습니다.');
                   }
                 }}
@@ -925,10 +941,27 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 className="px-5 py-3 rounded-full bg-white border font-bold hover:bg-gray-50 transition"
                 onClick={async () => {
                   try {
-                    await (window as any).ourunionPwa?.subscribeWebPush?.();
-                    alert('구독 시도를 완료했습니다. (VAPID 키가 없으면 테스트 알림만 동작합니다.)');
+                    if (!('Notification' in window)) {
+                      alert('이 브라우저는 알림을 지원하지 않습니다.');
+                      return;
+                    }
+
+                    // 권한이 granted가 아니면 먼저 요청
+                    let perm: NotificationPermission = Notification.permission;
+                    if (perm !== 'granted') perm = await Notification.requestPermission();
+                    if (perm !== 'granted') {
+                      alert('알림 권한이 허용되지 않았습니다.');
+                      return;
+                    }
+
+                    // 실제 웹푸시 구독 + 저장 (VAPID 키 필요)
+                    const { ensurePushSubscribed } = await import('../services/pushService');
+                    await ensurePushSubscribed();
+
+                    alert('웹푸시 구독 및 저장 완료!');
                   } catch (e) {
-                    alert('푸시 구독 중 오류가 발생했습니다.');
+                    console.error(e);
+                    alert('푸시 구독 중 오류가 발생했습니다. (VAPID 키/서비스워커/HTTPS/브라우저 지원 확인)');
                   }
                 }}
               >
@@ -942,8 +975,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                     const reg = await navigator.serviceWorker.ready;
                     await reg.showNotification('우리노동조합', {
                       body: '푸시 알림 테스트입니다.',
-                      icon: '/icons/icon-192.png',
-                      badge: '/icons/icon-192.png',
+                      icon: '/pwa/icon-192.png',
+                      badge: '/pwa/icon-192.png',
                       data: { url: '/' }
                     });
                   } catch {
