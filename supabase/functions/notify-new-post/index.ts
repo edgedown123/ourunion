@@ -11,11 +11,8 @@
  * - VAPID_SUBJECT (e.g. "mailto:admin@yourdomain.com")
  */
 
-// NOTE: Supabase Edge Functions run on Deno.
-// Use esm.sh with `?target=deno` to avoid Node-only shims (util.inherits/jws issues)
-// that can crash the event loop on cold start.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2?target=deno";
-import webpush from "https://esm.sh/web-push@3.6.7?target=deno";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import webpush from "https://esm.sh/web-push@3.6.7";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -27,18 +24,10 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
-function buildRouteFromPost(post: any) {
-  // Our app uses these board keys:
-  // notice_all, family_events, free, resources
-  // In DB it might be stored as `type` or `board`.
-  const tab = (post?.type || post?.board || post?.category || "notice_all") as string;
-  const id = (post?.id ?? post?.post_id ?? "") as string | number;
-  return {
-    tab,
-    // Front routing expects `id`
-    url: id ? `/#tab=${encodeURIComponent(tab)}&id=${encodeURIComponent(String(id))}` : `/#tab=${encodeURIComponent(tab)}`,
-    tag: tab,
-  };
+function buildUrlFromPost(post: any) {
+  const type = post?.type || "home";
+  const id = post?.id || "";
+  return `/#tab=${encodeURIComponent(type)}&post=${encodeURIComponent(id)}`;
 }
 
 Deno.serve(async (req) => {
@@ -53,7 +42,7 @@ Deno.serve(async (req) => {
 
   // Supabase Database Webhook payload usually contains: record/new/old/table/schema
   const post = payload.record || payload.new || payload;
-  const route = buildRouteFromPost(post);
+  const url = buildUrlFromPost(post);
 
   const title = "우리노동조합";
   const body = "새 게시글이 등록되었습니다.";
@@ -75,7 +64,7 @@ Deno.serve(async (req) => {
     try {
       await webpush.sendNotification(
         subscription as any,
-        JSON.stringify({ title, body, url: route.url, tag: route.tag })
+        JSON.stringify({ title, body, url, tag: "ourunion-new-post" })
       );
       results.push({ endpoint: s.endpoint, ok: true });
     } catch (e) {
