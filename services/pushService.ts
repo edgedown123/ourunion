@@ -48,27 +48,46 @@ export async function ensurePushSubscribed() {
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
     }));
 
-  // Supabase에 구독 저장
+  // 서버(API)로 구독 저장 (service_role로 upsert)
   const session = await supabase.auth.getSession();
-  const userId = session.data.session?.user?.id || null;
+  const accessToken = session.data.session?.access_token || null;
 
   const json = sub.toJSON();
   const endpoint = sub.endpoint;
   const p256dh = (json.keys as any)?.p256dh || null;
   const auth = (json.keys as any)?.auth || null;
 
-  const { error } = await supabase.from('push_subscriptions').upsert(
-    {
-      endpoint,
-      p256dh,
-      auth,
-      user_id: userId,
-      last_seen_at: new Date().toISOString(),
-    },
-    { onConflict: 'endpoint' }
-  );
+  // 로그인 세션이 아직 준비되지 않은 상태면, 구독은 만들어지지만 DB 저장은 실패할 수 있으니
+  // 명확하게 안내한다.
+  if (!accessToken) {
+    throw new Error('로그인 정보를 확인할 수 없습니다. 잠시 후 다시 시도해 주세요.');
+  }
 
-  if (error) throw error;
+  // 1) API로 저장 (권장)
+  const res = await fetch('/api/push-subscribe', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ endpoint, p256dh, auth }),
+  });
+
+  if (!res.ok) {
+    // 2) 혹시 로컬 개발 환경 등에서 API가 없다면, RLS 정책에 따라 직접 upsert 시도
+    const { error } = await supabase.from('push_subscriptions').upsert(
+      {
+        endpoint,
+        p256dh,
+        auth,
+        user_id: session.data.session?.user?.id || null,
+        last_seen_at: new Date().toISOString(),
+      },
+      { onConflict: 'endpoint' }
+    );
+    if (error) throw error;
+  }
+
   return sub;
 }
 
@@ -85,7 +104,20 @@ export async function unsubscribePush() {
 
   // DB에서도 삭제 시도 (실패해도 ok)
   try {
-    await supabase.from('push_subscriptions').delete().eq('endpoint', endpoint);
+    const session = await supabase.auth.getSession();
+    const accessToken = session.data.session?.access_token || null;
+    if (accessToken) {
+      await fetch('/api/push-unsubscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ endpoint }),
+      });
+    } else {
+      await supabase.from('push_subscriptions').delete().eq('endpoint', endpoint);
+    }
   } catch {}
   return ok;
 }
