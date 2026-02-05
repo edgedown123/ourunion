@@ -82,10 +82,6 @@ export async function ensurePushSubscribed() {
   return sub;
 }
 
-
-  return sub;
-}
-
 export async function unsubscribePush() {
   if (!isPushSupported()) return false;
   if (!supabase) return false;
