@@ -9,6 +9,8 @@ const CORE_ASSETS = [
   '/icons/icon-512-any-v6.png'
 ];
 
+const BYPASS_CACHE_PREFIXES = ['/api/', '/auth', '/login', '/supabase'];
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_ASSETS)).then(() => self.skipWaiting())
@@ -33,6 +35,12 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
+
+  // ✅ 로그인/인증/API 요청은 캐시를 타지 않도록 예외 처리
+  if (BYPASS_CACHE_PREFIXES.some((p) => url.pathname.startsWith(p))) {
+    event.respondWith(fetch(req, { cache: 'no-store' }));
+    return;
+  }
 
   if (req.mode === 'navigate') {
     event.respondWith(

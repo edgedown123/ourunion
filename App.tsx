@@ -113,6 +113,7 @@ const App: React.FC = () => {
   const [adminPassword, setAdminPassword] = useState('');
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [memberLoginLoading, setMemberLoginLoading] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotLoading, setForgotLoading] = useState(false);
   const [newPassword, setNewPassword] = useState('');
@@ -562,11 +563,19 @@ const handlePermanentDelete = (postId: string) => {
     }
   };
 
-  const handleMemberLogin = async () => {
+  
+  const isAbortLikeError = (err: any) => {
+    const msg = String(err?.message || '');
+    return err?.name === 'AbortError' || /aborted|abort|signal is aborted/i.test(msg);
+  };
+
+const handleMemberLogin = async () => {
+    if (memberLoginLoading) return; // 중복 클릭 방지
     if (!loginEmail) return alert('이메일 주소를 입력해주세요.');
     if (!loginPassword) return alert('비밀번호를 입력해주세요.');
     if (!cloud.isSupabaseEnabled()) return alert('Supabase 설정이 필요합니다.');
 
+    setMemberLoginLoading(true);
     try {
       const { data, error } = await cloud.signInWithEmailPassword(loginEmail, loginPassword);
       if (error) throw error;
@@ -595,7 +604,16 @@ const handlePermanentDelete = (postId: string) => {
       alert(`${profile.name}님, 환영합니다!`);
     } catch (err: any) {
       console.error(err);
+
+      // Abort(요청 취소) 계열은 사용자에게 더 친절하게 안내
+      if (isAbortLikeError(err)) {
+        alert('네트워크 요청이 중단되었습니다. 잠시 후 다시 시도해주세요.\n(로그인 버튼은 한 번만 눌러주세요 / 와이파이·데이터 상태 확인)');
+        return;
+      }
+
       alert(err?.message || '로그인 중 오류가 발생했습니다.');
+    } finally {
+      setMemberLoginLoading(false);
     }
   };
 
@@ -954,9 +972,15 @@ const handleRequestWithdraw = () => {
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-gray-400 ml-2 uppercase tracking-widest">Password</label>
-                <input type="password" placeholder="••••••••" className="w-full border-2 border-gray-50 rounded-2xl p-4 text-sm outline-none focus:border-sky-primary transition-colors bg-gray-50/50 font-bold" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleMemberLogin()} />
+                <input type="password" placeholder="••••••••" className="w-full border-2 border-gray-50 rounded-2xl p-4 text-sm outline-none focus:border-sky-primary transition-colors bg-gray-50/50 font-bold" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !memberLoginLoading && handleMemberLogin()} />
               </div>
-              <button onClick={handleMemberLogin} className="w-full px-10 py-4 bg-sky-primary text-white rounded-2xl font-black text-xl shadow-xl shadow-sky-100 hover:opacity-95 active:scale-[0.99] transition-all mt-4">로그인</button>
+              <button
+                onClick={handleMemberLogin}
+                disabled={memberLoginLoading}
+                className={`w-full px-10 py-4 bg-sky-primary text-white rounded-2xl font-black text-xl shadow-xl shadow-sky-100 hover:opacity-95 active:scale-[0.99] transition-all mt-4 ${memberLoginLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
+              >
+                {memberLoginLoading ? '로그인 중...' : '로그인'}
+              </button>
               <button
                 onClick={handleOpenForgotPassword}
                 className="w-full text-center text-xs text-gray-400 font-bold hover:text-sky-primary mt-3 transition-colors"
