@@ -40,6 +40,12 @@ export async function ensurePushSubscribed() {
   }
 
   const reg = await navigator.serviceWorker.ready;
+
+  const appServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY.trim());
+  if (appServerKey.byteLength !== 65) {
+    throw new Error(`VAPID 공개키가 비정상입니다 (${appServerKey.byteLength} bytes)`);
+  }
+
   const existing = await reg.pushManager.getSubscription();
   const sub =
     existing ||
@@ -48,22 +54,17 @@ export async function ensurePushSubscribed() {
       applicationServerKey: appServerKey,
     }));
 
-  // 서버(API)로 구독 저장 (service_role로 upsert)
   const session = await supabase.auth.getSession();
-  const accessToken = session.data.session?.access_token || null;
-
-  const json = sub.toJSON();
-  const endpoint = sub.endpoint;
-  const p256dh = (json.keys as any)?.p256dh || null;
-  const auth = (json.keys as any)?.auth || null;
-
-  // 로그인 세션이 아직 준비되지 않은 상태면, 구독은 만들어지지만 DB 저장은 실패할 수 있으니
-  // 명확하게 안내한다.
+  const accessToken = session.data.session?.access_token;
   if (!accessToken) {
     throw new Error('로그인 정보를 확인할 수 없습니다. 잠시 후 다시 시도해 주세요.');
   }
 
-  // 1) API로 저장 (권장)
+  const json = sub.toJSON();
+  const endpoint = sub.endpoint;
+  const p256dh = (json.keys as any)?.p256dh ?? null;
+  const auth = (json.keys as any)?.auth ?? null;
+
   const res = await fetch('/api/push-subscribe', {
     method: 'POST',
     headers: {
@@ -74,10 +75,13 @@ export async function ensurePushSubscribed() {
   });
 
   if (!res.ok) {
-  const text = await res.text().catch(() => '');
-  console.error('push-subscribe API failed', res.status, text);
-  throw new Error(`push-subscribe API 실패 (${res.status}): ${text}`);
+    const text = await res.text().catch(() => '');
+    throw new Error(`push-subscribe API 실패 (${res.status}): ${text}`);
+  }
+
+  return sub;
 }
+
 
   return sub;
 }
