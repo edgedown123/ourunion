@@ -17,26 +17,28 @@ export default async function handler(req, res) {
     }
 
     const authHeader = req.headers.authorization || '';
-    const token = authHeader.startsWith('Bearer ') ? authHeader.slice('Bearer '.length) : null;
-    if (!token) {
-      return res.status(401).json({ ok: false, error: 'Missing access token' });
-    }
+const token = authHeader.startsWith('Bearer ') ? authHeader.slice('Bearer '.length) : null;
 
-    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false },
     });
 
-    const { data: userData, error: userError } = await supabase.auth.getUser(token);
-    if (userError || !userData?.user) {
-      return res.status(401).json({ ok: false, error: 'Invalid access token' });
-    }
+    let user_id = null;
+let anonymous = true;
 
-    const { endpoint, p256dh = null, auth = null } = req.body || {};
+if (token) {
+  const { data: userData, error: userError } = await supabase.auth.getUser(token);
+  if (userError || !userData?.user) {
+    return res.status(401).json({ ok: false, error: 'Invalid access token' });
+  }
+  user_id = userData.user.id;
+  anonymous = false;
+}
+
+const { endpoint, p256dh = null, auth = null } = req.body || {};
     if (!endpoint) {
       return res.status(400).json({ ok: false, error: 'Missing endpoint' });
     }
-
-    const user_id = userData.user.id;
 
     const { error } = await supabase.from('push_subscriptions').upsert(
       {
@@ -53,7 +55,7 @@ export default async function handler(req, res) {
       return res.status(500).json({ ok: false, error: error.message });
     }
 
-    return res.status(200).json({ ok: true });
+    return res.status(200).json({ ok: true, stored: true, user_id, anonymous });
   } catch (e) {
     return res.status(500).json({ ok: false, error: e?.message || String(e) });
   }
