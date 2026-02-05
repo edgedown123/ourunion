@@ -1,3 +1,16 @@
+async function getAccessTokenWithRetry(maxMs = 5000, intervalMs = 250): Promise<string | null> {
+  if (!supabase) return null;
+
+  const start = Date.now();
+  while (Date.now() - start < maxMs) {
+    const session = await supabase.auth.getSession();
+    const token = session.data.session?.access_token || null;
+    if (token) return token;
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
+  return null;
+}
+
 import { supabase } from './supabaseService';
 
 const VAPID_PUBLIC_KEY_RAW = (typeof import.meta !== 'undefined' ? (import.meta as any).env?.VITE_VAPID_PUBLIC_KEY : undefined) || '';
@@ -39,7 +52,10 @@ export async function ensurePushSubscribed() {
     if (p !== 'granted') throw new Error('알림 권한이 허용되지 않았습니다.');
   }
 
-  const reg = await navigator.serviceWorker.ready;
+  const reg = await Promise.race([
+    navigator.serviceWorker.ready,
+    new Promise((_, rej) => setTimeout(() => rej(new Error('서비스워커 준비가 지연됩니다. (ready 타임아웃)')), 8000)),
+  ]) as ServiceWorkerRegistration;
 
   const appServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY.trim());
   if (appServerKey.byteLength !== 65) {
@@ -54,13 +70,10 @@ export async function ensurePushSubscribed() {
       applicationServerKey: appServerKey,
     }));
 
-  const session = await supabase.auth.getSession();
-  const accessToken = session.data.session?.access_token;
-  if (!accessToken) {
-    console.warn('로그인 세션 없음 – 푸시 구독 생성만 수행');
-    return sub;
-  }
-
+  const accessToken = await getAccessTokenWithRetry(5000, 250);
+if (!accessToken) {
+  throw new Error('로그인이 필요합니다. 관리자 로그인 후 다시 시도해 주세요. (세션 준비 지연 가능)');
+}
   const json = sub.toJSON();
   const endpoint = sub.endpoint;
   const p256dh = (json.keys as any)?.p256dh ?? null;
