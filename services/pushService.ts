@@ -55,7 +55,11 @@ export async function ensurePushSubscribed() {
     }));
 
   const session = await supabase.auth.getSession();
-  const accessToken = session.data.session?.access_token || null;
+  const accessToken = session.data.session?.access_token;
+  if (!accessToken) {
+    console.warn('로그인 세션 없음 – 푸시 구독 생성만 수행');
+    return sub;
+  }
 
   const json = sub.toJSON();
   const endpoint = sub.endpoint;
@@ -66,7 +70,7 @@ export async function ensurePushSubscribed() {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      Authorization: `Bearer ${accessToken}`,
     },
     body: JSON.stringify({ endpoint, p256dh, auth }),
   });
@@ -76,12 +80,7 @@ export async function ensurePushSubscribed() {
     throw new Error(`push-subscribe API 실패 (${res.status}): ${text}`);
   }
 
-  let info: any = null;
-  try {
-    info = await res.json();
-  } catch {}
-
-  return { sub, stored: true, anonymous: info?.anonymous ?? !accessToken, user_id: info?.user_id ?? null };
+  return sub;
 }
 
 export async function unsubscribePush() {

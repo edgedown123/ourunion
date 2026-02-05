@@ -956,13 +956,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
                     // 실제 웹푸시 구독 + 저장 (VAPID 키 필요)
                     const { ensurePushSubscribed } = await import('../services/pushService');
-                    const result = await ensurePushSubscribed();
+                    await ensurePushSubscribed();
 
-                    if (result?.anonymous) {
-                      alert('웹푸시 구독 저장 완료! (비로그인: user_id 없이 저장됨)');
-                    } else {
-                      alert('웹푸시 구독 및 저장 완료!');
-                    }
+                    alert('웹푸시 구독 및 저장 완료!');
                   } catch (e) {
                     console.error(e);
                     alert(`푸시 구독 실패: ${e?.message || String(e)}`);
