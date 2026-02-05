@@ -12,9 +12,8 @@
  * Optional:
  * - PUSH_SUBSCRIPTIONS_TABLE (default: "push_subscriptions")
  */
-const webpush = require("web-push");
-const { createClient } = require("@supabase/supabase-js");
-
+import webpush from "web-push";
+import { createClient } from "@supabase/supabase-js";
 function getJsonBody(req) {
   if (req.body && typeof req.body === "object") return req.body;
   if (!req.body) return null;
@@ -36,7 +35,7 @@ function getBoardKey(record) {
   );
 }
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   try {
     if (req.method !== "POST") return res.status(405).json({ ok: false, error: "Method not allowed" });
 
@@ -126,4 +125,4 @@ module.exports = async (req, res) => {
   } catch (e) {
     return res.status(500).json({ ok: false, error: e?.message || String(e) });
   }
-};
+}
