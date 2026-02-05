@@ -57,7 +57,8 @@ export async function ensurePushSubscribed() {
   const session = await supabase.auth.getSession();
   const accessToken = session.data.session?.access_token;
   if (!accessToken) {
-    throw new Error('로그인 정보를 확인할 수 없습니다. 잠시 후 다시 시도해 주세요.');
+    console.warn('로그인 세션 없음 – 푸시 구독 생성만 수행');
+    return sub;
   }
 
   const json = sub.toJSON();
