@@ -961,7 +961,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                     alert('웹푸시 구독 및 저장 완료!');
                   } catch (e) {
                     console.error(e);
-                    alert('푸시 구독 중 오류가 발생했습니다. (VAPID 키/서비스워커/HTTPS/브라우저 지원 확인)');
+                    alert(`푸시 구독 실패: ${e?.message || String(e)}`);
                   }
                 }}
               >

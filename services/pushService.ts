@@ -1,7 +1,7 @@
 import { supabase } from './supabaseService';
 
-const VAPID_PUBLIC_KEY =
-  (typeof import.meta !== 'undefined' ? (import.meta as any).env?.VITE_VAPID_PUBLIC_KEY : undefined) || '';
+const VAPID_PUBLIC_KEY_RAW = (typeof import.meta !== 'undefined' ? (import.meta as any).env?.VITE_VAPID_PUBLIC_KEY : undefined) || '';
+const VAPID_PUBLIC_KEY = (VAPID_PUBLIC_KEY_RAW || '').trim();
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -45,7 +45,7 @@ export async function ensurePushSubscribed() {
     existing ||
     (await reg.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      applicationServerKey: appServerKey,
     }));
 
   // 서버(API)로 구독 저장 (service_role로 upsert)
@@ -74,19 +74,10 @@ export async function ensurePushSubscribed() {
   });
 
   if (!res.ok) {
-    // 2) 혹시 로컬 개발 환경 등에서 API가 없다면, RLS 정책에 따라 직접 upsert 시도
-    const { error } = await supabase.from('push_subscriptions').upsert(
-      {
-        endpoint,
-        p256dh,
-        auth,
-        user_id: session.data.session?.user?.id || null,
-        last_seen_at: new Date().toISOString(),
-      },
-      { onConflict: 'endpoint' }
-    );
-    if (error) throw error;
-  }
+  const text = await res.text().catch(() => '');
+  console.error('push-subscribe API failed', res.status, text);
+  throw new Error(`push-subscribe API 실패 (${res.status}): ${text}`);
+}
 
   return sub;
 }
