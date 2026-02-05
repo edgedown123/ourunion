@@ -71,9 +71,7 @@ export async function ensurePushSubscribed() {
     }));
 
   const accessToken = await getAccessTokenWithRetry(5000, 250);
-if (!accessToken) {
-  throw new Error('로그인이 필요합니다. 관리자 로그인 후 다시 시도해 주세요. (세션 준비 지연 가능)');
-}
+// accessToken이 없더라도(세션 준비 지연/비로그인) 익명으로 저장을 시도합니다.
   const json = sub.toJSON();
   const endpoint = sub.endpoint;
   const p256dh = (json.keys as any)?.p256dh ?? null;
@@ -85,7 +83,7 @@ if (!accessToken) {
   const res = await fetch('/api/push-subscribe', {
     method: 'POST',
     headers,
-    body: JSON.stringify({ endpoint, p256dh, auth }),
+    body: JSON.stringify({ endpoint, p256dh, auth, userAgent: navigator.userAgent }),
   });
 
   if (!res.ok) {

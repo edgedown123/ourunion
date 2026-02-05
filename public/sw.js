@@ -61,3 +61,54 @@ self.addEventListener('fetch', (event) => {
     }
   })());
 });
+// Push message handler
+self.addEventListener('push', (event) => {
+  let payload = {};
+  try {
+    payload = event.data ? event.data.json() : {};
+  } catch {
+    payload = { title: '우리노동조합', body: '새 게시글이 등록되었습니다.' };
+  }
+
+  const title = payload.title || '우리노동조합';
+  const body = payload.body || '새 게시글이 등록되었습니다.';
+  const url = payload.url || '/#tab=home';
+  const tag = payload.tag || 'ourunion-new-post';
+
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      tag,
+      renotify: true,
+      data: { url },
+      // 아이콘 경로는 manifest에 맞춰둠(빌드 시 생성/복사되는 것을 가정)
+      icon: '/pwa/icon-192.png',
+      badge: '/pwa/icon-192.png',
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = event.notification?.data?.url || '/#tab=home';
+
+  event.waitUntil(
+    (async () => {
+      const allClients = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+      for (const client of allClients) {
+        if ('focus' in client) {
+          // 이미 열린 탭이 있으면 그 탭으로 이동
+          await client.focus();
+          try {
+            client.navigate(url);
+          } catch {}
+          return;
+        }
+      }
+      // 없으면 새 창
+      if (clients.openWindow) {
+        await clients.openWindow(url);
+      }
+    })()
+  );
+});
