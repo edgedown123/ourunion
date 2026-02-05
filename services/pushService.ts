@@ -79,12 +79,12 @@ if (!accessToken) {
   const p256dh = (json.keys as any)?.p256dh ?? null;
   const auth = (json.keys as any)?.auth ?? null;
 
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+
   const res = await fetch('/api/push-subscribe', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`,
-    },
+    headers,
     body: JSON.stringify({ endpoint, p256dh, auth }),
   });
 
@@ -93,7 +93,8 @@ if (!accessToken) {
     throw new Error(`push-subscribe API 실패 (${res.status}): ${text}`);
   }
 
-  return sub;
+  const resp = await res.json().catch(() => ({} as any));
+  return { sub, ...resp };
 }
 
 export async function unsubscribePush() {
